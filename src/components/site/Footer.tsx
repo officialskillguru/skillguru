@@ -27,12 +27,12 @@ const columns = [
     ],
   },
   {
-    title: "Resources",
+    title: "Guidance",
     links: [
-      ["Interview Tips", routes.resources],
-      ["Career Guide", routes.resources],
-      ["Blog", routes.resources],
-      ["Events & Webinars", routes.resources],
+      ["Career Assessment", routes.guidance],
+      ["AI Guidance Preview", routes.guidance],
+      ["Recommended Courses", routes.guidance],
+      ["Career Roadmap", routes.guidance],
       ["FAQs", routes.faq],
     ],
   },

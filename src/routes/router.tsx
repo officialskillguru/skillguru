@@ -1,6 +1,7 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { createHashRouter, Navigate, Outlet } from "react-router-dom";
 import { PageLoader } from "@/components/common/PageLoader";
+import { ScrollToTop } from "@/components/common/ScrollToTop";
 import { AnalyticsProvider } from "@/context/AnalyticsProvider";
 import { MarketingLayout } from "@/layouts/MarketingLayout";
 import { routes } from "@/lib/routes";
@@ -11,18 +12,30 @@ const CoursesPage = lazy(() => import("@/pages/CoursesPage"));
 const CourseDetailsPage = lazy(() => import("@/pages/CourseDetailsPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const PlacementsPage = lazy(() => import("@/pages/PlacementsPage"));
-const SuccessStoriesPage = lazy(() => import("@/pages/SuccessStoriesPage"));
+const PlacementStoryPage = lazy(() => import("@/pages/PlacementStoryPage"));
 const MentorsPage = lazy(() => import("@/pages/MentorsPage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
-const BlogPage = lazy(() => import("@/pages/BlogPage"));
-const BlogDetailsPage = lazy(() => import("@/pages/BlogDetailsPage"));
+const GuidancePage = lazy(() => import("@/pages/GuidancePage"));
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
 const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 const AdminPage = lazy(() => import("@/pages/AdminPage"));
-const AdminResourcePage = lazy(() => import("@/pages/AdminResourcePage"));
 const LegalPage = lazy(() => import("@/pages/LegalPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+
+// Lazy load premium admin pages
+const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
+const AdminCoursesPage = lazy(() => import("@/pages/AdminCoursesPage"));
+const AdminStudentsPage = lazy(() => import("@/pages/AdminStudentsPage"));
+const AdminMentorsPage = lazy(() => import("@/pages/AdminMentorsPage"));
+const AdminSuccessStoriesPage = lazy(() => import("@/pages/AdminSuccessStoriesPage"));
+const AdminPlacementsPage = lazy(() => import("@/pages/AdminPlacementsPage"));
+const AdminCRMPage = lazy(() => import("@/pages/AdminCRMPage"));
+const AdminAIGuidancePage = lazy(() => import("@/pages/AdminAIGuidancePage"));
+const AdminCMSPage = lazy(() => import("@/pages/AdminCMSPage"));
+const AdminAnalyticsPage = lazy(() => import("@/pages/AdminAnalyticsPage"));
+const AdminRolePage = lazy(() => import("@/pages/AdminRolePage"));
+const AdminSettingsPage = lazy(() => import("@/pages/AdminSettingsPage"));
 
 function withSuspense(element: ReactNode) {
   return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
@@ -35,6 +48,7 @@ function MarketingRoute({ children }: Readonly<{ children: ReactNode }>) {
 function RootRoute() {
   return (
     <AnalyticsProvider>
+      <ScrollToTop />
       <Outlet />
     </AnalyticsProvider>
   );
@@ -49,13 +63,10 @@ export const router = createHashRouter([
       { path: "/courses/:slug", element: withSuspense(<MarketingRoute><CourseDetailsPage /></MarketingRoute>) },
       { path: routes.about, element: withSuspense(<MarketingRoute><AboutPage /></MarketingRoute>) },
       { path: routes.placements, element: withSuspense(<MarketingRoute><PlacementsPage /></MarketingRoute>) },
-      { path: routes.successStories, element: withSuspense(<MarketingRoute><SuccessStoriesPage /></MarketingRoute>) },
+      { path: "/placements/:id", element: withSuspense(<MarketingRoute><PlacementStoryPage /></MarketingRoute>) },
       { path: routes.mentors, element: withSuspense(<MarketingRoute><MentorsPage /></MarketingRoute>) },
+      { path: routes.guidance, element: withSuspense(<MarketingRoute><GuidancePage /></MarketingRoute>) },
       { path: routes.contact, element: withSuspense(<MarketingRoute><ContactPage /></MarketingRoute>) },
-      { path: routes.resources, element: withSuspense(<MarketingRoute><BlogPage /></MarketingRoute>) },
-      { path: routes.blog, element: withSuspense(<MarketingRoute><BlogPage /></MarketingRoute>) },
-      { path: "/resources/:slug", element: withSuspense(<MarketingRoute><BlogDetailsPage /></MarketingRoute>) },
-      { path: "/blog/:slug", element: withSuspense(<MarketingRoute><BlogDetailsPage /></MarketingRoute>) },
       { path: routes.login, element: withSuspense(<AuthPage mode="login" />) },
       { path: routes.signup, element: withSuspense(<AuthPage mode="signup" />) },
       {
@@ -75,20 +86,51 @@ export const router = createHashRouter([
           </AdminProtectedRoute>,
         ),
         children: [
-          { index: true, element: withSuspense(<AdminResourcePage title="Dashboard" />) },
-          { path: "leads", element: withSuspense(<AdminResourcePage title="Leads" />) },
-          { path: "courses", element: withSuspense(<AdminResourcePage title="Courses" />) },
-          { path: "blogs", element: withSuspense(<AdminResourcePage title="Blog" />) },
-          { path: "faculty", element: withSuspense(<AdminResourcePage title="Faculty" />) },
-          { path: "testimonials", element: withSuspense(<AdminResourcePage title="Testimonials" />) },
-          { path: "events", element: withSuspense(<AdminResourcePage title="Events" />) },
-          { path: "seo", element: withSuspense(<AdminResourcePage title="SEO" />) },
-          { path: "audit", element: withSuspense(<AdminResourcePage title="Audit" />) },
+          { index: true, element: withSuspense(<AdminDashboardPage />) },
+          { path: "leads", element: withSuspense(<AdminCRMPage />) },
+          { path: "pipeline", element: withSuspense(<AdminCRMPage />) },
+          { path: "courses", element: withSuspense(<AdminCoursesPage />) },
+          { path: "categories", element: withSuspense(<AdminCoursesPage />) },
+          { path: "programs", element: withSuspense(<AdminCoursesPage />) },
+          { path: "certifications", element: withSuspense(<AdminCoursesPage />) },
+          { path: "students", element: withSuspense(<AdminStudentsPage />) },
+          { path: "enrollments", element: withSuspense(<AdminStudentsPage />) },
+          { path: "progress", element: withSuspense(<AdminStudentsPage />) },
+          { path: "certificates", element: withSuspense(<AdminStudentsPage />) },
+          { path: "blogs", element: withSuspense(<AdminCMSPage />) },
+          { path: "faq", element: withSuspense(<AdminCMSPage />) },
+          { path: "homepage", element: withSuspense(<AdminCMSPage />) },
+          { path: "seo", element: withSuspense(<AdminCMSPage />) },
+          { path: "faculty", element: withSuspense(<AdminMentorsPage />) },
+          { path: "mentor-applications", element: withSuspense(<AdminMentorsPage />) },
+          { path: "mentor-assignments", element: withSuspense(<AdminMentorsPage />) },
+          { path: "mentor-reviews", element: withSuspense(<AdminMentorsPage />) },
+          { path: "testimonials", element: withSuspense(<AdminSuccessStoriesPage />) },
+          { path: "hiring-partners", element: withSuspense(<AdminSuccessStoriesPage />) },
+          { path: "placement-records", element: withSuspense(<AdminPlacementsPage />) },
+          { path: "placement-statistics", element: withSuspense(<AdminPlacementsPage />) },
+          { path: "revenue", element: withSuspense(<AdminAnalyticsPage />) },
+          { path: "transactions", element: withSuspense(<AdminAnalyticsPage />) },
+          { path: "coupons", element: withSuspense(<AdminAnalyticsPage />) },
+          { path: "refunds", element: withSuspense(<AdminAnalyticsPage />) },
+          { path: "ai-guidance", element: withSuspense(<AdminAIGuidancePage />) },
+          { path: "counselling", element: withSuspense(<AdminAIGuidancePage />) },
+          { path: "users-roles", element: withSuspense(<AdminRolePage />) },
+          { path: "permissions", element: withSuspense(<AdminRolePage />) },
+          { path: "audit", element: withSuspense(<AdminRolePage />) },
+          { path: "settings", element: withSuspense(<AdminSettingsPage />) },
         ],
       },
       { path: "/placement-assistance", element: <Navigate to={routes.placements} replace /> },
       { path: "/faculty", element: <Navigate to={routes.mentors} replace /> },
-      { path: "/testimonials", element: <Navigate to={routes.successStories} replace /> },
+      { path: "/testimonials", element: <Navigate to={routes.placements} replace /> },
+      { path: "/success-stories", element: <Navigate to={routes.placements} replace /> },
+      { path: "/success-story", element: <Navigate to={routes.placements} replace /> },
+      { path: "/success-story/:id", element: <Navigate to={routes.placements} replace /> },
+      { path: "/resources", element: <Navigate to={routes.guidance} replace /> },
+      { path: "/resources/:slug", element: <Navigate to={routes.guidance} replace /> },
+      { path: "/blog", element: <Navigate to={routes.guidance} replace /> },
+      { path: "/blog/:slug", element: <Navigate to={routes.guidance} replace /> },
       { path: "/career-programs", element: <Navigate to={routes.courses} replace /> },
       { path: routes.faq, element: withSuspense(<MarketingRoute><HomePage /></MarketingRoute>) },
       { path: routes.privacyPolicy, element: withSuspense(<MarketingRoute><LegalPage title="Privacy Policy" /></MarketingRoute>) },

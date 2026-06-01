@@ -6,12 +6,9 @@ export const routes = {
   courses: "/courses",
   placements: "/placements",
   placementAssistance: "/placements",
-  testimonials: "/success-stories",
-  successStories: "/success-stories",
+  guidance: "/guidance",
   mentors: "/mentors",
   faculty: "/mentors",
-  blog: "/blog",
-  resources: "/resources",
   contact: "/contact",
   login: "/login",
   signup: "/signup",
@@ -40,8 +37,12 @@ export function courseDetailRoute(slug: string) {
   return `/courses/${slug}` as const;
 }
 
+export function placementStoryRoute(id: string) {
+  return `/placements/${id}` as const;
+}
+
 export function blogDetailRoute(slug: string) {
-  return `/resources/${slug}` as const;
+  return `/blog/${slug}` as const;
 }
 
 export function thankYouRoute(type: string) {

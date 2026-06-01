@@ -16,14 +16,8 @@ const navItems = [
   },
   { label: "Placements", to: routes.placements },
   { label: "Mentors", to: routes.mentors },
-  { label: "Success Stories", to: routes.successStories },
-  {
-    label: "Resources",
-    to: routes.resources,
-    dropdown: ["Career Guides", "Interview Preparation", "Resume Tips", "Webinars"],
-  },
+  { label: "AI Guidance", to: routes.guidance },
   { label: "About Us", to: routes.about },
-  { label: "Contact Us", to: routes.contact },
 ];
 
 export function Navbar() {
@@ -78,10 +72,10 @@ export function Navbar() {
           scrolled && "border-white/35 bg-white/78 shadow-[0_16px_46px_rgba(10,42,136,0.13)] backdrop-blur-[20px]",
         )}
       >
-        <div className="mx-auto flex h-[72px] max-w-[1440px] items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-18 max-w-360 items-center justify-between px-4 sm:px-6 lg:px-8">
           <Logo
             src={assetUrl("/assets/logo/hr-remedy-logo-new.png")}
-            className="w-[190px] shrink-0 overflow-visible sm:w-[220px] lg:w-[250px]"
+            className="w-47.5 shrink-0 overflow-visible sm:w-55 lg:w-62.5"
             imageClassName="h-10 w-auto origin-left scale-[2.2] sm:h-[46px] lg:h-[52px]"
           />
           <nav className="hidden items-center gap-5 xl:gap-7 lg:flex">
@@ -101,7 +95,7 @@ export function Navbar() {
                 </NavLink>
                 {item.dropdown ? (
                   <div className="invisible absolute left-1/2 top-full z-30 min-w-60 -translate-x-1/2 pt-3 opacity-0 transition duration-200 group-hover:visible group-hover:opacity-100">
-                    <div className="rounded-[16px] border border-[#E5EAF5] bg-white p-2 shadow-[0_18px_60px_rgba(10,42,136,0.13)]">
+                    <div className="rounded-2xl border border-[#E5EAF5] bg-white p-2 shadow-[0_18px_60px_rgba(10,42,136,0.13)]">
                       {item.dropdown.map((label) => (
                         <Link key={label} to={item.to} className="block rounded-xl px-4 py-2.5 text-sm font-semibold text-[#64748B] transition hover:bg-[#F1F5FF] hover:text-[#1147FF]">
                           {label}
@@ -115,10 +109,10 @@ export function Navbar() {
           </nav>
           <div className="hidden items-center gap-2.5 lg:flex">
             <button type="button" className="grid size-10 place-items-center rounded-[13px] border border-[#E5EAF5] bg-white text-[#061B5C] shadow-[0_8px_22px_rgba(10,42,136,0.06)] transition hover:-translate-y-0.5 hover:border-[#1147FF] hover:text-[#1147FF]" aria-label="Search">
-              <Search className="size-[18px]" />
+              <Search className="size-4.5" />
             </button>
             <Link to={routes.login} className="grid size-10 place-items-center rounded-[13px] border border-[#E5EAF5] bg-white text-[#061B5C] shadow-[0_8px_22px_rgba(10,42,136,0.06)] transition hover:-translate-y-0.5 hover:border-[#1147FF] hover:text-[#1147FF]" aria-label="Login">
-              <UserRound className="size-[18px]" />
+              <UserRound className="size-4.5" />
             </Link>
             <Link
               to={routes.freeCounselling}
@@ -127,7 +121,7 @@ export function Navbar() {
               Book Free Counselling
             </Link>
           </div>
-          <button type="button" className="rounded-[14px] border border-[#E5EAF5] p-2.5 text-[#061B5C] lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+          <button type="button" className="rounded-md border border-[#E5EAF5] p-2.5 text-[#061B5C] lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
             <Menu className="size-5" />
           </button>
         </div>
@@ -147,7 +141,7 @@ export function Navbar() {
           <Link
             to={routes.freeCounselling}
             onClick={() => setOpen(false)}
-            className="mt-3 rounded-[14px] bg-[#19D9FF] px-4 py-3 text-center text-base font-black text-[#061B5C]"
+            className="mt-3 rounded-md bg-[#19D9FF] px-4 py-3 text-center text-base font-black text-[#061B5C]"
           >
             Book Free Counselling
           </Link>
