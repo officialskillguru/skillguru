@@ -44,6 +44,7 @@
     "react": "^19.0.0",
     "react-countup": "^6.5.3",
     "react-dom": "^19.0.0",
+    "react-helmet-async": "^3.0.0",
     "react-hook-form": "^7.54.0",
     "react-icons": "^5.5.0",
     "react-is": "^19.2.6",
@@ -55,6 +56,7 @@
     "swiper": "^12.0.3",
     "tailwind-merge": "^2.6.0",
     "three": "^0.184.0",
+    "vite-plugin-sitemap": "^0.8.2",
     "zod": "^3.24.0"
   },
   "devDependencies": {
