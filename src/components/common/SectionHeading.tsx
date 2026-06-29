@@ -16,11 +16,11 @@ export function SectionHeading({
   return (
     <div className={cn("max-w-3xl", align === "center" && "mx-auto text-center")}>
       {eyebrow ? (
-        <p className={cn("text-xs font-bold uppercase tracking-[0.22em]", inverse ? "text-[#19D9FF]" : "text-[#1147FF]")}>
+        <p className={cn("text-xs font-bold uppercase tracking-[0.22em]", inverse ? "text-[#19C7C8]" : "text-[#5B35F2]")}>
           {eyebrow}
         </p>
       ) : null}
-      <h2 className={cn("mt-4 text-3xl font-black tracking-tight sm:text-5xl", inverse ? "text-white" : "text-[#061B5C]")}>
+      <h2 className={cn("mt-4 text-3xl font-black tracking-tight sm:text-5xl", inverse ? "text-white" : "text-[#111E79]")}>
         {title}
       </h2>
       {description ? (

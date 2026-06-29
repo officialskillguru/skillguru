@@ -1,5 +1,4 @@
-import { useState, useTransition, useMemo, useEffect, useRef, lazy, Suspense } from "react";
-import { Link } from "react-router-dom";
+import { useState, useTransition, useMemo, useEffect, lazy, Suspense } from "react";
 import {
   Search,
   ChevronDown,
@@ -31,27 +30,20 @@ import {
   Award,
   ArrowRight,
   Sparkle,
-  Phone,
   Bookmark,
   CheckCircle2,
-  CalendarDays,
-  Star,
-  Check,
-  Calendar,
   X,
-  Clock,
-  BriefcaseBusiness
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
 import { GsapReveal } from "@/components/motion/gsap-reveal";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { assetUrl } from "@/lib/asset-url";
-import { routes } from "@/lib/routes";
-import { coursesData, courseCategoriesList, CourseItem } from "@/data/coursesData";
+import { coursesData, courseCategoriesList } from "@/data/coursesData";
 
 // Icon Mapper Utility
-const iconMap: Record<string, React.ComponentType<any>> = {
+const iconMap: Record<string, typeof Bookmark> = {
   BrainCircuit,
   BarChart3,
   Palette,
@@ -93,13 +85,13 @@ function HighlightedText({ text, query }: Readonly<{ text: string; query: string
   if (!query.trim()) {
     return <span>{text}</span>;
   }
-  const regex = new RegExp(`(${query.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&")})`, "gi");
+  const regex = new RegExp(`(${query.replace(/[-\\^$*+?.()|[\]{}]/g, "\\$&")})`, "gi");
   const parts = text.split(regex);
   return (
     <span>
       {parts.map((part, index) =>
         regex.test(part) ? (
-          <mark key={index} className="bg-yellow-200 dark:bg-yellow-800 text-[#061B5C] dark:text-white rounded px-0.5 font-black">
+          <mark key={index} className="bg-yellow-200 dark:bg-yellow-800 text-[#111E79] dark:text-white rounded px-0.5 font-black">
             {part}
           </mark>
         ) : (
@@ -120,26 +112,30 @@ export default function CoursesPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [counsellingModalOpen, setCounsellingModalOpen] = useState(false);
   const [selectedCourseForModal, setSelectedCourseForModal] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   // Handle mock loading skeletons when user types search
   useEffect(() => {
     if (searchQuery) {
-      setIsLoading(true);
+      setTimeout(() => setIsLoading(true), 0);
       const timer = setTimeout(() => setIsLoading(false), 300);
       return () => clearTimeout(timer);
     }
+   
   }, [searchQuery]);
 
   // Expand categories by default if there is a search query
   useEffect(() => {
     if (searchQuery.trim().length > 0) {
-      const allTrue: Record<string, boolean> = {};
-      courseCategoriesList.forEach((cat) => {
-        allTrue[cat.id] = true;
+      startTransition(() => {
+        const allTrue: Record<string, boolean> = {};
+        courseCategoriesList.forEach((cat) => {
+          allTrue[cat.id] = true;
+        });
+        setExpandedCategories(allTrue);
       });
-      setExpandedCategories(allTrue);
     }
+   
   }, [searchQuery]);
 
   // Toggle single category expand state
@@ -203,11 +199,11 @@ export default function CoursesPage() {
         </Suspense>
         <div className="relative mx-auto grid max-w-[1280px] gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
           <GsapReveal className="premium-reveal">
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1147FF] dark:text-cyan-300">
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2] dark:text-cyan-300">
               Education Platform
             </p>
-            <h1 className="mt-5 text-4xl font-black leading-tight text-[#061B5C] sm:text-6xl dark:text-white">
-              SaaS Tech & Business <span className="block text-[#1147FF] dark:text-cyan-400">Education Catalogue</span>
+            <h1 className="mt-5 text-4xl font-black leading-tight text-[#111E79] sm:text-6xl dark:text-white">
+              SaaS Tech & Business <span className="block text-[#5B35F2] dark:text-cyan-400">Education Catalogue</span>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-8 text-[#64748B] dark:text-slate-400">
               Explore 32 specialized learning domains, verified credentials, and strategic placement roadmaps for 2026.
@@ -220,11 +216,11 @@ export default function CoursesPage() {
                 ["95.4%", "Placement Rate"],
               ].map(([value, label]) => (
                 <div key={label} className="flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-full bg-[#F1F5FF] text-[#1147FF] dark:bg-slate-800 dark:text-cyan-400">
+                  <span className="grid size-11 place-items-center rounded-full bg-[#F1F5FF] text-[#5B35F2] dark:bg-slate-800 dark:text-cyan-400">
                     <CheckCircle2 className="size-5" />
                   </span>
                   <span>
-                    <span className="block text-lg font-black text-[#061B5C] dark:text-white">{value}</span>
+                    <span className="block text-lg font-black text-[#111E79] dark:text-white">{value}</span>
                     <span className="text-xs font-semibold text-[#64748B] dark:text-slate-400">{label}</span>
                   </span>
                 </div>
@@ -247,7 +243,7 @@ export default function CoursesPage() {
               <Sparkle className="size-3.5 fill-current" />
               <span>Trending Categories</span>
             </span>
-            <h2 className="mt-4 text-3xl font-black text-[#061B5C] sm:text-5xl dark:text-white">
+            <h2 className="mt-4 text-3xl font-black text-[#111E79] sm:text-5xl dark:text-white">
               Top High-Demand Courses for 2026
             </h2>
             <p className="mt-4 text-sm font-semibold text-slate-450 leading-relaxed max-w-xl mx-auto dark:text-slate-400">
@@ -275,7 +271,7 @@ export default function CoursesPage() {
                   </span>
                 </div>
 
-                <h3 className="mt-4 text-lg font-black text-[#061B5C] dark:text-white leading-tight">
+                <h3 className="mt-4 text-lg font-black text-[#111E79] dark:text-white leading-tight">
                   {c.name}
                 </h3>
                 <p className="mt-2 text-xs font-bold text-slate-400">
@@ -299,11 +295,11 @@ export default function CoursesPage() {
                 <div className="mt-6 pt-4.5 border-t border-slate-100 flex items-center justify-between dark:border-slate-800">
                   <div>
                     <span className="text-xs font-bold text-slate-400 block line-through">₹{c.oldPrice.toLocaleString()}</span>
-                    <span className="text-lg font-black text-[#061B5C] dark:text-white">₹{c.price.toLocaleString()}</span>
+                    <span className="text-lg font-black text-[#111E79] dark:text-white">₹{c.price.toLocaleString()}</span>
                   </div>
                   <button
                     onClick={() => handleLearnMore(c.name)}
-                    className="flex items-center gap-1.5 rounded-xl bg-[#061B5C] px-4 py-2 text-xs font-black text-white hover:bg-opacity-95 dark:bg-cyan-400 dark:text-[#061B5C]"
+                    className="flex items-center gap-1.5 rounded-xl bg-[#111E79] px-4 py-2 text-xs font-black text-white hover:bg-opacity-95 dark:bg-cyan-400 dark:text-[#111E79]"
                   >
                     <span>Enquire Now</span>
                     <ArrowRight className="size-3.5" />
@@ -323,8 +319,8 @@ export default function CoursesPage() {
           <aside className="space-y-6 lg:sticky lg:top-24 h-max">
             <div className="rounded-3xl border border-[#E5EAF5] bg-white p-5 shadow-[0_16px_50px_rgba(10,42,136,0.06)] dark:border-slate-850 dark:bg-slate-900">
               <div className="flex items-center justify-between border-b border-slate-50 pb-4.5 dark:border-slate-800">
-                <h3 className="text-base font-black text-[#061B5C] dark:text-white flex items-center gap-2">
-                  <SlidersHorizontalIcon className="size-4.5 text-[#1147FF]" />
+                <h3 className="text-base font-black text-[#111E79] dark:text-white flex items-center gap-2">
+                  <SlidersHorizontal className="size-4.5 text-[#5B35F2]" />
                   <span>Domain Fields</span>
                 </h3>
                 <button
@@ -332,7 +328,7 @@ export default function CoursesPage() {
                     setActiveCategory("All");
                     toast.success("Category filter reset.");
                   }}
-                  className="text-xs font-black text-[#1147FF] dark:text-cyan-400"
+                  className="text-xs font-black text-[#5B35F2] dark:text-cyan-400"
                 >
                   Reset
                 </button>
@@ -356,7 +352,7 @@ export default function CoursesPage() {
                   className={[
                     "flex w-full items-center justify-between rounded-xl px-3 py-2 text-xs font-black transition",
                     activeCategory === "All"
-                      ? "bg-[#1147FF] text-white dark:bg-cyan-400 dark:text-[#061B5C]"
+                      ? "bg-[#5B35F2] text-white dark:bg-cyan-400 dark:text-[#111E79]"
                       : "text-slate-600 hover:bg-[#F1F5FF] dark:text-slate-400 dark:hover:bg-slate-800",
                   ].join(" ")}
                 >
@@ -375,7 +371,7 @@ export default function CoursesPage() {
                       className={[
                         "flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-xs font-black transition text-left",
                         activeCategory === cat.id
-                          ? "bg-[#1147FF] text-white dark:bg-cyan-400 dark:text-[#061B5C]"
+                          ? "bg-[#5B35F2] text-white dark:bg-cyan-400 dark:text-[#111E79]"
                           : "text-slate-600 hover:bg-[#F1F5FF] dark:text-slate-400 dark:hover:bg-slate-800",
                       ].join(" ")}
                     >
@@ -410,9 +406,9 @@ export default function CoursesPage() {
           <div className="space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-850">
               <div>
-                <h3 className="text-xl font-black text-[#061B5C] dark:text-white">Courses Catalogue</h3>
+                <h3 className="text-xl font-black text-[#111E79] dark:text-white">Courses Catalogue</h3>
                 <p className="text-xs font-semibold text-slate-400 mt-1">
-                  Matching courses count: <span className="text-[#1147FF] dark:text-cyan-400 font-black">{filteredCourses.length}</span>
+                  Matching courses count: <span className="text-[#5B35F2] dark:text-cyan-400 font-black">{filteredCourses.length}</span>
                 </p>
               </div>
             </div>
@@ -434,7 +430,7 @@ export default function CoursesPage() {
               /* Empty state UI */
               <div className="rounded-3xl border border-dashed border-[#E5EAF5] bg-white p-12 text-center dark:border-slate-800 dark:bg-slate-900 space-y-4">
                 <Search className="size-10 mx-auto text-slate-450" />
-                <h4 className="text-lg font-black text-[#061B5C] dark:text-white">No courses matched your query</h4>
+                <h4 className="text-lg font-black text-[#111E79] dark:text-white">No courses matched your query</h4>
                 <p className="text-xs font-semibold text-slate-400 leading-normal max-w-sm mx-auto">
                   Try adjusting filters or checking for other spelling variations (e.g. 'Coding', 'Marketing').
                 </p>
@@ -470,11 +466,11 @@ export default function CoursesPage() {
                           className="flex items-center justify-between px-6 py-4.5 bg-slate-50/50 dark:bg-slate-900/60 cursor-pointer select-none hover:bg-slate-50 dark:hover:bg-slate-900"
                         >
                           <div className="flex items-center gap-3">
-                            <span className="grid size-9 place-items-center rounded-xl bg-[#F1F5FF] text-[#1147FF] dark:bg-slate-850 dark:text-cyan-400 shrink-0">
+                            <span className="grid size-9 place-items-center rounded-xl bg-[#F1F5FF] text-[#5B35F2] dark:bg-slate-850 dark:text-cyan-400 shrink-0">
                               <CategoryIcon name={cat.iconName} className="size-4.5" />
                             </span>
                             <div>
-                              <h4 className="text-sm font-black text-[#061B5C] dark:text-white">
+                              <h4 className="text-sm font-black text-[#111E79] dark:text-white">
                                 {cat.name}
                               </h4>
                               <p className="text-[10px] font-bold text-slate-400 mt-0.5">
@@ -508,7 +504,7 @@ export default function CoursesPage() {
                                 {catCourses.map((course) => (
                                   <div
                                     key={course.id}
-                                    className="group relative rounded-2xl border border-slate-150 p-5 bg-white hover:border-[#1147FF]/30 dark:border-slate-800 dark:bg-slate-950 shadow-[0_4px_20px_rgba(10,42,136,0.01)] hover:shadow-lg transition-all"
+                                    className="group relative rounded-2xl border border-slate-150 p-5 bg-white hover:border-[#5B35F2]/30 dark:border-slate-800 dark:bg-slate-950 shadow-[0_4px_20px_rgba(10,42,136,0.01)] hover:shadow-lg transition-all"
                                   >
                                     <div className="flex items-start justify-between">
                                       <span className="rounded bg-indigo-50 px-2 py-0.5 text-[9px] font-black uppercase text-indigo-700 dark:bg-indigo-950/20 dark:text-indigo-400">
@@ -520,7 +516,7 @@ export default function CoursesPage() {
                                     </div>
 
                                     {/* Highlights searched text query */}
-                                    <h5 className="mt-4 text-base font-black text-[#061B5C] dark:text-white leading-tight">
+                                    <h5 className="mt-4 text-base font-black text-[#111E79] dark:text-white leading-tight">
                                       <HighlightedText text={course.name} query={searchQuery} />
                                     </h5>
                                     <p className="mt-2 text-xs text-slate-450 leading-relaxed font-bold">
@@ -540,11 +536,11 @@ export default function CoursesPage() {
                                     <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                                       <div>
                                         <span className="text-[10px] font-bold text-slate-400 line-through block">₹{course.oldPrice.toLocaleString()}</span>
-                                        <span className="text-base font-black text-[#061B5C] dark:text-white">₹{course.price.toLocaleString()}</span>
+                                        <span className="text-base font-black text-[#111E79] dark:text-white">₹{course.price.toLocaleString()}</span>
                                       </div>
                                       <button
                                         onClick={() => handleLearnMore(course.name)}
-                                        className="h-9 rounded-lg bg-[#061B5C] px-4 text-xs font-black text-white hover:bg-opacity-95 dark:bg-cyan-400 dark:text-[#061B5C]"
+                                        className="h-9 rounded-lg bg-[#111E79] px-4 text-xs font-black text-white hover:bg-opacity-95 dark:bg-cyan-400 dark:text-[#111E79]"
                                       >
                                         Learn More
                                       </button>
@@ -567,16 +563,23 @@ export default function CoursesPage() {
       {/* 4. Live Counselling Bookings Modal */}
       <AnimatePresence>
         {counsellingModalOpen && (
-          <div className="fixed inset-0 z-50 grid place-items-center bg-[#020617]/50 p-4 backdrop-blur-sm">
+          <div
+            className="fixed inset-0 z-50 grid place-items-center bg-[#020617]/50 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="counselling-modal-title"
+            onKeyDown={(e) => { if (e.key === "Escape") setCounsellingModalOpen(false); }}
+          >
+            <button type="button" className="absolute inset-0" aria-label="Close dialog" onClick={() => setCounsellingModalOpen(false)} />
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="w-full max-w-md rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+              className="relative w-full max-w-md rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-800">
                 <div>
-                  <h3 className="text-base font-black text-[#061B5C] dark:text-white">Book Free Counselling Session</h3>
+                  <h3 id="counselling-modal-title" className="text-base font-black text-[#111E79] dark:text-white">Book Free Counselling Session</h3>
                   <p className="text-[10px] font-semibold text-slate-400 mt-1 truncate max-w-64">
                     Course: {selectedCourseForModal}
                   </p>
@@ -584,6 +587,7 @@ export default function CoursesPage() {
                 <button
                   onClick={() => setCounsellingModalOpen(false)}
                   className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                  aria-label="Close dialog"
                 >
                   <X className="size-5" />
                 </button>
@@ -591,24 +595,26 @@ export default function CoursesPage() {
 
               <form onSubmit={submitCounsellingForm} className="mt-5 space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#061B5C] dark:text-slate-300">Your Full Name</label>
+                  <label htmlFor="counselling-name" className="text-xs font-black text-[#111E79] dark:text-slate-300">Your Full Name</label>
                   <input
+                    id="counselling-name"
                     required
                     className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                     placeholder="e.g. Sameer Shah"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#061B5C] dark:text-slate-300">Your Primary Phone</label>
+                  <label htmlFor="counselling-phone" className="text-xs font-black text-[#111E79] dark:text-slate-300">Your Primary Phone</label>
                   <input
+                    id="counselling-phone"
                     required
                     className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                     placeholder="e.g. +91 98765 43210"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#061B5C] dark:text-slate-300">Pre-qualification status</label>
-                  <select className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white">
+                  <label htmlFor="counselling-status" className="text-xs font-black text-[#111E79] dark:text-slate-300">Pre-qualification status</label>
+                  <select id="counselling-status" className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white">
                     <option>Fresher Graduate</option>
                     <option>Non-IT professional</option>
                     <option>Current student</option>
@@ -625,7 +631,7 @@ export default function CoursesPage() {
                   </button>
                   <button
                     type="submit"
-                    className="h-11 rounded-xl bg-[#061B5C] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#061B5C]"
+                    className="h-11 rounded-xl bg-[#111E79] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]"
                   >
                     Request Callback
                   </button>
@@ -636,30 +642,5 @@ export default function CoursesPage() {
         )}
       </AnimatePresence>
     </main>
-  );
-}
-
-function SlidersHorizontalIcon({ className }: Readonly<{ className?: string }>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <line x1="4" y1="21" x2="4" y2="14" />
-      <line x1="4" y1="10" x2="4" y2="3" />
-      <line x1="12" y1="21" x2="12" y2="12" />
-      <line x1="12" y1="8" x2="12" y2="3" />
-      <line x1="20" y1="21" x2="20" y2="16" />
-      <line x1="20" y1="12" x2="20" y2="3" />
-      <line x1="2" y1="14" x2="6" y2="14" />
-      <line x1="10" y1="8" x2="14" y2="8" />
-      <line x1="18" y1="16" x2="22" y2="16" />
-    </svg>
   );
 }

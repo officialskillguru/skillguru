@@ -7,16 +7,11 @@ import tseslint from "typescript-eslint";
 const eslintConfig = [
   {
     ignores: [
-      ".next/**",
       "node_modules/**",
       "coverage/**",
       "dist/**",
-      "next-env.d.ts",
-      "next.config.ts",
       "playwright-report/**",
       "public/**",
-      "src/app/**",
-      "src/server/**",
       "supabase/functions/**",
       "tmp/**",
     ],

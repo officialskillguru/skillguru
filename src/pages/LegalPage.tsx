@@ -13,7 +13,7 @@ export default function LegalPage({ title }: Readonly<{ title: string }>) {
             This page is prepared for production legal review. Final policy language should be approved before commercial launch.
           </p>
           <p className="mt-4 leading-8 text-[#64748B]">
-            For questions, contact HR Remedy India Education through the official contact channels listed on the website.
+            For questions, contact SkillGuru through the official contact channels listed on the website.
           </p>
         </article>
       </SectionShell>

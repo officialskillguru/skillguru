@@ -17,9 +17,9 @@ export default function BlogDetailsPage() {
     <main className="page-shell">
       <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-16">
         <div className="mx-auto max-w-225">
-          <Link to={routes.guidance} className="text-sm font-black text-[#1147FF]">Resources</Link>
-          <p className="mt-6 text-xs font-black uppercase tracking-[0.22em] text-[#1147FF]">{post.category}</p>
-          <h1 className="mt-5 text-4xl font-black leading-tight text-[#061B5C] sm:text-6xl">{post.title}</h1>
+          <Link to={routes.guidance} className="text-sm font-black text-[#5B35F2]">Resources</Link>
+          <p className="mt-6 text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">{post.category}</p>
+          <h1 className="mt-5 text-4xl font-black leading-tight text-[#111E79] sm:text-6xl">{post.title}</h1>
           <p className="mt-5 text-lg leading-8 text-[#64748B]">{post.excerpt}</p>
           <p className="mt-5 text-sm font-semibold text-[#94A3B8]">{post.date} • {post.readTime}</p>
         </div>
@@ -32,7 +32,7 @@ export default function BlogDetailsPage() {
               Career transformation works best when learners combine structured skills, practical projects, interview feedback, and role-specific positioning.
             </p>
             <p className="mt-5">
-              HR Remedy India Education builds every track around these operating principles so students can move from information overload to a clear career roadmap.
+              SkillGuru builds every track around these operating principles so students can move from information overload to a clear career roadmap.
             </p>
             <p className="mt-5">
               The strongest learners show evidence: projects, clear communication, confidence in fundamentals, and readiness to learn inside real teams.

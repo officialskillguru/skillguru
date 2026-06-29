@@ -1,24 +1,16 @@
 import { useState } from "react";
 import {
   Brain,
-  Zap,
-  ArrowRight,
-  TrendingUp,
   Cpu,
   Database,
   Radio,
-  FileCheck,
   CheckCircle,
   AlertTriangle,
   Play,
-  Settings,
   MoreVertical,
-  Activity,
   Code,
-  Users,
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
 import { GsapReveal } from "@/components/motion/gsap-reveal";
 
 interface AssessmentRecord {
@@ -38,7 +30,7 @@ const mockAssessments: AssessmentRecord[] = [
 ];
 
 export default function AdminAIGuidancePage() {
-  const [assessments, setAssessments] = useState<AssessmentRecord[]>(mockAssessments);
+  const [assessments] = useState<AssessmentRecord[]>(mockAssessments);
   const [activeIntegrationTab, setActiveIntegrationTab] = useState<"assessments" | "callbacks" | "webhooks">("assessments");
   const [webhookActive, setWebhookActive] = useState(true);
 
@@ -54,7 +46,7 @@ export default function AdminAIGuidancePage() {
       {/* Header */}
       <GsapReveal direction="up" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200 flex items-center gap-3">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200 flex items-center gap-3">
             <Brain className="size-8 text-[#22D3EE] animate-pulse" />
             <span>AI Career Guidance & Automation</span>
           </h1>
@@ -80,12 +72,12 @@ export default function AdminAIGuidancePage() {
         ].map((tb) => (
           <button
             key={tb.id}
-            onClick={() => setActiveIntegrationTab(tb.id as any)}
+            onClick={() => setActiveIntegrationTab(tb.id as typeof activeIntegrationTab)}
             className={[
               "py-3.5 px-5 text-xs font-black border-b-2 transition-all flex items-center gap-2",
               activeIntegrationTab === tb.id
-                ? "border-[#0F2B7A] text-[#0F2B7A] dark:border-cyan-400 dark:text-cyan-300"
-                : "border-transparent text-slate-450 hover:text-[#0F2B7A] dark:hover:text-white",
+                ? "border-[#111E79] text-[#111E79] dark:border-cyan-400 dark:text-cyan-300"
+                : "border-transparent text-slate-450 hover:text-[#111E79] dark:hover:text-white",
             ].join(" ")}
           >
             <span>{tb.label}</span>
@@ -114,7 +106,7 @@ export default function AdminAIGuidancePage() {
                 {assessments.map((asm) => (
                   <tr key={asm.id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
                     <td className="px-6 py-4.5 font-bold text-slate-450">{asm.id}</td>
-                    <td className="px-6 py-4.5 font-black text-[#0F2B7A] dark:text-white">{asm.name}</td>
+                    <td className="px-6 py-4.5 font-black text-[#111E79] dark:text-white">{asm.name}</td>
                     <td className="px-6 py-4.5">
                       <div className="flex items-center gap-2">
                         <span className="font-black text-cyan-600 dark:text-cyan-400">{asm.score}%</span>
@@ -169,11 +161,11 @@ export default function AdminAIGuidancePage() {
                 </div>
 
                 <div className="flex items-start gap-3.5">
-                  <span className="rounded-xl bg-slate-100 p-2.5 text-[#0F2B7A] dark:bg-slate-800 dark:text-cyan-300">
+                  <span className="rounded-xl bg-slate-100 p-2.5 text-[#111E79] dark:bg-slate-800 dark:text-cyan-300">
                     <AlertIcon className="size-5" />
                   </span>
                   <div className="space-y-1">
-                    <h4 className="text-sm font-black text-[#0F2B7A] dark:text-white">{item.name}</h4>
+                    <h4 className="text-sm font-black text-[#111E79] dark:text-white">{item.name}</h4>
                     <p className="text-[11px] font-bold text-slate-400">Primary Strength: {item.strength}</p>
                     <p className="text-xs font-bold text-slate-500 leading-normal">{item.reason}</p>
                   </div>
@@ -182,7 +174,7 @@ export default function AdminAIGuidancePage() {
                 <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-50 dark:border-slate-850">
                   <button
                     onClick={() => toast.success("Scheduled counseling call with counselor board.")}
-                    className="h-10 rounded-xl bg-[#0F2B7A] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]"
+                    className="h-10 rounded-xl bg-[#111E79] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]"
                   >
                     Initiate Callback
                   </button>
@@ -199,17 +191,17 @@ export default function AdminAIGuidancePage() {
           {/* Active integrations details */}
           <GsapReveal direction="up" className="rounded-2xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-7 space-y-6">
             <div>
-              <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">Active Webhook Integrations</h3>
+              <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">Active Webhook Integrations</h3>
               <p className="text-xs font-semibold text-slate-400">Map lead metadata triggers and outgoing payloads variables</p>
             </div>
 
             <div className="space-y-4">
               <div className="flex items-center justify-between rounded-2xl border border-slate-100 p-4 dark:border-slate-850">
                 <div className="flex items-center gap-3">
-                  <Cpu className="size-5 text-[#0F2B7A] dark:text-cyan-300" />
+                  <Cpu className="size-5 text-[#111E79] dark:text-cyan-300" />
                   <div>
-                    <h4 className="text-xs font-black text-[#0F2B7A] dark:text-white">n8n Workflow Listener</h4>
-                    <p className="text-[10px] font-bold text-slate-450">URL: https://n8n.hr-remedy.edu/hooks/lead-analysis</p>
+                    <h4 className="text-xs font-black text-[#111E79] dark:text-white">n8n Workflow Listener</h4>
+                    <p className="text-[10px] font-bold text-slate-450">URL: https://n8n.skill-guru.edu/hooks/lead-analysis</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -259,7 +251,7 @@ export default function AdminAIGuidancePage() {
           {/* Flow representation layout */}
           <GsapReveal direction="up" delay={0.1} className="rounded-2xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-5 space-y-6">
             <div>
-              <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">n8n Automation Flow Graph</h3>
+              <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">n8n Automation Flow Graph</h3>
               <p className="text-xs font-semibold text-slate-400">Visual mapping of active micro-services</p>
             </div>
 
@@ -279,7 +271,7 @@ export default function AdminAIGuidancePage() {
                         <StepIcon className="size-4.5" />
                       </span>
                       <div>
-                        <h4 className="text-xs font-black text-[#0F2B7A] dark:text-white">{step.name}</h4>
+                        <h4 className="text-xs font-black text-[#111E79] dark:text-white">{step.name}</h4>
                         <p className="text-[9px] font-bold text-slate-400">{step.desc}</p>
                       </div>
                     </div>

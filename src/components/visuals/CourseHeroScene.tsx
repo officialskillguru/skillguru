@@ -41,12 +41,12 @@ function NeuralCourseMesh() {
   return (
     <group ref={groupRef}>
       {lines.map(([start, end], index) => (
-        <Line key={index} points={[start, end]} color="#19D9FF" lineWidth={1.15} transparent opacity={0.36} />
+        <Line key={index} points={[start, end]} color="#19C7C8" lineWidth={1.15} transparent opacity={0.36} />
       ))}
       {nodePositions.map((position, index) => (
         <Float key={position.join("-")} speed={1.2 + index * 0.08} rotationIntensity={0.24} floatIntensity={0.28}>
           <Sphere args={[index % 2 === 0 ? 0.09 : 0.07, 24, 24]} position={position}>
-            <meshStandardMaterial color={index % 2 === 0 ? "#19D9FF" : "#1147FF"} emissive={index % 2 === 0 ? "#19D9FF" : "#1147FF"} emissiveIntensity={0.85} roughness={0.42} metalness={0.18} />
+            <meshStandardMaterial color={index % 2 === 0 ? "#19C7C8" : "#5B35F2"} emissive={index % 2 === 0 ? "#19C7C8" : "#5B35F2"} emissiveIntensity={0.85} roughness={0.42} metalness={0.18} />
           </Sphere>
         </Float>
       ))}
@@ -59,8 +59,8 @@ export function CourseHeroScene() {
     <div className="course-three-scene" aria-hidden="true">
       <Canvas camera={{ position: [0, 0, 5.2], fov: 42 }} dpr={[1, 1.5]} gl={{ antialias: true, alpha: true, powerPreference: "high-performance" }}>
         <ambientLight intensity={1.1} />
-        <pointLight position={[2.6, 2.8, 3]} intensity={2.1} color="#19D9FF" />
-        <pointLight position={[-2.2, -1.4, 2.5]} intensity={1.2} color="#1147FF" />
+        <pointLight position={[2.6, 2.8, 3]} intensity={2.1} color="#19C7C8" />
+        <pointLight position={[-2.2, -1.4, 2.5]} intensity={1.2} color="#5B35F2" />
         <NeuralCourseMesh />
       </Canvas>
     </div>

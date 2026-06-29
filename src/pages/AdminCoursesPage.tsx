@@ -1,7 +1,6 @@
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import {
   Search,
-  Filter,
   Plus,
   MoreVertical,
   Edit2,
@@ -11,13 +10,8 @@ import {
   Trash2,
   X,
   PlusCircle,
-  FileCheck,
   Award,
   Video,
-  DollarSign,
-  ChevronLeft,
-  ChevronRight,
-  TrendingUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -61,7 +55,6 @@ export default function AdminCoursesPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<"basic" | "curriculum" | "pricing" | "seo" | "mentors" | "placement" | "certificate" | "media">("basic");
   const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   // Search and Filter logic
   const filteredCourses = courses.filter((c) => {
@@ -147,7 +140,7 @@ export default function AdminCoursesPage() {
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             Academics Catalogue Management
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -156,7 +149,7 @@ export default function AdminCoursesPage() {
         </div>
         <button
           onClick={handleCreate}
-          className="flex h-11 items-center gap-2 rounded-xl bg-[#0F2B7A] px-5 text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-[#0f2b7a]/15 dark:bg-cyan-400 dark:text-[#0F2B7A]"
+          className="flex h-11 items-center gap-2 rounded-xl bg-[#111E79] px-5 text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-[#111e79]/15 dark:bg-cyan-400 dark:text-[#111E79]"
         >
           <Plus className="size-4" />
           <span>Create Course</span>
@@ -166,7 +159,7 @@ export default function AdminCoursesPage() {
       {/* Stats Counter Row */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
-          { label: "Active Courses", count: courses.filter(c => c.status === "Published").length, color: "text-[#0F2B7A]" },
+          { label: "Active Courses", count: courses.filter(c => c.status === "Published").length, color: "text-[#111E79]" },
           { label: "Draft Programs", count: courses.filter(c => c.status === "Draft").length, color: "text-amber-500" },
           { label: "Archived Tracks", count: courses.filter(c => c.status === "Archived").length, color: "text-slate-400" },
           { label: "Total Programs", count: courses.length, color: "text-cyan-600" }
@@ -182,12 +175,12 @@ export default function AdminCoursesPage() {
       <div className="flex flex-col gap-3 rounded-2xl border border-[#DDE7F6] bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 md:flex-row md:items-center">
         {/* Search */}
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#0F2B7A] dark:text-cyan-300" />
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#111E79] dark:text-cyan-300" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search programs, tags, mentors..."
-            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#0F2B7A] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#111E79] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
@@ -196,7 +189,7 @@ export default function AdminCoursesPage() {
           <select
             value={categoryFilter}
             onChange={(e) => setCategoryFilter(e.target.value)}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-4 text-xs font-black text-[#0F2B7A] outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white md:w-56"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-4 text-xs font-black text-[#111E79] outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white md:w-56"
           >
             <option>All Categories</option>
             {courseCategories.filter(c => c !== "All Categories").map((cat) => (
@@ -212,7 +205,7 @@ export default function AdminCoursesPage() {
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-4 text-xs font-black text-[#0F2B7A] outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white md:w-36"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] px-4 text-xs font-black text-[#111E79] outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white md:w-36"
           >
             <option value="All">All Status</option>
             <option value="Published">Published</option>
@@ -252,11 +245,11 @@ export default function AdminCoursesPage() {
                   >
                     <td className="px-6 py-4.5">
                       <div className="flex items-center gap-3">
-                        <div className="grid size-11 place-items-center rounded-xl bg-gradient-to-br from-[#0F2B7A] to-blue-800 text-white font-black text-xs">
+                        <div className="grid size-11 place-items-center rounded-xl bg-gradient-to-br from-[#111E79] to-blue-800 text-white font-black text-xs">
                           {c.title.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="text-sm font-black text-[#0F2B7A] dark:text-slate-100">
+                          <p className="text-sm font-black text-[#111E79] dark:text-slate-100">
                             {c.title}
                           </p>
                           <p className="text-[10px] font-bold text-slate-400">{c.duration}</p>
@@ -269,10 +262,10 @@ export default function AdminCoursesPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4.5">
-                      <p className="text-xs font-bold text-[#0F2B7A] dark:text-slate-350">{c.mentor}</p>
+                      <p className="text-xs font-bold text-[#111E79] dark:text-slate-350">{c.mentor}</p>
                     </td>
                     <td className="px-6 py-4.5 text-xs font-black">{c.students.toLocaleString()}</td>
-                    <td className="px-6 py-4.5 text-xs font-black text-[#0F2B7A] dark:text-white">
+                    <td className="px-6 py-4.5 text-xs font-black text-[#111E79] dark:text-white">
                       ₹{c.revenue.toFixed(1)}L
                     </td>
                     <td className="px-6 py-4.5">
@@ -316,7 +309,7 @@ export default function AdminCoursesPage() {
                                 onClick={() => handleEdit(c)}
                                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-black text-slate-700 hover:bg-slate-50 dark:text-slate-350 dark:hover:bg-slate-900"
                               >
-                                <Edit2 className="size-3.5 text-[#0F2B7A]" />
+                                <Edit2 className="size-3.5 text-[#111E79]" />
                                 <span>Edit Course</span>
                               </button>
                               <button
@@ -383,7 +376,7 @@ export default function AdminCoursesPage() {
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-850">
                 <div>
-                  <h3 className="text-lg font-black text-[#0F2B7A] dark:text-white">
+                  <h3 className="text-lg font-black text-[#111E79] dark:text-white">
                     {selectedCourse.title ? "Program Workshop Details" : "Construct New Academic Track"}
                   </h3>
                   <p className="text-xs font-semibold text-slate-400">
@@ -412,12 +405,12 @@ export default function AdminCoursesPage() {
                 ].map((tb) => (
                   <button
                     key={tb.id}
-                    onClick={() => setEditorTab(tb.id as any)}
+                    onClick={() => setEditorTab(tb.id as typeof editorTab)}
                     className={[
                       "shrink-0 py-3.5 px-3.5 text-xs font-black transition-all border-b-2",
                       editorTab === tb.id
-                        ? "border-[#0F2B7A] text-[#0F2B7A] dark:border-cyan-400 dark:text-cyan-300"
-                        : "border-transparent text-slate-400 hover:text-[#0F2B7A] dark:hover:text-white",
+                        ? "border-[#111E79] text-[#111E79] dark:border-cyan-400 dark:text-cyan-300"
+                        : "border-transparent text-slate-400 hover:text-[#111E79] dark:hover:text-white",
                     ].join(" ")}
                   >
                     {tb.label}
@@ -430,7 +423,7 @@ export default function AdminCoursesPage() {
                 {editorTab === "basic" && (
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Course Title</label>
+                      <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Course Title</label>
                       <input
                         required
                         value={selectedCourse.title}
@@ -441,7 +434,7 @@ export default function AdminCoursesPage() {
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Academic Category</label>
+                        <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Academic Category</label>
                         <select
                           value={selectedCourse.category}
                           onChange={(e) => setSelectedCourse({ ...selectedCourse, category: e.target.value })}
@@ -453,7 +446,7 @@ export default function AdminCoursesPage() {
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Duration Length</label>
+                        <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Duration Length</label>
                         <input
                           required
                           value={selectedCourse.duration}
@@ -464,7 +457,7 @@ export default function AdminCoursesPage() {
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Academic Outcomes / Skills (Comma Separated)</label>
+                      <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Academic Outcomes / Skills (Comma Separated)</label>
                       <input
                         value={selectedCourse.skills.join(", ")}
                         onChange={(e) => setSelectedCourse({ ...selectedCourse, skills: e.target.value.split(", ") })}
@@ -478,7 +471,7 @@ export default function AdminCoursesPage() {
                 {editorTab === "curriculum" && (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-[#0F2B7A] dark:text-cyan-200">Curriculum Module Syllabus Builder</h4>
+                      <h4 className="text-xs font-black text-[#111E79] dark:text-cyan-200">Curriculum Module Syllabus Builder</h4>
                       <button
                         type="button"
                         onClick={() => toast.success("Added new dynamic curriculum slot.")}
@@ -492,7 +485,7 @@ export default function AdminCoursesPage() {
                     {["Frontend Foundations", "Backend Systems & Orchestrations", "Job Preparation & Capstones"].map((mod, index) => (
                       <div key={mod} className="rounded-xl border border-slate-100 bg-[#F8FAFC] p-4 space-y-3 dark:border-slate-800 dark:bg-slate-900/50">
                         <div className="flex items-center justify-between">
-                          <p className="text-xs font-black text-[#0F2B7A] dark:text-slate-300">Module {index + 1}: {mod}</p>
+                          <p className="text-xs font-black text-[#111E79] dark:text-slate-300">Module {index + 1}: {mod}</p>
                           <button type="button" className="text-[10px] font-black text-rose-500 uppercase">Remove</button>
                         </div>
                         <input className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white" value={mod} readOnly />
@@ -505,7 +498,7 @@ export default function AdminCoursesPage() {
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Course Base Price (INR)</label>
+                        <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Course Base Price (INR)</label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">₹</span>
                           <input
@@ -518,7 +511,7 @@ export default function AdminCoursesPage() {
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Discount Subtitle</label>
+                        <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Discount Subtitle</label>
                         <input
                           required
                           value={selectedCourse.discount}
@@ -534,14 +527,14 @@ export default function AdminCoursesPage() {
                 {editorTab === "seo" && (
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">SEO Title Tag</label>
+                      <label className="text-xs font-black text-[#111E79] dark:text-slate-350">SEO Title Tag</label>
                       <input
                         className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                         placeholder="SEO optimised meta title"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">SEO Description</label>
+                      <label className="text-xs font-black text-[#111E79] dark:text-slate-350">SEO Description</label>
                       <textarea
                         rows={4}
                         className="w-full rounded-xl border border-slate-200 bg-[#F8FAFC] p-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
@@ -553,7 +546,7 @@ export default function AdminCoursesPage() {
 
                 {editorTab === "mentors" && (
                   <div className="space-y-4">
-                    <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Assign Instructors/Faculty Mentors</label>
+                    <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Assign Instructors/Faculty Mentors</label>
                     <div className="grid gap-3 sm:grid-cols-2">
                       {["Rahul Sharma", "Neha Verma", "Amit Singh", "Pooja Rao"].map((m) => (
                         <label key={m} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-[#F8FAFC] p-3 cursor-pointer dark:border-slate-800 dark:bg-slate-900/50">
@@ -561,7 +554,7 @@ export default function AdminCoursesPage() {
                             type="checkbox"
                             checked={selectedCourse.mentor === m}
                             onChange={() => setSelectedCourse({ ...selectedCourse, mentor: m })}
-                            className="rounded border-slate-200 text-[#0F2B7A] focus:ring-[#0F2B7A]"
+                            className="rounded border-slate-200 text-[#111E79] focus:ring-[#111E79]"
                           />
                           <span className="text-xs font-black text-slate-700 dark:text-slate-350">{m}</span>
                         </label>
@@ -573,7 +566,7 @@ export default function AdminCoursesPage() {
                 {editorTab === "placement" && (
                   <div className="space-y-4">
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Placement Support Guarantee Level</label>
+                      <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Placement Support Guarantee Level</label>
                       <select className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white">
                         <option>100% Direct Referrals & Mock Interviews</option>
                         <option>Curriculum Portfolio Reviews & Mentoring</option>
@@ -585,13 +578,13 @@ export default function AdminCoursesPage() {
 
                 {editorTab === "certificate" && (
                   <div className="space-y-4">
-                    <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Included Certificate Template</label>
+                    <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Included Certificate Template</label>
                     <div className="grid gap-4 sm:grid-cols-2">
                       {["Standard EdTech Certificate", "Premium PG-Diploma layout"].map((cert, index) => (
                         <div key={cert} className="rounded-2xl border border-slate-200 p-4 bg-slate-50 text-center dark:border-slate-800 dark:bg-slate-900">
-                          <Award className="size-8 mx-auto text-[#0F2B7A] dark:text-cyan-300" />
+                          <Award className="size-8 mx-auto text-[#111E79] dark:text-cyan-300" />
                           <p className="mt-3 text-xs font-black text-slate-700 dark:text-slate-350">{cert}</p>
-                          <input type="radio" name="cert" defaultChecked={index === 0} className="mt-2.5 cursor-pointer text-[#0F2B7A]" />
+                          <input type="radio" name="cert" defaultChecked={index === 0} className="mt-2.5 cursor-pointer text-[#111E79]" />
                         </div>
                       ))}
                     </div>
@@ -625,7 +618,7 @@ export default function AdminCoursesPage() {
                 </button>
                 <button
                   onClick={saveCourse}
-                  className="h-11 rounded-xl bg-[#0F2B7A] px-6 text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#0F2B7A]"
+                  className="h-11 rounded-xl bg-[#111E79] px-6 text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#111E79]"
                 >
                   Save Catalogue Record
                 </button>

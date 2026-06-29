@@ -16,7 +16,7 @@ export function PricingCard({ course }: Readonly<{ course: Course }>) {
   return (
     <article className="premium-pricing-card rounded-[20px] border border-[#DDE7F6] bg-white p-6 shadow-[0_22px_70px_rgba(10,42,136,0.12)] sm:p-7">
       <div className="flex flex-wrap items-center gap-3">
-        <p className="text-3xl font-black text-[#061B5C]">{formatPrice(course.price)}</p>
+        <p className="text-3xl font-black text-[#111E79]">{formatPrice(course.price)}</p>
         <p className="text-sm font-bold text-[#94A3B8] line-through">
           {formatPrice(course.oldPrice)}
         </p>
@@ -44,7 +44,7 @@ export function PricingCard({ course }: Readonly<{ course: Course }>) {
           course.placementSupport,
         ].map((item) => (
           <p key={item} className="flex gap-3 text-sm font-semibold text-[#334155]">
-            <CheckCircle2 className="size-5 shrink-0 text-[#1147FF]" />
+            <CheckCircle2 className="size-5 shrink-0 text-[#5B35F2]" />
             {item}
           </p>
         ))}

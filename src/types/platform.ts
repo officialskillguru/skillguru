@@ -52,6 +52,7 @@ export type Course = {
 };
 
 export type Mentor = {
+  slug: string;
   name: string;
   role: string;
   company: string;

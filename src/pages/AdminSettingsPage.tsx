@@ -1,11 +1,8 @@
 import { useState } from "react";
 import {
-  Settings,
   Mail,
   CreditCard,
-  Layers,
   Save,
-  CheckCircle,
   Eye,
   AlertCircle,
 } from "lucide-react";
@@ -25,7 +22,7 @@ export default function AdminSettingsPage() {
       {/* Header */}
       <GsapReveal direction="up" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             EdTech System Settings
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -40,7 +37,7 @@ export default function AdminSettingsPage() {
         <div className="space-y-6 md:col-span-8">
           {/* Outbound SMTP configurations */}
           <GsapReveal direction="up" className="rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200 flex items-center gap-2">
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200 flex items-center gap-2">
               <Mail className="size-5" />
               <span>Outbound SMTP System</span>
             </h3>
@@ -49,7 +46,7 @@ export default function AdminSettingsPage() {
               <div className="space-y-1">
                 <label className="text-xs font-black text-slate-400">SMTP Host Server</label>
                 <input
-                  defaultValue="smtp.mailgun.hrremedy.edu"
+                  defaultValue="smtp.mailgun.skillguru.com"
                   className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-sm font-semibold outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
@@ -66,14 +63,14 @@ export default function AdminSettingsPage() {
               <div className="space-y-1">
                 <label className="text-xs font-black text-slate-400">Default Sender Email</label>
                 <input
-                  defaultValue="admissions@hrremedy.edu.in"
+                  defaultValue="admissions@skillguru.com"
                   className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-sm font-semibold outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
               <div className="space-y-1">
                 <label className="text-xs font-black text-slate-400">Sender Display Name</label>
                 <input
-                  defaultValue="HR Remedy Admissions"
+                  defaultValue="SkillGuru Admissions"
                   className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3.5 text-sm font-semibold outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                 />
               </div>
@@ -82,7 +79,7 @@ export default function AdminSettingsPage() {
 
           {/* Outbound Payment integrations Razorpay / Stripe */}
           <GsapReveal direction="up" delay={0.1} className="rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200 flex items-center gap-2">
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200 flex items-center gap-2">
               <CreditCard className="size-5" />
               <span>Razorpay Tuition Gateway</span>
             </h3>
@@ -90,7 +87,7 @@ export default function AdminSettingsPage() {
             {/* Test/Live toggle slider */}
             <div className="flex items-center justify-between rounded-2xl bg-[#EEF3FA]/40 p-4 dark:bg-slate-800/40">
               <div className="space-y-1">
-                <p className="text-xs font-black text-[#0F2B7A] dark:text-cyan-300">Tuition Gateway Operation Mode</p>
+                <p className="text-xs font-black text-[#111E79] dark:text-cyan-300">Tuition Gateway Operation Mode</p>
                 <p className="text-[10px] font-bold text-slate-400 leading-normal">
                   Toggle gateway mode between Sandbox testing and active live payments processing.
                 </p>
@@ -102,7 +99,7 @@ export default function AdminSettingsPage() {
                   className={[
                     "h-9 rounded-lg px-4 text-xs font-black transition-all",
                     gatewayMode === "test"
-                      ? "bg-white text-[#0F2B7A] shadow-sm dark:bg-[#0F2B7A] dark:text-white"
+                      ? "bg-white text-[#111E79] shadow-sm dark:bg-[#111E79] dark:text-white"
                       : "text-slate-500",
                   ].join(" ")}
                 >
@@ -151,13 +148,13 @@ export default function AdminSettingsPage() {
         {/* Right side parameters summary actions */}
         <div className="space-y-6 md:col-span-4">
           <GsapReveal direction="up" delay={0.2} className="rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-            <h3 className="text-xs font-black text-[#0F2B7A] dark:text-cyan-200 uppercase tracking-wider">Save variables</h3>
+            <h3 className="text-xs font-black text-[#111E79] dark:text-cyan-200 uppercase tracking-wider">Save variables</h3>
             <p className="text-xs font-bold text-slate-500 leading-normal">
               Committed settings become globally active across Admissions platforms, SMS dispatch networks, and student portals instantly.
             </p>
             <button
               type="submit"
-              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#0F2B7A] text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-[#0f2b7a]/15 dark:bg-cyan-400 dark:text-[#0F2B7A]"
+              className="flex h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#111E79] text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-[#111e79]/15 dark:bg-cyan-400 dark:text-[#111E79]"
             >
               <Save className="size-4" />
               <span>Commit System Parameters</span>

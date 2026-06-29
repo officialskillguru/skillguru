@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { Toaster } from "sonner";
 
 import App from "@/App";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
 import { AuthProvider } from "@/context/AuthContext";
 import { LenisProvider } from "@/context/LenisProvider";
 
@@ -16,11 +17,13 @@ if (!root) {
 
 createRoot(root).render(
   <StrictMode>
-    <AuthProvider>
-      <LenisProvider>
-        <App />
-        <Toaster richColors position="top-right" />
-      </LenisProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <LenisProvider>
+          <App />
+          <Toaster richColors position="top-right" />
+        </LenisProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>,
 );

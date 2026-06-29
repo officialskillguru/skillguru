@@ -1,19 +1,9 @@
 import { useState } from "react";
 import {
   Search,
-  Users,
   Award,
-  ChevronRight,
   MoreVertical,
   X,
-  FileCheck,
-  BookOpen,
-  GraduationCap,
-  Sparkles,
-  Play,
-  ArrowRight,
-  Clock,
-  Briefcase,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -70,7 +60,7 @@ export default function AdminStudentsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             Student Registers & Outcomes
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -89,12 +79,12 @@ export default function AdminStudentsPage() {
         ].map((tb) => (
           <button
             key={tb.id}
-            onClick={() => setStatusFilter(tb.id as any)}
+            onClick={() => setStatusFilter(tb.id as typeof statusFilter)}
             className={[
               "py-3.5 px-5 text-xs font-black border-b-2 transition-all",
               statusFilter === tb.id
-                ? "border-[#0F2B7A] text-[#0F2B7A] dark:border-cyan-400 dark:text-cyan-300"
-                : "border-transparent text-slate-450 hover:text-[#0F2B7A] dark:hover:text-white",
+                ? "border-[#111E79] text-[#111E79] dark:border-cyan-400 dark:text-cyan-300"
+                : "border-transparent text-slate-450 hover:text-[#111E79] dark:hover:text-white",
             ].join(" ")}
           >
             {tb.label}
@@ -105,12 +95,12 @@ export default function AdminStudentsPage() {
       {/* Filter and Search Bar */}
       <div className="flex items-center gap-3 rounded-2xl border border-[#DDE7F6] bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#0F2B7A] dark:text-cyan-300" />
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#111E79] dark:text-cyan-300" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search students by name, course focus..."
-            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#0F2B7A] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#111E79] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
       </div>
@@ -146,11 +136,11 @@ export default function AdminStudentsPage() {
                   >
                     <td className="px-6 py-4.5">
                       <div className="flex items-center gap-3">
-                        <div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#0F2B7A] to-blue-800 text-white font-black text-xs shrink-0">
+                        <div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#111E79] to-blue-800 text-white font-black text-xs shrink-0">
                           {s.name.slice(0, 2).toUpperCase()}
                         </div>
                         <div>
-                          <p className="font-black text-[#0F2B7A] dark:text-slate-100">{s.name}</p>
+                          <p className="font-black text-[#111E79] dark:text-slate-100">{s.name}</p>
                           <p className="text-[10px] font-bold text-slate-400">{s.email}</p>
                         </div>
                       </div>
@@ -206,7 +196,7 @@ export default function AdminStudentsPage() {
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-850">
                 <div>
-                  <h3 className="text-lg font-black text-[#0F2B7A] dark:text-white">Academic Progress Roadmap</h3>
+                  <h3 className="text-lg font-black text-[#111E79] dark:text-white">Academic Progress Roadmap</h3>
                   <p className="text-xs font-semibold text-slate-400">{activeStudent.name} • {activeStudent.id}</p>
                 </div>
                 <button onClick={() => setDrawerOpen(false)} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
@@ -220,7 +210,7 @@ export default function AdminStudentsPage() {
                 <div className="grid gap-4 grid-cols-2">
                   <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-850">
                     <p className="text-[9px] font-black uppercase text-slate-450">Syllabus Complete</p>
-                    <p className="mt-1 text-xl font-black text-[#0F2B7A] dark:text-white">{activeStudent.progress}%</p>
+                    <p className="mt-1 text-xl font-black text-[#111E79] dark:text-white">{activeStudent.progress}%</p>
                   </div>
                   <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-850">
                     <p className="text-[9px] font-black uppercase text-slate-450">Median Test Score</p>
@@ -230,7 +220,7 @@ export default function AdminStudentsPage() {
 
                 {/* Course outline module list */}
                 <div className="space-y-4">
-                  <h4 className="text-xs font-black text-[#0F2B7A] dark:text-cyan-200 uppercase tracking-wider">Syllabus modules audit</h4>
+                  <h4 className="text-xs font-black text-[#111E79] dark:text-cyan-200 uppercase tracking-wider">Syllabus modules audit</h4>
                   {[
                     { name: "Frontend Core Frameworks", status: "Cleared", score: "94%" },
                     { name: "Backend APIs & Databases Modeling", status: activeStudent.progress > 50 ? "Cleared" : "In Progress", score: activeStudent.progress > 50 ? "90%" : "—" },
@@ -238,7 +228,7 @@ export default function AdminStudentsPage() {
                   ].map((mod, index) => (
                     <div key={mod.name} className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 dark:border-slate-850">
                       <div className="space-y-0.5">
-                        <p className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Module {index + 1}: {mod.name}</p>
+                        <p className="text-xs font-black text-[#111E79] dark:text-slate-350">Module {index + 1}: {mod.name}</p>
                         <p className="text-[10px] font-bold text-slate-400">Score: {mod.score}</p>
                       </div>
                       <span className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
@@ -268,7 +258,7 @@ export default function AdminStudentsPage() {
                     </div>
                     <button
                       onClick={() => handleApproveCertificate(activeStudent.id)}
-                      className="h-10 w-full rounded-xl bg-[#0F2B7A] text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#0F2B7A]"
+                      className="h-10 w-full rounded-xl bg-[#111E79] text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#111E79]"
                     >
                       Approve & Generate PG Certificate
                     </button>

@@ -7,7 +7,9 @@ export function MarketingLayout({ children }: Readonly<{ children: ReactNode }>)
   return (
     <div className="min-h-svh bg-white text-[#0F172A]">
       <Navbar />
-      {children}
+      <div id="main-content">
+        {children}
+      </div>
       <Footer />
     </div>
   );

@@ -41,6 +41,10 @@ export function placementStoryRoute(id: string) {
   return `/placements/${id}` as const;
 }
 
+export function mentorProfileRoute(slug: string) {
+  return `/mentors/${slug}` as const;
+}
+
 export function blogDetailRoute(slug: string) {
   return `/blog/${slug}` as const;
 }

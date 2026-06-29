@@ -31,5 +31,5 @@
     "playwright.config.ts",
     "eslint.config.mjs"
   ],
-  "exclude": ["node_modules", "dist", ".next", "src/app", "src/server", "supabase/functions"]
+  "exclude": ["node_modules", "dist", "supabase/functions"]
 }

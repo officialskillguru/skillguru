@@ -21,7 +21,7 @@ export function SectionShell({
         "relative overflow-hidden py-10 sm:py-[60px] lg:py-[100px]",
         tone === "light" && "bg-[#F8FAFF]",
         tone === "white" && "bg-white",
-        tone === "dark" && "bg-[#061B5C] text-white",
+        tone === "dark" && "bg-[#111E79] text-white",
         className,
       )}
     >

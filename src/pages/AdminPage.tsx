@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   Bell,
@@ -22,7 +22,6 @@ import {
   Sparkles,
   Star,
   Users,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -109,7 +108,7 @@ function Sidebar({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
   return (
     <div className="flex h-full flex-col bg-[#081A4A] text-white">
       <div className="border-b border-white/10 px-5 py-5">
-        <Logo imageClassName="h-12" />
+        <Logo />
         <p className="mt-4 text-[11px] font-black uppercase tracking-[0.24em] text-cyan-200/80">
           Enterprise Admin
         </p>
@@ -132,7 +131,7 @@ function Sidebar({ onNavigate }: Readonly<{ onNavigate?: () => void }>) {
                     className={[
                       "group flex min-h-10 items-center gap-3 rounded-[12px] px-3 text-sm font-bold transition",
                       active
-                        ? "bg-[#22D3EE] text-[#061B5C] shadow-[0_14px_32px_rgba(34,211,238,0.22)]"
+                        ? "bg-[#22D3EE] text-[#111E79] shadow-[0_14px_32px_rgba(34,211,238,0.22)]"
                         : "text-white/68 hover:bg-white/8 hover:text-white",
                     ].join(" ")}
                   >
@@ -199,7 +198,7 @@ export default function AdminPage() {
           <div className="flex min-h-18 items-center gap-3 px-4 sm:px-6 lg:px-8">
             <button
               type="button"
-              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#0F2B7A] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 lg:hidden"
+              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#111E79] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 lg:hidden"
               aria-label="Open admin navigation"
               onClick={() => setDrawerOpen(true)}
             >
@@ -208,14 +207,14 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => toast.success("Sidebar state locked.")}
-              className="hidden size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#0F2B7A] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 lg:grid"
+              className="hidden size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#111E79] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 lg:grid"
               aria-label="Collapse sidebar"
             >
               <PanelLeftClose className="size-5" />
             </button>
 
             <label className="hidden h-11 min-w-0 flex-1 items-center gap-3 rounded-[14px] border border-[#DDE7F6] bg-[#F8FAFC] px-4 text-sm text-[#64748B] dark:border-slate-800 dark:bg-slate-900 md:flex">
-              <Search className="size-4 text-[#0F2B7A] dark:text-cyan-300" />
+              <Search className="size-4 text-[#111E79] dark:text-cyan-300" />
               <input
                 className="min-w-0 flex-1 bg-transparent font-semibold outline-none placeholder:text-[#94A3B8] dark:text-white"
                 placeholder="Search students, courses, leads, mentors..."
@@ -226,13 +225,13 @@ export default function AdminPage() {
             <div className="ml-auto hidden items-center gap-2 text-sm font-bold text-[#64748B] dark:text-slate-400 xl:flex">
               <span>Admin</span>
               <ChevronRight className="size-4" />
-              <span className="capitalize text-[#0F2B7A] dark:text-cyan-300">{section}</span>
+              <span className="capitalize text-[#111E79] dark:text-cyan-300">{section}</span>
             </div>
 
             <button
               type="button"
               onClick={() => toast.success("No unread operations notifications.")}
-              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#0F2B7A] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 shadow-[0_8px_22px_rgba(15,43,122,0.06)]"
+              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#111E79] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 shadow-[0_8px_22px_rgba(15,43,122,0.06)]"
               aria-label="Notifications"
             >
               <Bell className="size-4" />
@@ -241,7 +240,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={() => toast.success("Outbox messaging channels active.")}
-              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#0F2B7A] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 shadow-[0_8px_22px_rgba(15,43,122,0.06)]"
+              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#111E79] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 shadow-[0_8px_22px_rgba(15,43,122,0.06)]"
               aria-label="Messages"
             >
               <MessageSquare className="size-4" />
@@ -250,18 +249,18 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={toggleDarkMode}
-              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#0F2B7A] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 shadow-[0_8px_22px_rgba(15,43,122,0.06)]"
+              className="grid size-10 place-items-center rounded-[12px] border border-[#DDE7F6] bg-white text-[#111E79] dark:border-slate-800 dark:bg-slate-900 dark:text-cyan-300 shadow-[0_8px_22px_rgba(15,43,122,0.06)]"
               aria-label="Dark mode"
             >
               {darkMode ? <Sun className="size-4" /> : <Moon className="size-4" />}
             </button>
 
             <div className="flex items-center gap-3 rounded-[14px] border border-[#DDE7F6] bg-white px-2.5 py-2 dark:border-slate-800 dark:bg-slate-900 shadow-[0_8px_22px_rgba(15,43,122,0.06)]">
-              <span className="grid size-8 place-items-center rounded-[10px] bg-[#0F2B7A] text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]">
+              <span className="grid size-8 place-items-center rounded-[10px] bg-[#111E79] text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]">
                 HR
               </span>
               <div className="hidden sm:block text-left">
-                <p className="text-xs font-black text-[#0F2B7A] dark:text-white">Super Admin</p>
+                <p className="text-xs font-black text-[#111E79] dark:text-white">Super Admin</p>
                 <p className="text-[11px] font-semibold text-[#64748B] dark:text-slate-400">Operations</p>
               </div>
             </div>

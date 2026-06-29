@@ -4,18 +4,18 @@
   --color-border: #e5eaf5;
   --color-background: #f8faff;
   --color-foreground: #0f172a;
-  --color-primary: #0a2a88;
+  --color-primary: #111e79;
   --color-primary-foreground: #ffffff;
-  --color-secondary: #1147ff;
+  --color-secondary: #5b35f2;
   --color-secondary-foreground: #ffffff;
   --color-muted: #f1f5ff;
   --color-muted-foreground: #64748b;
-  --color-accent: #19d9ff;
-  --color-accent-foreground: #061b5c;
+  --color-accent: #19c7c8;
+  --color-accent-foreground: #111e79;
   --color-card: #ffffff;
   --color-card-foreground: #0f172a;
   --color-input: rgba(15, 23, 42, 0.12);
-  --color-ring: #19d9ff;
+  --color-ring: #19c7c8;
   --radius-lg: 1.25rem;
   --radius-md: 0.875rem;
   --radius-sm: 0.75rem;
@@ -28,10 +28,10 @@
 :root {
   --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --brand-primary: #0a2a88;
-  --brand-secondary: #1147ff;
-  --brand-cyan: #19d9ff;
-  --brand-navy: #061b5c;
+  --brand-primary: #111e79;
+  --brand-secondary: #5b35f2;
+  --brand-cyan: #19c7c8;
+  --brand-navy: #111e79;
   --brand-bg: #f8faff;
   --brand-border: #e5eaf5;
   --brand-text: #0f172a;
@@ -105,11 +105,11 @@ h3 {
 }
 
 .brand-gradient {
-  background: linear-gradient(135deg, #1147ff 0%, #0a2a88 58%, #061b5c 100%);
+  background: linear-gradient(135deg, #5b35f2 0%, #111e79 58%, #111e79 100%);
 }
 
 .cyan-gradient {
-  background: linear-gradient(135deg, #19d9ff 0%, #1147ff 100%);
+  background: linear-gradient(135deg, #19c7c8 0%, #5b35f2 100%);
 }
 
 .hide-scrollbar {
@@ -139,7 +139,7 @@ h3 {
   bottom: -0.2rem;
   height: 2px;
   border-radius: 999px;
-  background: linear-gradient(90deg, #19d9ff, #1147ff);
+  background: linear-gradient(90deg, #19c7c8, #5b35f2);
   transform: scaleX(0);
   transform-origin: right;
   transition: transform 220ms ease;
@@ -150,114 +150,11 @@ h3 {
   transform-origin: left;
 }
 
-.hero-section {
-  position: relative;
-  height: 820px;
-}
 
-/* Mobile hero height — prevent oversized hero on small screens */
-@media (max-width: 768px) {
-  .hero-section {
-    height: auto;
-    min-height: 520px;
-    max-height: 100svh;
-  }
-}
 
-/* Dedicated media container — replaces CSS background approach */
-.hero-media {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  overflow: hidden;
-}
 
-.hero-media video {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: 65% center;
-  filter: saturate(1.25) contrast(1.12) brightness(1.15);
-  transform: translate3d(0, 0, 0);
-  transform-style: preserve-3d;
-  backface-visibility: hidden;
-  will-change: transform;
-  image-rendering: auto;
-  /* No blur, no backdrop-blur, no opacity reduction */
-}
 
-/* ─── Mobile-responsive hero video ─── */
 
-/* Tablet: slight recentering */
-@media (max-width: 1024px) {
-  .hero-media video {
-    object-position: 60% center;
-  }
-}
-
-/* Small tablet / large phone landscape */
-@media (max-width: 768px) {
-  .hero-media video {
-    object-position: 55% center;
-    transform: translate3d(0, 0, 0) scale(1.05);
-    transform-origin: center center;
-  }
-}
-
-/* iPhone 14 Pro Max / Pixel 7 Pro (430px) */
-@media (max-width: 430px) {
-  .hero-media video {
-    object-fit: cover;
-    object-position: 52% 40%;
-    transform: translate3d(0, 0, 0) scale(1.1);
-    transform-origin: center 40%;
-  }
-}
-
-/* iPhone 14 / 13 / 12 (414px) */
-@media (max-width: 414px) {
-  .hero-media video {
-    object-position: 50% 38%;
-    transform: translate3d(0, 0, 0) scale(1.12);
-    transform-origin: center 38%;
-  }
-}
-
-/* iPhone 14 Pro / 13 Pro (390px) */
-@media (max-width: 390px) {
-  .hero-media video {
-    object-position: 50% 36%;
-    transform: translate3d(0, 0, 0) scale(1.15);
-    transform-origin: center 36%;
-  }
-}
-
-/* iPhone SE 3rd gen / iPhone 13 mini (375px) */
-@media (max-width: 375px) {
-  .hero-media video {
-    object-position: 50% 35%;
-    transform: translate3d(0, 0, 0) scale(1.18);
-    transform-origin: center 35%;
-  }
-}
-
-/* Galaxy S series / common Android (360px) */
-@media (max-width: 360px) {
-  .hero-media video {
-    object-position: 50% 34%;
-    transform: translate3d(0, 0, 0) scale(1.2);
-    transform-origin: center 34%;
-  }
-}
-
-/* iPhone SE 1st gen / small Android (320px) */
-@media (max-width: 320px) {
-  .hero-media video {
-    object-position: 50% 32%;
-    transform: translate3d(0, 0, 0) scale(1.25);
-    transform-origin: center 32%;
-  }
-}
 
 .hero-section {
   display: block;
@@ -284,6 +181,7 @@ h3 {
 }
 
 .hero-media {
+  position: absolute;
   inset: 0 0 0 33vw;
   pointer-events: none;
   contain: paint;
@@ -298,6 +196,9 @@ h3 {
 }
 
 .hero-media video {
+  width: 100%;
+  height: 100%;
+  display: block;
   object-fit: contain;
   object-position: center center;
   filter: contrast(1.08) brightness(1.05) saturate(1.15);
@@ -359,12 +260,12 @@ h3 {
 
 /* ─── Navbar-hero blending (homepage only via :has) ─── */
 html:has(.hero-section) header:not([data-scrolled]) .nav-link-premium {
-  color: #061B5C;
+  color: #111E79;
   transition: color 300ms ease;
 }
 
 html:has(.hero-section) header:not([data-scrolled]) .nav-link-premium:hover {
-  color: #1147FF;
+  color: #5B35F2;
 }
 
 html:has(.hero-section) header[data-scrolled] .nav-link-premium {
@@ -373,7 +274,7 @@ html:has(.hero-section) header[data-scrolled] .nav-link-premium {
 
 /* Active nav link on dark hero — use primary instead of invisible cyan */
 html:has(.hero-section) header:not([data-scrolled]) .nav-link-premium[aria-current="page"] {
-  color: #1147FF;
+  color: #5B35F2;
 }
 
 /* Icon pill buttons — glass-border treatment on dark hero */
@@ -533,7 +434,7 @@ html:has(.hero-section) header:not([data-scrolled]) [aria-label="Open menu"] {
   background:
     radial-gradient(circle at 74% 22%, rgba(25, 217, 255, 0.2), transparent 34rem),
     radial-gradient(circle at 48% 58%, rgba(17, 71, 255, 0.14), transparent 30rem),
-    linear-gradient(135deg, #061b5c 0%, #0a2a88 46%, #061b5c 100%);
+    linear-gradient(135deg, #111e79 0%, #111e79 46%, #111e79 100%);
 }
 
 .recruiter-marquee-shell {

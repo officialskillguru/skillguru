@@ -2,17 +2,9 @@ import { useState } from "react";
 import {
   Search,
   Plus,
-  MoreVertical,
   X,
   Phone,
-  Calendar,
-  Layers,
-  ArrowRight,
-  TrendingUp,
-  MapPin,
   Clock,
-  Sparkles,
-  MessageSquare,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -98,7 +90,7 @@ export default function AdminCRMPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             Counseling Lead pipeline
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -107,7 +99,7 @@ export default function AdminCRMPage() {
         </div>
         <button
           onClick={() => setNewLeadModalOpen(true)}
-          className="flex h-11 items-center gap-2 rounded-xl bg-[#0F2B7A] px-5 text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-[#0f2b7a]/15 dark:bg-cyan-400 dark:text-[#0F2B7A]"
+          className="flex h-11 items-center gap-2 rounded-xl bg-[#111E79] px-5 text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-[#111e79]/15 dark:bg-cyan-400 dark:text-[#111E79]"
         >
           <Plus className="size-4" />
           <span>New Lead</span>
@@ -115,7 +107,7 @@ export default function AdminCRMPage() {
       </div>
 
       {/* CRM Conversion Index Info Banner */}
-      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-[#0F2B7A] to-blue-900 p-6 text-white md:flex-row md:items-center md:justify-between">
+      <div className="flex flex-col gap-4 rounded-2xl bg-gradient-to-r from-[#111E79] to-blue-900 p-6 text-white md:flex-row md:items-center md:justify-between">
         <div className="space-y-1">
           <p className="text-xs font-black uppercase tracking-wider text-cyan-300">Funnel Conversion Rate</p>
           <h3 className="text-2xl font-black">18.2% Average Enrollment Rate</h3>
@@ -136,12 +128,12 @@ export default function AdminCRMPage() {
       {/* Filters */}
       <div className="flex items-center gap-3 rounded-2xl border border-[#DDE7F6] bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#0F2B7A] dark:text-cyan-300" />
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#111E79] dark:text-cyan-300" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search lead or course query..."
-            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#0F2B7A] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#111E79] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
           />
         </div>
       </div>
@@ -160,7 +152,7 @@ export default function AdminCRMPage() {
             >
               {/* Column Header */}
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-xs font-black text-[#0F2B7A] dark:text-cyan-300 uppercase tracking-wide">
+                <span className="text-xs font-black text-[#111E79] dark:text-cyan-300 uppercase tracking-wide">
                   {col.label}
                 </span>
                 <span className="rounded-md bg-slate-200/60 px-2 py-0.5 text-[10px] font-black text-[#64748B] dark:bg-slate-800 dark:text-slate-400">
@@ -194,7 +186,7 @@ export default function AdminCRMPage() {
                       </span>
                     </div>
 
-                    <h4 className="mt-3 text-xs font-black text-[#0F2B7A] dark:text-white truncate">
+                    <h4 className="mt-3 text-xs font-black text-[#111E79] dark:text-white truncate">
                       {lead.name}
                     </h4>
                     <p className="mt-1 text-[10px] font-bold text-slate-450 truncate">
@@ -234,7 +226,7 @@ export default function AdminCRMPage() {
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-850">
                 <div>
-                  <h3 className="text-lg font-black text-[#0F2B7A] dark:text-white">Counselor call log</h3>
+                  <h3 className="text-lg font-black text-[#111E79] dark:text-white">Counselor call log</h3>
                   <p className="text-xs font-semibold text-slate-400">{activeLead.name} • {activeLead.id}</p>
                 </div>
                 <button onClick={() => setCallLogOpen(false)} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850">
@@ -246,18 +238,18 @@ export default function AdminCRMPage() {
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {/* Details */}
                 <div className="rounded-2xl border border-slate-100 p-4 space-y-3 dark:border-slate-850">
-                  <p className="text-xs font-black text-[#0F2B7A] dark:text-cyan-300 uppercase tracking-wider">Candidate info</p>
+                  <p className="text-xs font-black text-[#111E79] dark:text-cyan-300 uppercase tracking-wider">Candidate info</p>
                   <p className="text-sm font-black text-slate-700 dark:text-white">{activeLead.name}</p>
-                  <p className="text-xs font-bold text-slate-500">Interested in: <span className="font-black text-[#0F2B7A] dark:text-cyan-400">{activeLead.course}</span></p>
+                  <p className="text-xs font-bold text-slate-500">Interested in: <span className="font-black text-[#111E79] dark:text-cyan-400">{activeLead.course}</span></p>
                   <div className="flex items-center gap-2 text-xs font-black text-slate-500">
-                    <Phone className="size-4 text-[#0F2B7A] dark:text-cyan-300" />
+                    <Phone className="size-4 text-[#111E79] dark:text-cyan-300" />
                     <span>{activeLead.phone}</span>
                   </div>
                 </div>
 
                 {/* Status selector */}
                 <div className="space-y-2">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Pipeline Funnel Stage</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Pipeline Funnel Stage</label>
                   <div className="grid gap-2 grid-cols-2">
                     {columns.map((c) => (
                       <button
@@ -267,7 +259,7 @@ export default function AdminCRMPage() {
                         className={[
                           "h-10 rounded-xl border text-xs font-black transition-all",
                           activeLead.status === c.id
-                            ? "bg-[#0F2B7A] text-white border-transparent"
+                            ? "bg-[#111E79] text-white border-transparent"
                             : "border-slate-200 bg-[#F8FAFC] text-slate-600 hover:bg-slate-100 dark:border-slate-850 dark:bg-slate-900 dark:text-slate-350",
                         ].join(" ")}
                       >
@@ -279,7 +271,7 @@ export default function AdminCRMPage() {
 
                 {/* Call Notes input */}
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Counselling Call Notes</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Counselling Call Notes</label>
                   <textarea
                     rows={4}
                     defaultValue="Called candidate today. Very interested in Full Stack Dev track. Has basic Java coding background. Scheduled mock demo review session for Wednesday."
@@ -302,7 +294,7 @@ export default function AdminCRMPage() {
                     setCallLogOpen(false);
                     toast.success("Counseling notes committed.");
                   }}
-                  className="h-11 rounded-xl bg-[#0F2B7A] px-6 text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#0F2B7A]"
+                  className="h-11 rounded-xl bg-[#111E79] px-6 text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#111E79]"
                 >
                   Commit Log
                 </button>
@@ -323,7 +315,7 @@ export default function AdminCRMPage() {
               className="w-full max-w-md rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-850">
-                <h3 className="text-base font-black text-[#0F2B7A] dark:text-white">Generate Counseling Lead</h3>
+                <h3 className="text-base font-black text-[#111E79] dark:text-white">Generate Counseling Lead</h3>
                 <button onClick={() => setNewLeadModalOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
                   <X className="size-5" />
                 </button>
@@ -331,7 +323,7 @@ export default function AdminCRMPage() {
 
               <form onSubmit={handleCreateLead} className="mt-5 space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Student Full Name</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Student Full Name</label>
                   <input
                     required
                     value={newLeadName}
@@ -340,7 +332,7 @@ export default function AdminCRMPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Primary Phone Number</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Primary Phone Number</label>
                   <input
                     required
                     value={newLeadPhone}
@@ -349,7 +341,7 @@ export default function AdminCRMPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Course Focus Area</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Course Focus Area</label>
                   <select
                     value={newLeadCourse}
                     onChange={(e) => setNewLeadCourse(e.target.value)}
@@ -363,7 +355,7 @@ export default function AdminCRMPage() {
 
                 <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-5">
                   <button type="button" onClick={() => setNewLeadModalOpen(false)} className="h-11 rounded-xl px-5 text-xs font-black text-slate-500">Cancel</button>
-                  <button type="submit" className="h-11 rounded-xl bg-[#0F2B7A] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]">Create Lead Card</button>
+                  <button type="submit" className="h-11 rounded-xl bg-[#111E79] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]">Create Lead Card</button>
                 </div>
               </form>
             </motion.div>

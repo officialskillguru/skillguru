@@ -1,6 +1,6 @@
-# HR Remedy India Education
+# Skill Guru India Education
 
-Production scaffold for the HR Remedy India Education platform.
+Production scaffold for the Skill Guru India Education platform.
 
 ## Stack
 

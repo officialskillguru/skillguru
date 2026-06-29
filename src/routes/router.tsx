@@ -14,6 +14,7 @@ const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const PlacementsPage = lazy(() => import("@/pages/PlacementsPage"));
 const PlacementStoryPage = lazy(() => import("@/pages/PlacementStoryPage"));
 const MentorsPage = lazy(() => import("@/pages/MentorsPage"));
+const MentorProfilePage = lazy(() => import("@/pages/MentorProfilePage"));
 const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const GuidancePage = lazy(() => import("@/pages/GuidancePage"));
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
@@ -45,11 +46,16 @@ function MarketingRoute({ children }: Readonly<{ children: ReactNode }>) {
   return <MarketingLayout>{children}</MarketingLayout>;
 }
 
+import { SearchProvider, SearchModal } from "@/features/search";
+
 function RootRoute() {
   return (
     <AnalyticsProvider>
-      <ScrollToTop />
-      <Outlet />
+      <SearchProvider>
+        <ScrollToTop />
+        <SearchModal />
+        <Outlet />
+      </SearchProvider>
     </AnalyticsProvider>
   );
 }
@@ -65,6 +71,7 @@ export const router = createHashRouter([
       { path: routes.placements, element: withSuspense(<MarketingRoute><PlacementsPage /></MarketingRoute>) },
       { path: "/placements/:id", element: withSuspense(<MarketingRoute><PlacementStoryPage /></MarketingRoute>) },
       { path: routes.mentors, element: withSuspense(<MarketingRoute><MentorsPage /></MarketingRoute>) },
+      { path: "/mentors/:slug", element: withSuspense(<MarketingRoute><MentorProfilePage /></MarketingRoute>) },
       { path: routes.guidance, element: withSuspense(<MarketingRoute><GuidancePage /></MarketingRoute>) },
       { path: routes.contact, element: withSuspense(<MarketingRoute><ContactPage /></MarketingRoute>) },
       { path: routes.login, element: withSuspense(<AuthPage mode="login" />) },

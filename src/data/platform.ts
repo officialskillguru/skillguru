@@ -46,7 +46,6 @@ const avatars = {
   karan: assetUrl("/assets/home/avatar-rahul.png"),
   simran: assetUrl("/assets/home/avatar-anjali.png"),
 };
-
 export const recruiterLogos = {
   TCS: assetUrl("/assets/recruiters/tcs-display.svg"),
   Infosys: assetUrl("/assets/recruiters/infosys-display.svg"),
@@ -616,6 +615,7 @@ export const careerTracks = [
 
 export const mentors: Mentor[] = [
   {
+    slug: "rahul-sharma",
     name: "Rahul Sharma",
     role: "Senior Data Scientist",
     company: "Microsoft",
@@ -634,6 +634,7 @@ export const mentors: Mentor[] = [
     workedWith: ["Microsoft", "IBM", "Flipkart", "Deloitte", "Mu Sigma"],
   },
   {
+    slug: "neha-verma",
     name: "Neha Verma",
     role: "Product Manager",
     company: "Google",
@@ -652,6 +653,7 @@ export const mentors: Mentor[] = [
     workedWith: ["Google", "Infosys", "Accenture", "Deloitte"],
   },
   {
+    slug: "amit-singh",
     name: "Amit Singh",
     role: "Solutions Architect",
     company: "Amazon Web Services",
@@ -670,6 +672,7 @@ export const mentors: Mentor[] = [
     workedWith: ["AWS", "HCL", "Cognizant", "Capgemini"],
   },
   {
+    slug: "pooja-rao",
     name: "Pooja Rao",
     role: "Senior UI/UX Designer",
     company: "PayPal",
@@ -696,7 +699,7 @@ export const testimonials: Testimonial[] = [
     company: "TCS",
     companyLogo: recruiterLogos.TCS,
     avatar: avatars.neha,
-    quote: "HR Remedy India Education changed my life. The mentors, projects, and placement support were exceptional.",
+    quote: "Skill Guru India Education changed my life. The mentors, projects, and placement support were exceptional.",
     growth: "8.5 LPA",
   },
   {
@@ -778,7 +781,7 @@ export const successStories: SuccessStory[] = [
     company: "Deloitte",
     companyLogo: recruiterLogos.Deloitte,
     avatar: avatars.rahul,
-    quote: "Amazing mentors and great learning experience. I am grateful to HR Remedy India Education.",
+    quote: "Amazing mentors and great learning experience. I am grateful to Skill Guru India Education.",
     growth: "11.5 LPA",
     before: "Fresher",
     after: "Data Scientist at Deloitte",
@@ -879,10 +882,10 @@ export const faqs: FAQItem[] = [
 ];
 
 export const whyChooseUs = [
-  { title: "Industry Experts", description: "Learn from professionals working in top companies.", icon: Users },
-  { title: "Live Projects", description: "Build real assignments, case studies, and portfolio proof.", icon: Rocket },
-  { title: "Placement Assistance", description: "Resume, interview, and recruiter readiness support.", icon: Handshake },
-  { title: "Certification", description: "Earn a recognized certificate after completion.", icon: BadgeCheck },
+  { title: "Industry Experts as Mentor", description: "Learn from professionals working in top companies.", icon: Users },
+  { title: "Live Simulation Project ", description: "Build real assignments, case studies, and portfolio proof.", icon: Rocket },
+  { title: "100%Placement Assistance", description: "Resume, interview, and recruiter readiness support.", icon: Handshake },
+  { title: "Global Recognition Certificate", description: "Earn a recognized certificate after completion.", icon: BadgeCheck },
 ];
 
 export const courseAdvantages = [
@@ -911,8 +914,8 @@ export const placementTrend = [
 ];
 
 export const roleDistribution = [
-  { role: "Software Developer", value: 25, color: "#1147FF" },
-  { role: "Frontend Developer", value: 20, color: "#19D9FF" },
+  { role: "Software Developer", value: 25, color: "#5B35F2" },
+  { role: "Frontend Developer", value: 20, color: "#19C7C8" },
   { role: "Data Analyst", value: 20, color: "#8B5CF6" },
   { role: "UI/UX Designer", value: 15, color: "#F97316" },
   { role: "DevOps Engineer", value: 10, color: "#22C55E" },
@@ -933,7 +936,7 @@ export const officeLocations: OfficeLocation[] = [
     label: "Head Office",
     address: "1st Floor, ZR Tower, Civil Lines, Vadodara, Gujarat - 390002",
     phone: "+91 91090 72316",
-    email: "info@hrremedyindia.com",
+    email: "info@skillguru.com",
   },
   {
     city: "Ahmedabad",

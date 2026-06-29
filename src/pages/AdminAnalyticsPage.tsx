@@ -1,14 +1,10 @@
 import { useState } from "react";
 import {
   TrendingUp,
-  Award,
-  Calendar,
-  Filter,
   Download,
   DollarSign,
   Users,
   GraduationCap,
-  Sparkles,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -22,7 +18,6 @@ import {
   Bar,
   LineChart,
   Line,
-  Legend,
 } from "recharts";
 import { toast } from "sonner";
 import { GsapReveal } from "@/components/motion/gsap-reveal";
@@ -101,7 +96,7 @@ export default function AdminAnalyticsPage() {
           return (
             <button
               key={tb.id}
-              onClick={() => setActiveAnalysisTab(tb.id as any)}
+              onClick={() => setActiveAnalysisTab(tb.id as "revenue" | "enrollments" | "students" | "leads")}
               className={[
                 "py-3.5 px-5 text-xs font-black border-b-2 transition-all flex items-center gap-2",
                 activeAnalysisTab === tb.id

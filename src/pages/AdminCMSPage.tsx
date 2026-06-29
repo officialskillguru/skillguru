@@ -1,19 +1,13 @@
 import { useState } from "react";
 import {
   FileText,
-  MessageSquare,
   HelpCircle,
   Plus,
   X,
   Edit2,
   Trash2,
   Image,
-  ChevronRight,
-  TrendingUp,
-  Award,
   Globe,
-  Settings,
-  MoreVertical,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -112,7 +106,7 @@ export default function AdminCMSPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             Content Management System (CMS)
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -123,7 +117,7 @@ export default function AdminCMSPage() {
           {activeSubTab === "blogs" && (
             <button
               onClick={handleCreateBlog}
-              className="flex h-11 items-center gap-2 rounded-xl bg-[#0F2B7A] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]"
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#111E79] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]"
             >
               <Plus className="size-4" />
               <span>Draft Blog</span>
@@ -132,7 +126,7 @@ export default function AdminCMSPage() {
           {activeSubTab === "faqs" && (
             <button
               onClick={() => setFaqModalOpen(true)}
-              className="flex h-11 items-center gap-2 rounded-xl bg-[#0F2B7A] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]"
+              className="flex h-11 items-center gap-2 rounded-xl bg-[#111E79] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]"
             >
               <Plus className="size-4" />
               <span>Create FAQ</span>
@@ -152,12 +146,12 @@ export default function AdminCMSPage() {
           return (
             <button
               key={tb.id}
-              onClick={() => setActiveSubTab(tb.id as any)}
+              onClick={() => setActiveSubTab(tb.id as typeof activeSubTab)}
               className={[
                 "py-3.5 px-5 text-xs font-black border-b-2 transition-all flex items-center gap-2",
                 activeSubTab === tb.id
-                  ? "border-[#0F2B7A] text-[#0F2B7A] dark:border-cyan-400 dark:text-cyan-300"
-                  : "border-transparent text-slate-450 hover:text-[#0F2B7A] dark:hover:text-white",
+                  ? "border-[#111E79] text-[#111E79] dark:border-cyan-400 dark:text-cyan-300"
+                  : "border-transparent text-slate-450 hover:text-[#111E79] dark:hover:text-white",
               ].join(" ")}
             >
               <TabIcon className="size-4" />
@@ -174,7 +168,7 @@ export default function AdminCMSPage() {
       {activeSubTab === "homepage" && (
         <div className="space-y-6">
           <div className="rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">Landing Page Hero Banner</h3>
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">Landing Page Hero Banner</h3>
             <div className="space-y-4">
               <div className="space-y-1">
                 <label className="text-xs font-black text-slate-400">Hero Main Title (Large Screen)</label>
@@ -195,7 +189,7 @@ export default function AdminCMSPage() {
             <div className="flex justify-end pt-3 border-t border-slate-50 dark:border-slate-850">
               <button
                 onClick={() => toast.success("Homepage Hero edits committed.")}
-                className="h-10 rounded-xl bg-[#0F2B7A] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]"
+                className="h-10 rounded-xl bg-[#111E79] px-5 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]"
               >
                 Commit Changes
               </button>
@@ -203,14 +197,14 @@ export default function AdminCMSPage() {
           </div>
 
           <div className="rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 space-y-4">
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">Rearrange Active Success Testimonials</h3>
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">Rearrange Active Success Testimonials</h3>
             <p className="text-xs font-semibold text-slate-400 leading-normal">
               Select student case card highlights featured prominently on the marketing landing platform page.
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               {["Neha Verma placed at TCS", "Rahul Sharma placed at Infosys", "Priya Sharma placed at Deloitte"].map((story) => (
                 <label key={story} className="flex items-center gap-3 rounded-2xl border border-slate-100 p-4 bg-[#F8FAFC] dark:border-slate-850 dark:bg-slate-950 cursor-pointer">
-                  <input type="checkbox" defaultChecked className="rounded border-slate-200 text-[#0F2B7A]" />
+                  <input type="checkbox" defaultChecked className="rounded border-slate-200 text-[#111E79]" />
                   <span className="text-xs font-black text-slate-700 dark:text-slate-350">{story}</span>
                 </label>
               ))}
@@ -243,7 +237,7 @@ export default function AdminCMSPage() {
                         <div className="size-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-400 shrink-0">
                           <Image className="size-4" />
                         </div>
-                        <span className="font-black text-[#0F2B7A] dark:text-white truncate max-w-xs">{b.title}</span>
+                        <span className="font-black text-[#111E79] dark:text-white truncate max-w-xs">{b.title}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4.5">
@@ -290,7 +284,7 @@ export default function AdminCMSPage() {
                 </span>
                 <span className="text-[10px] font-bold text-slate-400">FAQ-{faq.id}</span>
               </div>
-              <h4 className="text-xs font-black text-[#0F2B7A] dark:text-white leading-normal pr-8">
+              <h4 className="text-xs font-black text-[#111E79] dark:text-white leading-normal pr-8">
                 {faq.question}
               </h4>
               <p className="text-xs font-bold text-slate-500 leading-relaxed">
@@ -326,7 +320,7 @@ export default function AdminCMSPage() {
               {/* Header */}
               <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-850">
                 <div>
-                  <h3 className="text-lg font-black text-[#0F2B7A] dark:text-white">Blog article builder</h3>
+                  <h3 className="text-lg font-black text-[#111E79] dark:text-white">Blog article builder</h3>
                   <p className="text-xs font-semibold text-slate-400">Author search engine optimized authority tech content.</p>
                 </div>
                 <button onClick={() => setBlogEditorOpen(false)} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
@@ -337,7 +331,7 @@ export default function AdminCMSPage() {
               {/* Form scrollable */}
               <form onSubmit={handleSaveBlog} className="flex-1 overflow-y-auto p-6 space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Article Title</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Article Title</label>
                   <input
                     required
                     value={selectedBlog.title}
@@ -348,7 +342,7 @@ export default function AdminCMSPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1">
-                    <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Category Topic</label>
+                    <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Category Topic</label>
                     <select
                       value={selectedBlog.category}
                       onChange={(e) => setSelectedBlog({ ...selectedBlog, category: e.target.value })}
@@ -360,10 +354,10 @@ export default function AdminCMSPage() {
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Status State</label>
+                    <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Status State</label>
                     <select
                       value={selectedBlog.status}
-                      onChange={(e) => setSelectedBlog({ ...selectedBlog, status: e.target.value as any })}
+                      onChange={(e) => setSelectedBlog({ ...selectedBlog, status: e.target.value as BlogRecord["status"] })}
                       className="w-full h-11 rounded-xl border border-slate-200 bg-[#F8FAFC] px-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
                     >
                       <option>Draft</option>
@@ -373,7 +367,7 @@ export default function AdminCMSPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Article Body Content</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Article Body Content</label>
                   <textarea
                     rows={8}
                     defaultValue="This comprehensive article outlines core technology trends affecting candidate placements in 2026. Micro-services architectures and prompt logic integrations remain vital..."
@@ -385,7 +379,7 @@ export default function AdminCMSPage() {
               {/* Footer */}
               <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-850">
                 <button type="button" onClick={() => setBlogEditorOpen(false)} className="h-11 rounded-xl px-5 text-xs font-black text-slate-500">Cancel</button>
-                <button onClick={handleSaveBlog} className="h-11 rounded-xl bg-[#0F2B7A] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]">Save Draft</button>
+                <button onClick={handleSaveBlog} className="h-11 rounded-xl bg-[#111E79] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]">Save Draft</button>
               </div>
             </motion.div>
           </div>
@@ -403,7 +397,7 @@ export default function AdminCMSPage() {
               className="w-full max-w-md rounded-3xl border border-[#DDE7F6] bg-white p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
             >
               <div className="flex items-center justify-between border-b border-slate-100 pb-4 dark:border-slate-850">
-                <h3 className="text-base font-black text-[#0F2B7A] dark:text-white font-display">Create FAQ Query Entry</h3>
+                <h3 className="text-base font-black text-[#111E79] dark:text-white font-display">Create FAQ Query Entry</h3>
                 <button onClick={() => setFaqModalOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100">
                   <X className="size-5" />
                 </button>
@@ -411,7 +405,7 @@ export default function AdminCMSPage() {
 
               <form onSubmit={handleCreateFAQ} className="mt-5 space-y-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">FAQ Question Title</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">FAQ Question Title</label>
                   <input
                     required
                     value={newFAQQuestion}
@@ -420,7 +414,7 @@ export default function AdminCMSPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-[#0F2B7A] dark:text-slate-350">Detailed FAQ Answer</label>
+                  <label className="text-xs font-black text-[#111E79] dark:text-slate-350">Detailed FAQ Answer</label>
                   <textarea
                     required
                     rows={4}
@@ -432,7 +426,7 @@ export default function AdminCMSPage() {
 
                 <div className="flex items-center justify-end gap-3 border-t border-slate-100 pt-4 mt-5">
                   <button type="button" onClick={() => setFaqModalOpen(false)} className="h-11 rounded-xl px-5 text-xs font-black text-slate-500">Cancel</button>
-                  <button type="submit" className="h-11 rounded-xl bg-[#0F2B7A] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#0F2B7A]">Append FAQ</button>
+                  <button type="submit" className="h-11 rounded-xl bg-[#111E79] px-6 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]">Append FAQ</button>
                 </div>
               </form>
             </motion.div>

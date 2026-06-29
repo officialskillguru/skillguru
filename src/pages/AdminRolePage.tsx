@@ -3,18 +3,10 @@ import {
   Shield,
   Users,
   Lock,
-  X,
-  Plus,
-  CheckCircle,
   MoreVertical,
-  Key,
-  Database,
-  ArrowRight,
   Clock,
-  Eye,
 } from "lucide-react";
 import { toast } from "sonner";
-import { motion, AnimatePresence } from "framer-motion";
 import { GsapReveal } from "@/components/motion/gsap-reveal";
 
 interface Operator {
@@ -25,10 +17,10 @@ interface Operator {
 }
 
 const initialOperators: Operator[] = [
-  { name: "Rahul Deshmukh", role: "Super Admin", email: "rahul.operations@hrremedy.com", status: "Active" },
-  { name: "Neha Verma", role: "Counsellor", email: "neha.counselling@hrremedy.com", status: "Active" },
-  { name: "Amit Singh", role: "Placement Officer", email: "amit.placements@hrremedy.com", status: "Active" },
-  { name: "Pooja Rao", role: "Content Manager", email: "pooja.cms@hrremedy.com", status: "Active" },
+  { name: "Rahul Deshmukh", role: "Super Admin", email: "rahul.operations@skillguru.com", status: "Active" },
+  { name: "Neha Verma", role: "Counsellor", email: "neha.counselling@skillguru.com", status: "Active" },
+  { name: "Amit Singh", role: "Placement Officer", email: "amit.placements@skillguru.com", status: "Active" },
+  { name: "Pooja Rao", role: "Content Manager", email: "pooja.cms@skillguru.com", status: "Active" },
 ];
 
 interface AuditLog {
@@ -45,7 +37,7 @@ const mockAuditLogs: AuditLog[] = [
 ];
 
 export default function AdminRolePage() {
-  const [operators, setOperators] = useState<Operator[]>(initialOperators);
+  const [operators] = useState<Operator[]>(initialOperators);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"roles" | "operators" | "audit">("roles");
   
   // Custom permissions state representation
@@ -74,7 +66,7 @@ export default function AdminRolePage() {
       {/* Header */}
       <GsapReveal direction="up" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             System Security & Operators Registry
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -94,12 +86,12 @@ export default function AdminRolePage() {
           return (
             <button
               key={tb.id}
-              onClick={() => setActiveSettingsTab(tb.id as any)}
+              onClick={() => setActiveSettingsTab(tb.id as typeof activeSettingsTab)}
               className={[
                 "py-3.5 px-5 text-xs font-black border-b-2 transition-all flex items-center gap-2",
                 activeSettingsTab === tb.id
-                  ? "border-[#0F2B7A] text-[#0F2B7A] dark:border-cyan-400 dark:text-cyan-300"
-                  : "border-transparent text-slate-450 hover:text-[#0F2B7A] dark:hover:text-white",
+                  ? "border-[#111E79] text-[#111E79] dark:border-cyan-400 dark:text-cyan-300"
+                  : "border-transparent text-slate-450 hover:text-[#111E79] dark:hover:text-white",
               ].join(" ")}
             >
               <TabIcon className="size-4" />
@@ -129,13 +121,13 @@ export default function AdminRolePage() {
               <tbody className="divide-y divide-[#DDE7F6] dark:divide-slate-850">
                 {(Object.keys(permissions) as Array<keyof typeof permissions>).map((role) => (
                   <tr key={role} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                    <td className="px-6 py-5 font-black text-[#0F2B7A] dark:text-white">{role}</td>
+                    <td className="px-6 py-5 font-black text-[#111E79] dark:text-white">{role}</td>
                     <td className="px-6 py-5 text-center">
                       <input
                         type="checkbox"
                         checked={permissions[role].read}
                         onChange={() => togglePermission(role, "read")}
-                        className="rounded border-slate-200 text-[#0F2B7A]"
+                        className="rounded border-slate-200 text-[#111E79]"
                       />
                     </td>
                     <td className="px-6 py-5 text-center">
@@ -143,7 +135,7 @@ export default function AdminRolePage() {
                         type="checkbox"
                         checked={permissions[role].write}
                         onChange={() => togglePermission(role, "write")}
-                        className="rounded border-slate-200 text-[#0F2B7A]"
+                        className="rounded border-slate-200 text-[#111E79]"
                       />
                     </td>
                     <td className="px-6 py-5 text-center">
@@ -152,7 +144,7 @@ export default function AdminRolePage() {
                         checked={permissions[role].delete}
                         disabled={role === "Super Admin"}
                         onChange={() => togglePermission(role, "delete")}
-                        className="rounded border-slate-200 text-[#0F2B7A] disabled:opacity-50"
+                        className="rounded border-slate-200 text-[#111E79] disabled:opacity-50"
                       />
                     </td>
                     <td className="px-6 py-5 text-center">
@@ -161,7 +153,7 @@ export default function AdminRolePage() {
                         checked={permissions[role].publish}
                         disabled={role === "Super Admin"}
                         onChange={() => togglePermission(role, "publish")}
-                        className="rounded border-slate-200 text-[#0F2B7A] disabled:opacity-50"
+                        className="rounded border-slate-200 text-[#111E79] disabled:opacity-50"
                       />
                     </td>
                   </tr>
@@ -189,7 +181,7 @@ export default function AdminRolePage() {
               <tbody className="divide-y divide-[#DDE7F6] dark:divide-slate-850">
                 {operators.map((op) => (
                   <tr key={op.name} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                    <td className="px-6 py-4.5 font-black text-[#0F2B7A] dark:text-white">{op.name}</td>
+                    <td className="px-6 py-4.5 font-black text-[#111E79] dark:text-white">{op.name}</td>
                     <td className="px-6 py-4.5">
                       <span className="rounded bg-slate-100 px-2.5 py-1 font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-350">
                         {op.role}
@@ -234,7 +226,7 @@ export default function AdminRolePage() {
                       <Clock className="size-3.5" />
                       <span>{log.timestamp}</span>
                     </td>
-                    <td className="px-6 py-4.5 font-black text-[#0F2B7A] dark:text-white">{log.operator}</td>
+                    <td className="px-6 py-4.5 font-black text-[#111E79] dark:text-white">{log.operator}</td>
                     <td className="px-6 py-4.5 font-semibold text-slate-600 dark:text-slate-350">{log.action}</td>
                     <td className="px-6 py-4.5 font-mono text-slate-450 font-bold">{log.ip}</td>
                   </tr>

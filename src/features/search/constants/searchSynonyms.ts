@@ -1,0 +1,15 @@
+export const searchSynonyms: Record<string, string[]> = {
+  ai: ["artificial intelligence", "machine learning"],
+  ml: ["machine learning", "artificial intelligence", "deep learning"],
+  ds: ["data science", "data analytics"],
+  js: ["javascript"],
+  ts: ["typescript"],
+  react: ["reactjs", "react.js"],
+  node: ["nodejs", "node.js"],
+  python: ["py"],
+  frontend: ["front end", "ui", "ux", "user interface"],
+  backend: ["back end", "server", "database"],
+  seo: ["search engine optimization"],
+  cybersecurity: ["cyber security", "security", "hacking", "infosec"],
+  cloud: ["aws", "azure", "gcp", "devops"],
+};

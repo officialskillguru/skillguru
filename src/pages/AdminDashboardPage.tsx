@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  TrendingUp,
   Users,
   BookOpen,
   DollarSign,
@@ -8,19 +7,11 @@ import {
   Sparkles,
   MessageSquare,
   Percent,
-  Plus,
   FileText,
   UserPlus,
   Award,
   ChevronRight,
-  ArrowUpRight,
-  ArrowDownRight,
-  Filter,
-  CheckCircle,
-  Download,
-  Calendar,
   X,
-  Play,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -32,9 +23,6 @@ import {
   CartesianGrid,
   BarChart,
   Bar,
-  LineChart,
-  Line,
-  Legend,
 } from "recharts";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -201,7 +189,7 @@ export default function AdminDashboardPage() {
 
       {/* KPI Stats Cards Grid */}
       <GsapReveal direction="up" delay={0.1} className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {metrics.map((card, idx) => {
+        {metrics.map((card) => {
           const Icon = card.icon;
           return (
             <motion.div

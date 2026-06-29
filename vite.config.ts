@@ -14,7 +14,7 @@ function buildTimestamp(): Plugin {
 }
 
 export default defineConfig({
-  base: "/HR-Remedy-India-Education/",
+  base: "/Skill-Guru-India-Education/",
 
   plugins: [react(), tailwindcss(), buildTimestamp()],
 

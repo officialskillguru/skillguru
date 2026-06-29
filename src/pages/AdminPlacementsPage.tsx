@@ -1,17 +1,11 @@
 import { useState } from "react";
 import {
-  TrendingUp,
   Award,
   Building2,
   DollarSign,
-  ChevronRight,
-  Filter,
   Download,
-  Calendar,
-  Briefcase,
   Users,
   Search,
-  CheckCircle,
 } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -55,7 +49,7 @@ const partnerHiringData = [
 ];
 
 export default function AdminPlacementsPage() {
-  const [sectorFilter, setSectorFilter] = useState("All");
+  const [sectorFilter, _setSectorFilter] = useState("All");
   const [search, setSearch] = useState("");
 
   const handleExport = () => {
@@ -73,7 +67,7 @@ export default function AdminPlacementsPage() {
       {/* Header */}
       <GsapReveal direction="up" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#0F2B7A] dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
             Corporate Placements Command
           </h1>
           <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
@@ -97,7 +91,7 @@ export default function AdminPlacementsPage() {
           { label: "Highest Package", count: "24.0 LPA", desc: "Top tech candidate tier", icon: DollarSign },
           { label: "Average Package", count: "8.5 LPA", desc: "Median salary baseline", icon: DollarSign },
           { label: "Hiring Partners", count: "150+", desc: "Active tech recruiters", icon: Building2 },
-        ].map((card, idx) => {
+        ].map((card) => {
           const Icon = card.icon;
           return (
             <div
@@ -108,11 +102,11 @@ export default function AdminPlacementsPage() {
                 <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">
                   {card.label}
                 </span>
-                <span className="rounded-lg bg-[#EEF3FA] p-1.5 text-[#0F2B7A] dark:bg-slate-800 dark:text-cyan-300">
+                <span className="rounded-lg bg-[#EEF3FA] p-1.5 text-[#111E79] dark:bg-slate-800 dark:text-cyan-300">
                   <Icon className="size-3.5" />
                 </span>
               </div>
-              <p className="mt-3 text-xl font-black text-[#0F2B7A] dark:text-white">{card.count}</p>
+              <p className="mt-3 text-xl font-black text-[#111E79] dark:text-white">{card.count}</p>
               <p className="mt-1 text-[10px] font-bold text-slate-400">{card.desc}</p>
             </div>
           );
@@ -124,7 +118,7 @@ export default function AdminPlacementsPage() {
         {/* Monthly Hire Trends */}
         <GsapReveal direction="up" delay={0.2} className="rounded-2xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-7">
           <div>
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">Hiring Intensity Index</h3>
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">Hiring Intensity Index</h3>
             <p className="text-xs font-semibold text-slate-400">Hires and active recruiters month-over-month</p>
           </div>
 
@@ -133,15 +127,15 @@ export default function AdminPlacementsPage() {
               <AreaChart data={placementTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="hiresGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0F2B7A" stopOpacity={0.15} />
-                    <stop offset="95%" stopColor="#0F2B7A" stopOpacity={0.0} />
+                    <stop offset="5%" stopColor="#111E79" stopOpacity={0.15} />
+                    <stop offset="95%" stopColor="#111E79" stopOpacity={0.0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" className="dark:stroke-slate-800" />
                 <XAxis dataKey="name" stroke="#94A3B8" fontSize={10} tickLine={false} />
                 <YAxis stroke="#94A3B8" fontSize={10} tickLine={false} />
-                <Tooltip contentStyle={{ backgroundColor: "#0F2B7A", color: "#fff", borderRadius: 12 }} />
-                <Area type="monotone" dataKey="hires" name="Students Placed" stroke="#0F2B7A" fill="url(#hiresGrad)" strokeWidth={3} />
+                <Tooltip contentStyle={{ backgroundColor: "#111E79", color: "#fff", borderRadius: 12 }} />
+                <Area type="monotone" dataKey="hires" name="Students Placed" stroke="#111E79" fill="url(#hiresGrad)" strokeWidth={3} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -150,7 +144,7 @@ export default function AdminPlacementsPage() {
         {/* Salary distribution histogram */}
         <GsapReveal direction="up" delay={0.25} className="rounded-2xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900 lg:col-span-5">
           <div>
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">LPA Salary Distribution</h3>
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">LPA Salary Distribution</h3>
             <p className="text-xs font-semibold text-slate-400">Total placed student counts by salary bracket</p>
           </div>
 
@@ -172,7 +166,7 @@ export default function AdminPlacementsPage() {
       <GsapReveal direction="up" delay={0.3} className="rounded-2xl border border-[#DDE7F6] bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h3 className="text-base font-black text-[#0F2B7A] dark:text-cyan-200">Active Recruiting Partners</h3>
+            <h3 className="text-base font-black text-[#111E79] dark:text-cyan-200">Active Recruiting Partners</h3>
             <p className="text-xs font-semibold text-slate-400">Verify corporate accounts and placement ledgers</p>
           </div>
 
@@ -193,7 +187,7 @@ export default function AdminPlacementsPage() {
         {/* Partners grid */}
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
           {filteredPartners.map((rec) => (
-            <div key={rec.name} className="flex flex-col justify-between rounded-2xl border border-slate-100 p-4 hover:border-[#0F2B7A]/20 hover:bg-[#EEF3FA]/10 dark:border-slate-850 dark:hover:bg-slate-850/10">
+            <div key={rec.name} className="flex flex-col justify-between rounded-2xl border border-slate-100 p-4 hover:border-[#111E79]/20 hover:bg-[#EEF3FA]/10 dark:border-slate-850 dark:hover:bg-slate-850/10">
               <div className="flex items-center justify-between">
                 <span className="rounded bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                   {rec.sector}
@@ -213,7 +207,7 @@ export default function AdminPlacementsPage() {
               <div className="border-t border-slate-50 pt-3 dark:border-slate-850">
                 <p className="text-[10px] font-bold text-slate-400">Total Hires</p>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-black text-[#0F2B7A] dark:text-white">{rec.hires} Placements</p>
+                  <p className="text-sm font-black text-[#111E79] dark:text-white">{rec.hires} Placements</p>
                   <span className="text-[9px] font-black text-cyan-600 dark:text-cyan-400 uppercase">{rec.status}</span>
                 </div>
               </div>

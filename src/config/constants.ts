@@ -28,12 +28,12 @@ export const brandColors = {
 export const appConstants = {
   defaultLocale: "en-IN",
   timezone: "Asia/Kolkata",
-  leadCookieName: "hr_remedy_lead_source",
-  csrfCookieName: "hr_remedy_csrf",
+  leadCookieName: "skill_guru_lead_source",
+  csrfCookieName: "skill_guru_csrf",
   /** Contact details — update these when real info is available */
-  phone: "+91-XXXX-XXXXXX",
-  email: "info@hrremedyindia.com",
-  address: "Pune, Maharashtra, India",
+  phone: "+91 91090 72316",
+  email: "info@skillguru.com",
+  address: "1st Floor, ZR Tower, Civil Lines, Vadodara, Gujarat - 390002",
   /** Social links — update when available */
   social: {
     linkedin: "#",
