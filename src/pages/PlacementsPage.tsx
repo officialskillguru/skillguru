@@ -125,7 +125,7 @@ export default function PlacementsPage() {
   }, []);
 
   return (
-    <main ref={pageRef} className="page-shell overflow-hidden">
+    <main ref={pageRef} className="page-shell overflow-x-clip">
       <section className="relative isolate overflow-hidden bg-[#111E79] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_20%,rgba(25,217,255,0.24),transparent_28rem)]" />
         <div className="relative mx-auto grid max-w-[1280px] gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">

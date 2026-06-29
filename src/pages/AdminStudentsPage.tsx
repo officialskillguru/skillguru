@@ -4,6 +4,7 @@ import {
   Award,
   MoreVertical,
   X,
+  Link,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -107,7 +108,7 @@ export default function AdminStudentsPage() {
 
       {/* Students Data Table */}
       <div className="overflow-hidden rounded-2xl border border-[#DDE7F6] bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto hidden md:block">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#DDE7F6] bg-[#EEF3FA]/40 text-[10px] font-black uppercase tracking-wider text-[#64748B] dark:border-slate-850 dark:bg-slate-900/50">
@@ -177,6 +178,66 @@ export default function AdminStudentsPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Cards View */}
+        <div className="md:hidden divide-y divide-[#DDE7F6] dark:divide-slate-850">
+          {filteredStudents.length === 0 ? (
+            <div className="p-8 text-center text-sm font-semibold text-slate-400">
+              No student records matched the active filter.
+            </div>
+          ) : (
+            filteredStudents.map((s) => (
+              <div key={s.id} onClick={() => handleRowClick(s)} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/20 cursor-pointer">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#111E79] to-blue-800 text-white font-black text-xs shrink-0">
+                      {s.name.slice(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-black text-[#111E79] dark:text-slate-100">{s.name}</p>
+                      <p className="text-[10px] font-bold text-slate-400">{s.email}</p>
+                    </div>
+                  </div>
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
+                    s.status === "Active" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" :
+                    s.status === "Completed" ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" :
+                    "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
+                  }`}>
+                    {s.status}
+                  </span>
+                </div>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-semibold">Program:</span>
+                    <span className="font-bold text-slate-700 dark:text-slate-200">{s.course}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-500 font-semibold">Progress:</span>
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-850 shrink-0">
+                        <div className="h-full bg-[#22D3EE] rounded-full" style={{ width: `${s.progress}%` }} />
+                      </div>
+                      <span className="font-black text-slate-700 dark:text-slate-200">{s.progress}%</span>
+                    </div>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-semibold">Median Score:</span>
+                    <span className="font-black text-cyan-600 dark:text-cyan-400">{s.score}%</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-500 font-semibold">Joined:</span>
+                    <span className="font-bold text-slate-450">{s.joined}</span>
+                  </div>
+                </div>
+                <div className="mt-4 flex justify-end">
+                  <button onClick={(e) => { e.stopPropagation(); toast.success("Magic Login link dispatched."); }} className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
+                    <Link className="size-3" /> Magic Link
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

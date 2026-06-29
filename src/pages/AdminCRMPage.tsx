@@ -139,7 +139,7 @@ export default function AdminCRMPage() {
       </div>
 
       {/* Kanban Board Container */}
-      <div className="grid gap-4 overflow-x-auto pb-4 md:grid-cols-5 min-w-[1000px]">
+      <div className="grid gap-4 pb-4 md:grid-cols-5 md:overflow-x-visible md:min-w-0">
         {columns.map((col) => {
           const colLeads = filteredLeads.filter((l) => l.status === col.id);
           return (

@@ -12,7 +12,7 @@ export function MentorHero({ mentor }: MentorHeroProps) {
       <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-96 h-96 bg-[#19C7C8] rounded-full blur-[120px] opacity-20 pointer-events-none" />
       <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-96 h-96 bg-[#5B35F2] rounded-full blur-[100px] opacity-40 pointer-events-none" />
 
-      <div className="relative z-10 flex flex-col md:row gap-8 items-start md:items-center">
+      <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
         {/* Avatar */}
         <div className="relative shrink-0">
           <div className="w-32 h-32 md:w-40 md:h-40 rounded-2xl overflow-hidden border-4 border-white/10 shadow-2xl relative">

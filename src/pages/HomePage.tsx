@@ -101,7 +101,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <main className="page-shell overflow-hidden">
+    <main className="page-shell overflow-x-clip">
       <section className="hero-section relative isolate overflow-hidden bg-[#020817] text-white">
         <div className="hero-media">
           <video

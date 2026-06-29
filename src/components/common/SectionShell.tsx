@@ -18,7 +18,7 @@ export function SectionShell({
   return (
     <section
       className={cn(
-        "relative overflow-hidden py-10 sm:py-[60px] lg:py-[100px]",
+        "relative py-10 sm:py-16 lg:py-24",
         tone === "light" && "bg-[#F8FAFF]",
         tone === "white" && "bg-white",
         tone === "dark" && "bg-[#111E79] text-white",
