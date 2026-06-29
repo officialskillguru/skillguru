@@ -14,7 +14,6 @@ function buildTimestamp(): Plugin {
 }
 
 export default defineConfig({
-  base: "/Skill-Guru-India-Education/",
 
   plugins: [react(), tailwindcss(), buildTimestamp()],
 
