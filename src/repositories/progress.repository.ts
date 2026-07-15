@@ -20,7 +20,7 @@ export class ProgressRepository extends BaseRepository<"lesson_progress"> {
     try {
       const { data: result, error } = await this.client
         .from("lesson_progress")
-        .upsert(data as never, { onConflict: "enrollment_id,lesson_id" })
+        .upsert(data, { onConflict: "enrollment_id,lesson_id" })
         .select()
         .single();
 

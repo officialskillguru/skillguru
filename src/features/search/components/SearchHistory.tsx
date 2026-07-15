@@ -24,7 +24,7 @@ export function SearchHistory() {
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Recent Searches</h3>
-        <button onClick={handleClear} className="text-xs text-[#5B35F2] hover:underline">Clear</button>
+        <button onClick={handleClear} className="text-xs text-secondary hover:underline">Clear</button>
       </div>
       <div className="space-y-1">
         {history.map((q) => (
@@ -35,7 +35,7 @@ export function SearchHistory() {
           >
             <div className="flex items-center gap-3">
               <Clock className="size-4 text-slate-400" />
-              <span className="text-sm font-medium text-slate-700 group-hover:text-[#111E79]">{q}</span>
+              <span className="text-sm font-medium text-slate-700 group-hover:text-primary">{q}</span>
             </div>
             <span
               onClick={(e) => handleRemove(e, q)}

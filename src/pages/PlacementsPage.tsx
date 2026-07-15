@@ -126,81 +126,81 @@ export default function PlacementsPage() {
 
   return (
     <main ref={pageRef} className="page-shell overflow-x-clip">
-      <section className="relative isolate overflow-hidden bg-[#111E79] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
+      <section className="relative isolate overflow-hidden bg-primary px-4 py-16 text-primary-foreground sm:px-6 lg:px-8 lg:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_78%_20%,rgba(25,217,255,0.24),transparent_28rem)]" />
         <div className="relative mx-auto grid max-w-[1280px] gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
           <div>
-            <p className="placement-reveal text-xs font-black uppercase tracking-[0.22em] text-[#19C7C8]">Placements</p>
+            <p className="placement-reveal text-xs font-black uppercase tracking-[0.22em] text-accent">Placements</p>
             <h1 className="placement-reveal mt-5 max-w-3xl text-4xl font-black leading-tight sm:text-6xl">Our Placement Success Stories</h1>
-            <p className="placement-reveal mt-5 max-w-xl text-base leading-8 text-white/76">
+            <p className="placement-reveal mt-5 max-w-xl text-base leading-8 text-primary-foreground/76">
               Discover how SkillGuru students transformed their careers and landed opportunities at top companies.
             </p>
-            <a href="#success-stories" className="placement-reveal mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-[#19C7C8] px-5 text-sm font-bold text-[#111E79] transition duration-300 hover:-translate-y-1 hover:bg-white">
+            <a href="#success-stories" className="placement-reveal mt-8 inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] bg-accent px-5 text-sm font-bold text-primary transition duration-300 hover:-translate-y-1 hover:bg-primary-foreground hover:text-primary">
               Explore Success Stories
               <ArrowRight className="size-4" />
             </a>
           </div>
           <div className="placement-reveal grid gap-4 sm:grid-cols-2">
             {successStories.slice(0, 4).map((story) => (
-              <article key={story.name} className="rounded-[20px] border border-white/15 bg-white/8 p-5 backdrop-blur-xl">
+              <article key={story.name} className="rounded-[20px] border border-white/15 bg-white/5 p-5 backdrop-blur-xl">
                 <div className="flex items-center gap-4">
                   <img src={story.avatar} alt={story.name} className="size-14 rounded-full object-cover ring-4 ring-white/10" />
                   <div>
                     <h2 className="font-black">{story.name}</h2>
-                    <p className="text-sm text-[#19C7C8]">{story.company}</p>
+                    <p className="text-sm text-accent">{story.company}</p>
                   </div>
                 </div>
-                <p className="mt-5 text-3xl font-black text-[#19C7C8]">{story.package}</p>
-                <p className="mt-1 text-sm text-white/68">{story.course}</p>
+                <p className="mt-5 text-3xl font-black text-accent">{story.package}</p>
+                <p className="mt-1 text-sm text-primary-foreground/68">{story.course}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-white px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-24">
-        <div className="mx-auto grid max-w-[1280px] gap-4 rounded-[24px] border border-[#E5EAF5] bg-white p-5 shadow-[0_24px_80px_rgba(10,42,136,0.14)] sm:grid-cols-2 lg:grid-cols-6">
+      <section className="bg-card px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-24">
+        <div className="mx-auto grid max-w-[1280px] gap-4 rounded-[24px] border border-border bg-card p-5 shadow-[0_24px_80px_rgba(10,42,136,0.14)] sm:grid-cols-2 lg:grid-cols-6">
           {placementStats.map((stat) => {
             const Icon = stat.icon;
             return (
-              <article key={stat.label} className="rounded-[18px] bg-[#F8FAFF] p-5">
-                <Icon className="size-5 text-[#5B35F2]" />
-                <p className="mt-4 text-2xl font-black text-[#111E79]">
+              <article key={stat.label} className="rounded-[18px] bg-muted p-5">
+                <Icon className="size-5 text-secondary" />
+                <p className="mt-4 text-2xl font-black text-primary">
                   <span data-count={stat.value}>0</span>{stat.suffix}
                 </p>
-                <p className="mt-1 text-xs font-bold text-[#64748B]">{stat.label}</p>
+                <p className="mt-1 text-xs font-bold text-muted-foreground">{stat.label}</p>
               </article>
             );
           })}
         </div>
       </section>
 
-      <section id="success-stories" className="placement-stories bg-[#F8FAFF] px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
+      <section id="success-stories" className="placement-stories bg-muted px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
         <div className="mx-auto max-w-[1280px]">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Success Stories</p>
-              <h2 className="mt-4 text-3xl font-black text-[#111E79] sm:text-5xl">Student Outcomes, In One Place</h2>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-secondary">Success Stories</p>
+              <h2 className="mt-4 text-3xl font-black text-primary sm:text-5xl">Student Outcomes, In One Place</h2>
             </div>
-            <p className="max-w-md text-sm leading-7 text-[#64748B]">Every story connects training, mentorship, projects, and placement support into a measurable career result.</p>
+            <p className="max-w-md text-sm leading-7 text-muted-foreground">Every story connects training, mentorship, projects, and placement support into a measurable career result.</p>
           </div>
           <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             {successStories.map((story) => (
-              <article key={story.name} className="placement-card premium-surface overflow-hidden rounded-[20px] border border-[#E5EAF5] bg-white shadow-[0_18px_55px_rgba(10,42,136,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_78px_rgba(17,71,255,0.15)]">
-                <div className="relative h-40 bg-[#111E79]">
+              <article key={story.name} className="placement-card premium-surface overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_55px_rgba(10,42,136,0.08)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_26px_78px_rgba(17,71,255,0.15)]">
+                <div className="relative h-40 bg-primary">
                   <img src={story.avatar} alt={story.name} className="size-full object-cover object-top opacity-92" loading="lazy" />
-                  <span className="absolute left-4 top-4 rounded-full bg-white px-3 py-1 text-xs font-black text-[#111E79]">{story.package}</span>
-                  <img src={story.companyLogo} alt={story.company} className="absolute bottom-4 right-4 h-8 max-w-24 rounded-lg bg-white p-1.5 object-contain" />
+                  <span className="absolute left-4 top-4 rounded-full bg-card px-3 py-1 text-xs font-black text-primary">{story.package}</span>
+                  <img src={story.companyLogo} alt={story.company} className="absolute bottom-4 right-4 h-8 max-w-24 rounded-lg bg-card p-1.5 object-contain" />
                 </div>
                 <div className="p-5">
-                  <h3 className="text-xl font-black text-[#111E79]">{story.name}</h3>
-                  <p className="mt-1 text-sm font-semibold text-[#5B35F2]">{story.course}</p>
-                  <div className="mt-5 grid gap-3 text-sm text-[#64748B]">
-                    <span>Company <strong className="block text-[#111E79]">{story.company}</strong></span>
-                    <span>Location <strong className="block text-[#111E79]">India</strong></span>
+                  <h3 className="text-xl font-black text-primary">{story.name}</h3>
+                  <p className="mt-1 text-sm font-semibold text-secondary">{story.course}</p>
+                  <div className="mt-5 grid gap-3 text-sm text-muted-foreground">
+                    <span>Company <strong className="block text-primary">{story.company}</strong></span>
+                    <span>Location <strong className="block text-primary">India</strong></span>
                   </div>
-                  <p className="mt-5 line-clamp-3 text-sm leading-6 text-[#475569]">{story.quote}</p>
-                  <Link to={placementStoryRoute(placementStoryId(story))} className="mt-5 inline-flex items-center gap-2 text-sm font-black text-[#5B35F2]">
+                  <p className="mt-5 line-clamp-3 text-sm leading-6 text-foreground/80">{story.quote}</p>
+                  <Link to={placementStoryRoute(placementStoryId(story))} className="mt-5 inline-flex items-center gap-2 text-sm font-black text-secondary">
                     Watch Story <ArrowRight className="size-4" />
                   </Link>
                 </div>
@@ -210,22 +210,22 @@ export default function PlacementsPage() {
         </div>
       </section>
 
-      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
+      <section className="bg-card px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
         <div className="mx-auto max-w-[1280px]">
-          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Video Testimonials</p>
-          <h2 className="mt-4 text-center text-3xl font-black text-[#111E79] sm:text-5xl">Student Experience Videos</h2>
+          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-secondary">Video Testimonials</p>
+          <h2 className="mt-4 text-center text-3xl font-black text-primary sm:text-5xl">Student Experience Videos</h2>
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {successStories.slice(0, 3).map((story) => (
-              <article key={story.name} className="premium-surface overflow-hidden rounded-[20px] border border-[#E5EAF5] bg-white shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
-                <div className="relative h-56 bg-[#111E79]">
+              <article key={story.name} className="premium-surface overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
+                <div className="relative h-56 bg-primary">
                   <img src={story.avatar} alt={story.name} className="size-full object-cover object-top opacity-80" loading="lazy" />
-                  <button type="button" className="absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 text-[#5B35F2] shadow-[0_18px_50px_rgba(0,0,0,0.22)]" aria-label={`Play ${story.name} story`}>
+                  <button type="button" className="absolute left-1/2 top-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-card/92 text-secondary shadow-[0_18px_50px_rgba(0,0,0,0.22)] hover:bg-card transition-colors" aria-label={`Play ${story.name} story`}>
                     <CirclePlay className="size-8" />
                   </button>
                 </div>
                 <div className="p-5">
-                  <h3 className="font-black text-[#111E79]">{story.name}</h3>
-                  <p className="text-sm font-semibold text-[#64748B]">{story.company}</p>
+                  <h3 className="font-black text-primary">{story.name}</h3>
+                  <p className="text-sm font-semibold text-muted-foreground">{story.company}</p>
                 </div>
               </article>
             ))}
@@ -233,13 +233,13 @@ export default function PlacementsPage() {
         </div>
       </section>
 
-      <section className="bg-[#F8FAFF] px-4 py-12 sm:px-6 lg:px-8">
-        <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[24px] border border-[#E5EAF5] bg-white p-6 shadow-[0_20px_70px_rgba(10,42,136,0.1)]">
-          <p className="text-center text-sm font-black text-[#111E79]">Hiring Partners</p>
+      <section className="bg-muted px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-[1280px] overflow-hidden rounded-[24px] border border-border bg-card p-6 shadow-[0_20px_70px_rgba(10,42,136,0.1)]">
+          <p className="text-center text-sm font-black text-primary">Hiring Partners</p>
           <div className="mt-6 overflow-hidden">
             <div ref={marqueeRef} className="flex w-max items-center gap-5">
               {[...recruiters, ...recruiters, ...recruiters].map((partner, index) => (
-                <div key={`${partner}-${index}`} className="grid h-16 w-40 shrink-0 place-items-center rounded-[16px] border border-[#E5EAF5] bg-white px-5">
+                <div key={`${partner}-${index}`} className="grid h-16 w-40 shrink-0 place-items-center rounded-[16px] border border-border bg-card px-5">
                   <RecruiterLogo name={partner} />
                 </div>
               ))}
@@ -248,53 +248,53 @@ export default function PlacementsPage() {
         </div>
       </section>
 
-      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
+      <section className="bg-card px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
         <div className="mx-auto max-w-[1280px]">
-          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Career Transformation Journey</p>
-          <h2 className="mt-4 text-center text-3xl font-black text-[#111E79] sm:text-5xl">Before Joining to Placement</h2>
+          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-secondary">Career Transformation Journey</p>
+          <h2 className="mt-4 text-center text-3xl font-black text-primary sm:text-5xl">Before Joining to Placement</h2>
           <div className="mt-12 grid gap-6 lg:grid-cols-5">
             {journey.map(([title, description], index) => (
-              <article key={title} className="relative rounded-[20px] border border-[#E5EAF5] bg-white p-6 text-center shadow-[0_16px_50px_rgba(10,42,136,0.08)]">
-                <span className="mx-auto grid size-12 place-items-center rounded-full bg-[#5B35F2] text-lg font-black text-white">{index + 1}</span>
-                <h3 className="mt-5 font-black text-[#111E79]">{title}</h3>
-                <p className="mt-2 text-sm leading-6 text-[#64748B]">{description}</p>
+              <article key={title} className="relative rounded-[20px] border border-border bg-card p-6 text-center shadow-[0_16px_50px_rgba(10,42,136,0.08)]">
+                <span className="mx-auto grid size-12 place-items-center rounded-full bg-secondary text-lg font-black text-primary-foreground">{index + 1}</span>
+                <h3 className="mt-5 font-black text-primary">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{description}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-[#F8FAFF] px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
+      <section className="bg-muted px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
         <div className="mx-auto grid max-w-[1280px] gap-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Student Reviews</p>
-            <h2 className="mt-4 text-3xl font-black text-[#111E79] sm:text-5xl">Trusted by Career Switchers</h2>
-            <p className="mt-4 max-w-lg text-sm leading-7 text-[#64748B]">Placement feedback from students who used mentorship, projects, and interview preparation to move forward.</p>
+            <p className="text-xs font-black uppercase tracking-[0.22em] text-secondary">Student Reviews</p>
+            <h2 className="mt-4 text-3xl font-black text-primary sm:text-5xl">Trusted by Career Switchers</h2>
+            <p className="mt-4 max-w-lg text-sm leading-7 text-muted-foreground">Placement feedback from students who used mentorship, projects, and interview preparation to move forward.</p>
           </div>
           <div className="grid gap-5 md:grid-cols-2">
             {successStories.slice(0, 4).map((story) => (
-              <article key={story.name} className="rounded-[20px] border border-[#E5EAF5] bg-white p-5 shadow-[0_16px_50px_rgba(10,42,136,0.08)]">
+              <article key={story.name} className="rounded-[20px] border border-border bg-card p-5 shadow-[0_16px_50px_rgba(10,42,136,0.08)]">
                 <div className="flex gap-1 text-amber-400">{Array.from({ length: 5 }).map((_, index) => <Star key={index} className="size-4 fill-current" />)}</div>
-                <p className="mt-4 text-sm leading-7 text-[#475569]">"{story.quote}"</p>
-                <p className="mt-4 text-sm font-black text-[#111E79]">- {story.name}</p>
+                <p className="mt-4 text-sm leading-7 text-foreground/80">"{story.quote}"</p>
+                <p className="mt-4 text-sm font-black text-primary">- {story.name}</p>
               </article>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
+      <section className="bg-card px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
         <div className="mx-auto max-w-[1280px]">
-          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Placement Support</p>
-          <h2 className="mt-4 text-center text-3xl font-black text-[#111E79] sm:text-5xl">Support Built Around Hiring</h2>
+          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-secondary">Placement Support</p>
+          <h2 className="mt-4 text-center text-3xl font-black text-primary sm:text-5xl">Support Built Around Hiring</h2>
           <div className="mt-10 grid gap-5 md:grid-cols-5">
             {support.map((item) => {
               const Icon = item.icon;
               return (
-                <article key={item.title} className="premium-surface rounded-[20px] border border-[#E5EAF5] bg-white p-5 shadow-[0_16px_45px_rgba(10,42,136,0.07)]">
-                  <Icon className="size-6 text-[#5B35F2]" />
-                  <h3 className="mt-5 font-black text-[#111E79]">{item.title}</h3>
-                  <p className="mt-2 text-sm leading-6 text-[#64748B]">{item.description}</p>
+                <article key={item.title} className="premium-surface rounded-[20px] border border-border bg-card p-5 shadow-[0_16px_45px_rgba(10,42,136,0.07)]">
+                  <Icon className="size-6 text-secondary" />
+                  <h3 className="mt-5 font-black text-primary">{item.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{item.description}</p>
                 </article>
               );
             })}
@@ -302,31 +302,31 @@ export default function PlacementsPage() {
         </div>
       </section>
 
-      <section className="bg-[#F8FAFF] px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
+      <section className="bg-muted px-4 py-12 sm:px-6 lg:px-8 lg:py-[90px]">
         <div className="mx-auto max-w-[920px]">
-          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Placement FAQ</p>
-          <h2 className="mt-4 text-center text-3xl font-black text-[#111E79] sm:text-5xl">Questions Before You Start</h2>
-          <div className="mt-10 divide-y divide-[#E5EAF5] overflow-hidden rounded-[20px] border border-[#E5EAF5] bg-white shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
+          <p className="text-center text-xs font-black uppercase tracking-[0.22em] text-secondary">Placement FAQ</p>
+          <h2 className="mt-4 text-center text-3xl font-black text-primary sm:text-5xl">Questions Before You Start</h2>
+          <div className="mt-10 divide-y divide-border overflow-hidden rounded-[20px] border border-border bg-card shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
             {faqs.slice(0, 5).map((faq, index) => (
               <details key={faq.question} className="group p-5" open={index === 0}>
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-black text-[#111E79]">
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-black text-primary">
                   {faq.question}
-                  <span className="text-[#5B35F2] transition group-open:rotate-45">+</span>
+                  <span className="text-secondary transition group-open:rotate-45">+</span>
                 </summary>
-                <p className="mt-3 text-sm leading-7 text-[#64748B]">{faq.answer}</p>
+                <p className="mt-3 text-sm leading-7 text-muted-foreground">{faq.answer}</p>
               </details>
             ))}
           </div>
         </div>
       </section>
 
-      <section className="bg-white px-4 py-12 sm:px-6 lg:px-8">
-        <div className="brand-gradient mx-auto grid max-w-[1280px] gap-6 rounded-[24px] p-7 text-white shadow-[0_24px_80px_rgba(10,42,136,0.2)] md:grid-cols-[1fr_auto] md:items-center">
+      <section className="bg-card px-4 py-12 sm:px-6 lg:px-8">
+        <div className="brand-gradient mx-auto grid max-w-[1280px] gap-6 rounded-[24px] p-7 text-primary-foreground shadow-[0_24px_80px_rgba(10,42,136,0.2)] md:grid-cols-[1fr_auto] md:items-center">
           <div>
             <h2 className="text-3xl font-black leading-tight sm:text-4xl">Build your placement plan with SkillGuru.</h2>
-            <p className="mt-3 max-w-2xl text-sm leading-7 text-white/74">Talk to a counsellor and choose the right course, projects, and placement roadmap for your target role.</p>
+            <p className="mt-3 max-w-2xl text-sm leading-7 text-primary-foreground/74">Talk to a counsellor and choose the right course, projects, and placement roadmap for your target role.</p>
           </div>
-          <CTAButton to={routes.freeCounselling} className="bg-[#19C7C8] text-[#111E79] hover:bg-white">
+          <CTAButton to={routes.freeCounselling} className="bg-accent text-primary hover:bg-primary-foreground hover:text-primary">
             Book Free Career Counselling
           </CTAButton>
         </div>

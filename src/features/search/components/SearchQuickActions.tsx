@@ -21,7 +21,7 @@ export function SearchQuickActions({ onClose }: { onClose: () => void }) {
             onClick={onClose}
             className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition group"
           >
-            <div className="flex items-center gap-3 text-slate-600 group-hover:text-[#111E79]">
+            <div className="flex items-center gap-3 text-slate-600 group-hover:text-primary">
               {action.icon}
               <span className="text-sm font-semibold">{action.label}</span>
             </div>

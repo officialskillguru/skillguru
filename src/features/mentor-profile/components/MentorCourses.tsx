@@ -12,7 +12,7 @@ export function MentorCourses({ mentor }: { mentor: Mentor }) {
 
       <div className="flex flex-col gap-6">
         {mentor.coursesTaught.map((course) => (
-          <div key={course.id} className="flex flex-col md:row gap-6 p-4 rounded-2xl border border-slate-100 hover:border-[#5B35F2]/20 hover:shadow-lg hover:shadow-[#5B35F2]/5 transition-all group bg-slate-50/50">
+          <div key={course.id} className="flex flex-col md:row gap-6 p-4 rounded-2xl border border-slate-100 hover:border-secondary/20 hover:shadow-lg hover:shadow-secondary/5 transition-all group bg-slate-50/50">
             {/* Thumbnail */}
             <div className="w-full md:w-48 h-32 md:h-auto rounded-xl overflow-hidden relative shrink-0 bg-slate-200">
               <img src={course.thumbnail} alt={course.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -22,7 +22,7 @@ export function MentorCourses({ mentor }: { mentor: Mentor }) {
             {/* Details */}
             <div className="flex flex-col grow justify-center">
               <div className="flex items-start justify-between gap-4 mb-2">
-                <h3 className="text-xl font-bold text-slate-900 group-hover:text-[#5B35F2] transition-colors">{course.title}</h3>
+                <h3 className="text-xl font-bold text-slate-900 group-hover:text-secondary transition-colors">{course.title}</h3>
                 <span className="hidden md:inline-flex px-2.5 py-1 bg-white border border-slate-200 text-slate-600 text-xs font-semibold rounded-lg">
                   {course.difficulty}
                 </span>
@@ -42,7 +42,7 @@ export function MentorCourses({ mentor }: { mentor: Mentor }) {
                   {course.rating}
                 </div>
                 {course.hasCertificate && (
-                  <div className="flex items-center gap-1.5 text-[#19C7C8]">
+                  <div className="flex items-center gap-1.5 text-accent">
                     <Award className="w-4 h-4" />
                     Certificate
                   </div>
@@ -53,7 +53,7 @@ export function MentorCourses({ mentor }: { mentor: Mentor }) {
                 <div className="text-sm text-slate-500 font-medium">
                   Includes {course.projectsCount} hands-on projects
                 </div>
-                <a href={`#/courses/${course.slug}`} className="text-sm font-bold text-[#5B35F2] hover:text-[#2F1F8A] transition-colors">
+                <a href={`#/courses/${course.slug}`} className="text-sm font-bold text-secondary hover:text-indigo-900 transition-colors">
                   View Details &rarr;
                 </a>
               </div>

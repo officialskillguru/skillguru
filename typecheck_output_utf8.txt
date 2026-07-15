@@ -1,0 +1,4 @@
+﻿
+> skill-guru-india-education@0.1.0 typecheck
+> tsc --noEmit
+

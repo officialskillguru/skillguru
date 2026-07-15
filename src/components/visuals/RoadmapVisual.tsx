@@ -28,8 +28,8 @@ export function RoadmapVisual() {
             </linearGradient>
           </defs>
         </svg>
-        <div className="absolute left-1/2 top-1/2 grid size-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[2rem] border border-[#00C2FF]/30 bg-[#031B34] shadow-[0_0_60px_rgba(0,194,255,0.30)]">
-          <div className="grid size-24 place-items-center rounded-full bg-gradient-to-br from-[#00C2FF] to-[#2563EB]">
+        <div className="absolute left-1/2 top-1/2 grid size-36 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-[2rem] border border-accent/30 bg-slate-900 shadow-[0_0_60px_rgba(0,194,255,0.30)]">
+          <div className="grid size-24 place-items-center rounded-full bg-gradient-to-br from-accent to-primary">
             <BrainCircuit className="size-11 text-white" />
           </div>
           <span className="absolute -bottom-10 text-center text-sm font-black text-white">AI Career Engine</span>
@@ -38,8 +38,8 @@ export function RoadmapVisual() {
           const Icon = node.icon;
           return (
             <div key={node.label} className={`absolute ${node.className}`}>
-              <div className="group min-w-28 rounded-2xl border border-white/12 bg-[#071f3f]/90 p-3 text-center shadow-[0_20px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl transition hover:-translate-y-1">
-                <div className="mx-auto grid size-11 place-items-center rounded-xl bg-[#00C2FF]/15 text-[#4DE2FF]">
+              <div className="group min-w-28 rounded-2xl border border-white/12 bg-card/90 p-3 text-center shadow-[0_20px_50px_rgba(0,0,0,0.25)] backdrop-blur-xl transition hover:-translate-y-1">
+                <div className="mx-auto grid size-11 place-items-center rounded-xl bg-accent/15 text-accent">
                   <Icon className="size-5" />
                 </div>
                 <p className="mt-2 text-[11px] font-bold leading-tight text-white/86">{node.label}</p>

@@ -98,10 +98,10 @@ export default function MentorProfilePage() {
       </div>
 
       {/* Mobile Sticky CTA */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-xl border-t border-slate-200/50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] lg:hidden z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-card/80 backdrop-blur-xl border-t border-border/50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)] lg:hidden z-50">
         <button 
           onClick={() => setIsBookingModalOpen(true)}
-          className="w-full py-3.5 bg-gradient-to-r from-[#111E79] to-[#2F1F8A] text-white font-bold rounded-xl shadow-lg shadow-[#111E79]/20 flex items-center justify-center gap-2"
+          className="w-full py-3.5 bg-gradient-to-r from-primary to-primary/90 text-primary-foreground font-bold rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
         >
           Book Free Counselling
         </button>

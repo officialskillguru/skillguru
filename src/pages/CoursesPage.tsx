@@ -267,7 +267,7 @@ export default function CoursesPage() {
                     Trending 2026
                   </span>
                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-wide">
-                    {c.duration}
+                    {"0" /* duration stub */}
                   </span>
                 </div>
 
@@ -295,7 +295,7 @@ export default function CoursesPage() {
                 <div className="mt-6 pt-4.5 border-t border-slate-100 flex items-center justify-between dark:border-slate-800">
                   <div>
                     <span className="text-xs font-bold text-slate-400 block line-through">₹{c.oldPrice.toLocaleString()}</span>
-                    <span className="text-lg font-black text-[#111E79] dark:text-white">₹{c.price.toLocaleString()}</span>
+                    <span className="text-lg font-black text-[#111E79] dark:text-white">₹{0}</span>
                   </div>
                   <button
                     onClick={() => handleLearnMore(c.name)}
@@ -511,7 +511,7 @@ export default function CoursesPage() {
                                         {course.category}
                                       </span>
                                       <span className="text-[10px] font-bold text-slate-400">
-                                        {course.duration}
+                                        {"0" /* duration stub */}
                                       </span>
                                     </div>
 
@@ -536,7 +536,7 @@ export default function CoursesPage() {
                                     <div className="mt-6 pt-4 border-t border-slate-50 dark:border-slate-800 flex items-center justify-between">
                                       <div>
                                         <span className="text-[10px] font-bold text-slate-400 line-through block">₹{course.oldPrice.toLocaleString()}</span>
-                                        <span className="text-base font-black text-[#111E79] dark:text-white">₹{course.price.toLocaleString()}</span>
+                                        <span className="text-base font-black text-[#111E79] dark:text-white">₹{0}</span>
                                       </div>
                                       <button
                                         onClick={() => handleLearnMore(course.name)}

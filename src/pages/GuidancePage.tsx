@@ -228,19 +228,19 @@ export default function GuidancePage() {
   return (
     <main ref={pageRef} className="page-shell">
       {/* Banner/Hero Section */}
-      <section className="relative overflow-hidden bg-[#020817] px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-24">
+      <section className="relative overflow-hidden bg-primary px-4 py-16 text-primary-foreground sm:px-6 lg:px-8 lg:py-24">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,rgba(17,71,255,0.22),transparent_32rem)]" />
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,rgba(25,217,255,0.12),transparent_28rem)]" />
         
         <div className="relative mx-auto max-w-7xl text-center">
-          <p className="premium-reveal inline-flex items-center gap-2 rounded-full border border-[#168CFF]/50 bg-[#062B58]/40 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-[#19C7C8] backdrop-blur-sm">
-            <Compass className="size-4 animate-spin-slow text-[#19C7C8]" />
+          <p className="premium-reveal inline-flex items-center gap-2 rounded-full border border-secondary/50 bg-secondary/10 px-4 py-1.5 text-xs font-black uppercase tracking-[0.2em] text-accent backdrop-blur-sm">
+            <Compass className="size-4 animate-spin-slow text-accent" />
             Career Navigator
           </p>
-          <h1 className="premium-reveal mt-6 text-4xl font-[900] tracking-tight text-white sm:text-6xl">
-            Find Your Career fit. <span className="bg-gradient-to-r from-[#9E8CFB] via-[#7FB2E8] to-[#19C7C8] bg-clip-text text-transparent">Accelerate Your Switch.</span>
+          <h1 className="premium-reveal mt-6 text-4xl font-[900] tracking-tight text-primary-foreground sm:text-6xl">
+            Find Your Career fit. <span className="bg-gradient-to-r from-accent via-secondary to-accent bg-clip-text text-transparent">Accelerate Your Switch.</span>
           </h1>
-          <p className="premium-reveal mx-auto mt-6 max-w-2xl text-base leading-8 text-white/76">
+          <p className="premium-reveal mx-auto mt-6 max-w-2xl text-base leading-8 text-primary-foreground/76">
             Not sure which domain fits your background? Use our assessment tool, explore standard industry roadmaps, or query our AI Career Coach.
           </p>
 
@@ -251,7 +251,7 @@ export default function GuidancePage() {
                 type="button"
                 onClick={() => setActiveTab("assessment")}
                 className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-black transition-all duration-200 ${
-                  activeTab === "assessment" ? "bg-[#5B35F2] text-white shadow-lg" : "text-white/60 hover:text-white"
+                  activeTab === "assessment" ? "bg-secondary text-primary-foreground shadow-lg" : "text-primary-foreground/60 hover:text-primary-foreground"
                 }`}
               >
                 <BrainCircuit className="size-4" />
@@ -261,7 +261,7 @@ export default function GuidancePage() {
                 type="button"
                 onClick={() => setActiveTab("ai_coach")}
                 className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-black transition-all duration-200 ${
-                  activeTab === "ai_coach" ? "bg-[#5B35F2] text-white shadow-lg" : "text-white/60 hover:text-white"
+                  activeTab === "ai_coach" ? "bg-secondary text-primary-foreground shadow-lg" : "text-primary-foreground/60 hover:text-primary-foreground"
                 }`}
               >
                 <Sparkles className="size-4" />
@@ -271,7 +271,7 @@ export default function GuidancePage() {
                 type="button"
                 onClick={() => setActiveTab("roadmaps")}
                 className={`inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-black transition-all duration-200 ${
-                  activeTab === "roadmaps" ? "bg-[#5B35F2] text-white shadow-lg" : "text-white/60 hover:text-white"
+                  activeTab === "roadmaps" ? "bg-secondary text-primary-foreground shadow-lg" : "text-primary-foreground/60 hover:text-primary-foreground"
                 }`}
               >
                 <Map className="size-4" />
@@ -283,23 +283,23 @@ export default function GuidancePage() {
       </section>
 
       {/* Main Tab Panels */}
-      <section className="bg-[#F8FAFF] px-4 py-12 sm:px-6 lg:px-8">
+      <section className="bg-muted px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           {/* TAB 1: ASSESSMENT PANEL */}
           {activeTab === "assessment" && (
             <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
-              <div className="premium-card-motion rounded-2xl border border-[#E5EAF5] bg-white p-6 shadow-[0_20px_60px_rgba(10,42,136,0.06)] sm:p-8">
+              <div className="premium-card-motion rounded-2xl border border-border bg-card p-6 shadow-[0_20px_60px_rgba(10,42,136,0.06)] sm:p-8">
                 {!assessmentResult ? (
                   <div>
-                    <div className="flex justify-between items-center border-b border-[#E5EAF5] pb-4 mb-6">
-                      <h2 className="text-xl font-black text-[#111E79]">Step {currentStep + 1} of {questions.length}</h2>
-                      <span className="text-sm font-semibold text-[#64748B]">
+                    <div className="flex justify-between items-center border-b border-border pb-4 mb-6">
+                      <h2 className="text-xl font-black text-primary">Step {currentStep + 1} of {questions.length}</h2>
+                      <span className="text-sm font-semibold text-muted-foreground">
                         {Math.round(((currentStep + 1) / questions.length) * 100)}% Complete
                       </span>
                     </div>
 
                     <div className="mb-8">
-                      <h3 className="text-2xl font-black text-[#111E79] leading-tight">
+                      <h3 className="text-2xl font-black text-primary leading-tight">
                         {questions[currentStep]!.text}
                       </h3>
                     </div>
@@ -310,35 +310,35 @@ export default function GuidancePage() {
                           key={option.value}
                           type="button"
                           onClick={() => handleOptionSelect(option.value)}
-                          className="flex items-center justify-between w-full rounded-xl border border-[#E5EAF5] bg-[#F8FAFF] p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-[#5B35F2] hover:bg-[#F1F5FF] hover:shadow-[0_8px_20px_rgba(17,71,255,0.06)]"
+                          className="flex items-center justify-between w-full rounded-xl border border-border bg-muted p-5 text-left transition duration-200 hover:-translate-y-0.5 hover:border-secondary hover:bg-secondary/5 hover:shadow-[0_8px_20px_rgba(17,71,255,0.06)]"
                         >
-                          <span className="text-base font-bold text-[#111E79]">{option.label}</span>
-                          <ChevronRight className="size-5 text-[#5B35F2]" />
+                          <span className="text-base font-bold text-primary">{option.label}</span>
+                          <ChevronRight className="size-5 text-secondary" />
                         </button>
                       ))}
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <div className="text-center pb-6 border-b border-[#E5EAF5] mb-8">
+                    <div className="text-center pb-6 border-b border-border mb-8">
                       <div className="mx-auto grid size-16 place-items-center rounded-full bg-green-100 text-green-600 mb-4">
                         <CheckCircle2 className="size-9" />
                       </div>
-                      <h2 className="text-3xl font-black text-[#111E79]">Assessment Completed!</h2>
-                      <p className="mt-2 text-sm text-[#64748B]">Here is your matching track recommendation based on your answers.</p>
+                      <h2 className="text-3xl font-black text-primary">Assessment Completed!</h2>
+                      <p className="mt-2 text-sm text-muted-foreground">Here is your matching track recommendation based on your answers.</p>
                     </div>
 
                     {/* Result Block */}
                     <div className="rounded-2xl border border-green-200 bg-green-50/50 p-6 mb-8">
                       <p className="text-xs font-black uppercase tracking-[0.2em] text-green-700">Recommended Track</p>
-                      <h3 className="text-3xl font-[900] text-[#111E79] mt-2">{roadmaps[assessmentResult].title}</h3>
-                      <p className="text-sm text-[#64748B] mt-3">
+                      <h3 className="text-3xl font-[900] text-primary mt-2">{roadmaps[assessmentResult].title}</h3>
+                      <p className="text-sm text-muted-foreground mt-3">
                         This roadmap outlines the exact phases and technical tools required to transition from your background.
                       </p>
                       
                       <div className="mt-6 flex flex-wrap gap-2">
                         {roadmaps[assessmentResult].skills.map((skill) => (
-                          <span key={skill} className="rounded-md bg-white border border-green-200 px-3 py-1.5 text-xs font-black text-[#111E79]">
+                          <span key={skill} className="rounded-md bg-card border border-green-200 px-3 py-1.5 text-xs font-black text-primary">
                             {skill}
                           </span>
                         ))}
@@ -347,28 +347,28 @@ export default function GuidancePage() {
 
                     {/* Timeline representation */}
                     <div className="mb-8">
-                      <h4 className="text-lg font-black text-[#111E79] mb-6">Your Transformation Milestones</h4>
-                      <div className="relative border-l-2 border-[#E5EAF5] pl-6 ml-3 space-y-8">
+                      <h4 className="text-lg font-black text-primary mb-6">Your Transformation Milestones</h4>
+                      <div className="relative border-l-2 border-border pl-6 ml-3 space-y-8">
                         {roadmaps[assessmentResult].steps.map((step, idx) => (
                           <div key={idx} className="relative">
-                            <span className="absolute -left-[35px] top-1 grid size-6 place-items-center rounded-full bg-[#5B35F2] text-[10px] font-black text-white">
+                            <span className="absolute -left-[35px] top-1 grid size-6 place-items-center rounded-full bg-secondary text-[10px] font-black text-primary-foreground">
                               {idx + 1}
                             </span>
-                            <h5 className="font-black text-[#111E79] text-base">{step.title}</h5>
-                            <p className="text-sm text-[#64748B] mt-1.5 leading-6">{step.desc}</p>
+                            <h5 className="font-black text-primary text-base">{step.title}</h5>
+                            <p className="text-sm text-muted-foreground mt-1.5 leading-6">{step.desc}</p>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-[#E5EAF5]">
+                    <div className="flex flex-col sm:flex-row gap-4 pt-4 border-t border-border">
                       {(() => {
                         const targetCourse = courses.find((c) => c.slug === roadmaps[assessmentResult].targetSlug);
                         if (targetCourse) {
                           return (
                             <Link
                               to={courseDetailRoute(targetCourse.slug)}
-                              className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#5B35F2] text-sm font-black text-white hover:bg-[#111E79] transition"
+                              className="flex-1 inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-secondary text-sm font-black text-primary-foreground hover:bg-primary transition"
                             >
                               Explore {targetCourse.title} <ArrowRight className="size-4" />
                             </Link>
@@ -379,7 +379,7 @@ export default function GuidancePage() {
                       <button
                         type="button"
                         onClick={resetAssessment}
-                        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-[#E5EAF5] bg-white px-5 text-sm font-black text-[#111E79] hover:bg-[#F8FAFF]"
+                        className="inline-flex h-12 items-center justify-center gap-2 rounded-xl border border-border bg-card px-5 text-sm font-black text-primary hover:bg-muted"
                       >
                         <RefreshCw className="size-4" /> Restart Assessment
                       </button>
@@ -390,32 +390,32 @@ export default function GuidancePage() {
 
               {/* Sidebar Info */}
               <aside className="space-y-6">
-                <div className="rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
-                  <h3 className="font-black text-[#111E79] text-lg">Why take the assessment?</h3>
-                  <ul className="mt-4 space-y-3.5 text-sm text-[#64748B]">
+                <div className="rounded-xl border border-border bg-card p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
+                  <h3 className="font-black text-primary text-lg">Why take the assessment?</h3>
+                  <ul className="mt-4 space-y-3.5 text-sm text-muted-foreground">
                     <li className="flex gap-2.5 items-start leading-6">
-                      <CheckCircle2 className="size-4 text-[#5B35F2] shrink-0 mt-1" />
+                      <CheckCircle2 className="size-4 text-secondary shrink-0 mt-1" />
                       <span><strong>Background Matching</strong>: Maps non-IT experience directly into relevant programs.</span>
                     </li>
                     <li className="flex gap-2.5 items-start leading-6">
-                      <CheckCircle2 className="size-4 text-[#5B35F2] shrink-0 mt-1" />
+                      <CheckCircle2 className="size-4 text-secondary shrink-0 mt-1" />
                       <span><strong>Pacing Estimation</strong>: Estimates the ideal study hours needed to prepare for technical roles.</span>
                     </li>
                     <li className="flex gap-2.5 items-start leading-6">
-                      <CheckCircle2 className="size-4 text-[#5B35F2] shrink-0 mt-1" />
+                      <CheckCircle2 className="size-4 text-secondary shrink-0 mt-1" />
                       <span><strong>Direct Outcome</strong>: Suggests courses that offer capstone project feedback and recruitment referral gates.</span>
                     </li>
                   </ul>
                 </div>
 
-                <div className="rounded-xl border border-[#E5EAF5] bg-[#111E79] p-6 text-white shadow-[0_18px_60px_rgba(10,42,136,0.12)]">
-                  <h3 className="font-black text-[#19C7C8] text-lg">Need 1:1 Live Guidance?</h3>
-                  <p className="mt-2.5 text-sm leading-6 text-white/76">
+                <div className="rounded-xl border border-border bg-primary p-6 text-primary-foreground shadow-[0_18px_60px_rgba(10,42,136,0.12)]">
+                  <h3 className="font-black text-accent text-lg">Need 1:1 Live Guidance?</h3>
+                  <p className="mt-2.5 text-sm leading-6 text-primary-foreground/76">
                     Our human counselling team is ready to map out your plan live. Get a call regarding your concerns.
                   </p>
                   <Link
                     to={routes.freeCounselling}
-                    className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-[#19C7C8] text-xs font-black text-[#111E79] transition hover:bg-white"
+                    className="mt-5 inline-flex h-11 w-full items-center justify-center rounded-lg bg-accent text-xs font-black text-primary transition hover:bg-card"
                   >
                     Book Free Callback
                   </Link>
@@ -427,13 +427,13 @@ export default function GuidancePage() {
           {/* TAB 2: AI CAREER COACH PANEL */}
           {activeTab === "ai_coach" && (
             <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
-              <div className="premium-card-motion rounded-2xl border border-[#E5EAF5] bg-white p-6 shadow-[0_20px_60px_rgba(10,42,136,0.06)] flex flex-col min-h-[580px]">
-                <div className="flex items-center gap-3 border-b border-[#E5EAF5] pb-4 mb-6">
-                  <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-tr from-[#5B35F2] to-[#19C7C8] text-white">
+              <div className="premium-card-motion rounded-2xl border border-border bg-card p-6 shadow-[0_20px_60px_rgba(10,42,136,0.06)] flex flex-col min-h-[580px]">
+                <div className="flex items-center gap-3 border-b border-border pb-4 mb-6">
+                  <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-tr from-secondary to-accent text-primary-foreground">
                     <Bot className="size-5" />
                   </div>
                   <div>
-                    <h2 className="text-lg font-black text-[#111E79]">AI Guidance Terminal</h2>
+                    <h2 className="text-lg font-black text-primary">AI Guidance Terminal</h2>
                     <p className="text-xs font-semibold text-green-600 flex items-center gap-1.5">
                       <span className="inline-block size-2 rounded-full bg-green-500 animate-pulse" /> Online and Ready
                     </p>
@@ -451,7 +451,7 @@ export default function GuidancePage() {
                     >
                       <div
                         className={`grid size-8 shrink-0 place-items-center rounded-full text-xs font-black ${
-                          msg.sender === "user" ? "bg-[#5B35F2] text-white" : "bg-[#F1F5FF] text-[#5B35F2]"
+                          msg.sender === "user" ? "bg-secondary text-primary-foreground" : "bg-secondary/10 text-secondary"
                         }`}
                       >
                         {msg.sender === "user" ? "U" : <Bot className="size-4" />}
@@ -459,18 +459,18 @@ export default function GuidancePage() {
                       <div
                         className={`rounded-2xl p-4 text-sm leading-6 ${
                           msg.sender === "user"
-                            ? "bg-[#5B35F2] text-white rounded-tr-none"
-                            : "bg-[#F8FAFF] border border-[#E5EAF5] text-[#334155] rounded-tl-none"
+                            ? "bg-secondary text-primary-foreground rounded-tr-none"
+                            : "bg-muted border border-border text-foreground rounded-tl-none"
                         }`}
                       >
                         {/* Render simple markdown formats */}
                         {msg.text.split("\n\n").map((para, pIdx) => {
                           if (para.startsWith("**")) {
-                            return <p key={pIdx} className="font-black text-[#111E79] mb-2">{para.replace(/\*\*/g, "")}</p>;
+                            return <p key={pIdx} className="font-black text-primary mb-2">{para.replace(/\*\*/g, "")}</p>;
                           }
                           if (para.startsWith("*Recommended Course:*")) {
                             return (
-                              <p key={pIdx} className="italic text-xs font-semibold mt-3 text-[#5B35F2]">
+                              <p key={pIdx} className="italic text-xs font-semibold mt-3 text-secondary">
                                 {para}
                               </p>
                             );
@@ -483,11 +483,11 @@ export default function GuidancePage() {
 
                   {aiLoading && (
                     <div className="flex gap-3 max-w-[80%]">
-                      <div className="grid size-8 shrink-0 place-items-center rounded-full bg-[#F1F5FF] text-[#5B35F2]">
+                      <div className="grid size-8 shrink-0 place-items-center rounded-full bg-secondary/10 text-secondary">
                         <Bot className="size-4 animate-spin" />
                       </div>
-                      <div className="rounded-2xl p-4 text-sm bg-[#F8FAFF] border border-[#E5EAF5] text-[#64748B] rounded-tl-none flex items-center gap-2">
-                        <Loader2 className="size-4 animate-spin text-[#5B35F2]" />
+                      <div className="rounded-2xl p-4 text-sm bg-muted border border-border text-muted-foreground rounded-tl-none flex items-center gap-2">
+                        <Loader2 className="size-4 animate-spin text-secondary" />
                         <span>Structuring your custom curriculum path...</span>
                       </div>
                     </div>
@@ -495,18 +495,18 @@ export default function GuidancePage() {
                 </div>
 
                 {/* Console Input */}
-                <form onSubmit={handleAiSubmit} className="mt-6 border-t border-[#E5EAF5] pt-5 flex gap-3">
+                <form onSubmit={handleAiSubmit} className="mt-6 border-t border-border pt-5 flex gap-3">
                   <input
                     value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     placeholder="Ask e.g. 'I want to be a web developer with no code background'"
                     disabled={aiLoading}
-                    className="flex-1 h-12 rounded-xl border border-[#E5EAF5] bg-white px-4 text-sm outline-none focus:border-[#5B35F2] focus:ring-1 focus:ring-[#5B35F2] transition disabled:opacity-60"
+                    className="flex-1 h-12 rounded-xl border border-border bg-card px-4 text-sm outline-none focus:border-secondary focus:ring-1 focus:ring-secondary transition disabled:opacity-60"
                   />
                   <button
                     type="submit"
                     disabled={aiLoading || !prompt.trim()}
-                    className="grid size-12 place-items-center rounded-xl bg-[#5B35F2] text-white hover:bg-[#111E79] transition disabled:opacity-50"
+                    className="grid size-12 place-items-center rounded-xl bg-secondary text-primary-foreground hover:bg-primary transition disabled:opacity-50"
                   >
                     <Send className="size-4" />
                   </button>
@@ -515,9 +515,9 @@ export default function GuidancePage() {
 
               {/* Sidebar Advice Examples */}
               <aside className="space-y-6">
-                <div className="rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
-                  <h3 className="font-black text-[#111E79] text-lg">Example Prompt Snippets</h3>
-                  <p className="text-xs text-[#64748B] mt-1">Try querying the AI with these concepts to get specialized roadmap responses:</p>
+                <div className="rounded-xl border border-border bg-card p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
+                  <h3 className="font-black text-primary text-lg">Example Prompt Snippets</h3>
+                  <p className="text-xs text-muted-foreground mt-1">Try querying the AI with these concepts to get specialized roadmap responses:</p>
                   <div className="mt-4 space-y-2">
                     {[
                       "I want to learn Java Spring Boot",
@@ -529,7 +529,7 @@ export default function GuidancePage() {
                         key={text}
                         type="button"
                         onClick={() => setPrompt(text)}
-                        className="w-full text-left rounded-lg bg-[#F8FAFF] hover:bg-[#F1F5FF] border border-[#E5EAF5] p-3 text-xs font-semibold text-[#111E79] transition"
+                        className="w-full text-left rounded-lg bg-muted hover:bg-secondary/10 border border-border p-3 text-xs font-semibold text-primary transition"
                       >
                         {text}
                       </button>
@@ -544,8 +544,8 @@ export default function GuidancePage() {
           {activeTab === "roadmaps" && (
             <div>
               <div className="text-center mb-10 max-w-2xl mx-auto">
-                <h2 className="text-3xl font-black text-[#111E79]">Explore Our Learning Blueprints</h2>
-                <p className="mt-2 text-sm text-[#64748B]">
+                <h2 className="text-3xl font-black text-primary">Explore Our Learning Blueprints</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
                   Detailed timelines mapped out by our industry mentors representing the actual competencies demanded in recruiter interviews.
                 </p>
               </div>
@@ -554,39 +554,39 @@ export default function GuidancePage() {
                 {Object.entries(roadmaps).map(([key, roadmap]) => (
                   <article
                     key={key}
-                    className="premium-card-motion flex flex-col justify-between rounded-2xl border border-[#E5EAF5] bg-white p-6 shadow-[0_16px_45px_rgba(10,42,136,0.05)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(17,71,255,0.08)]"
+                    className="premium-card-motion flex flex-col justify-between rounded-2xl border border-border bg-card p-6 shadow-[0_16px_45px_rgba(10,42,136,0.05)] transition duration-200 hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(17,71,255,0.08)]"
                   >
                     <div>
-                      <span className="rounded-md bg-[#F1F5FF] text-[#5B35F2] px-2.5 py-1 text-xs font-black uppercase tracking-wider">
+                      <span className="rounded-md bg-secondary/10 text-secondary px-2.5 py-1 text-xs font-black uppercase tracking-wider">
                         {key.replace("_", " ")}
                       </span>
-                      <h3 className="text-xl font-[900] text-[#111E79] mt-4">{roadmap.title}</h3>
+                      <h3 className="text-xl font-[900] text-primary mt-4">{roadmap.title}</h3>
                       
                       <div className="mt-5 space-y-4">
                         {roadmap.steps.slice(0, 3).map((step, idx) => (
                           <div key={idx} className="flex gap-3">
-                            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#5B35F2]/10 text-[#5B35F2] text-[10px] font-black mt-0.5">
+                            <span className="grid size-5 shrink-0 place-items-center rounded-full bg-secondary/10 text-secondary text-[10px] font-black mt-0.5">
                               {idx + 1}
                             </span>
                             <div>
-                              <h4 className="text-sm font-black text-[#111E79]">{step.title}</h4>
-                              <p className="text-xs text-[#64748B] mt-0.5 leading-5 line-clamp-2">{step.desc}</p>
+                              <h4 className="text-sm font-black text-primary">{step.title}</h4>
+                              <p className="text-xs text-muted-foreground mt-0.5 leading-5 line-clamp-2">{step.desc}</p>
                             </div>
                           </div>
                         ))}
-                        <p className="text-xs text-[#64748B] italic pt-1">+ {roadmap.steps.length - 3} more phases including Mock interview gating...</p>
+                        <p className="text-xs text-muted-foreground italic pt-1">+ {roadmap.steps.length - 3} more phases including Mock interview gating...</p>
                       </div>
                     </div>
 
-                    <div className="mt-8 border-t border-[#E5EAF5] pt-4 flex items-center justify-between">
+                    <div className="mt-8 border-t border-border pt-4 flex items-center justify-between">
                       {(() => {
                         const targetCourse = courses.find((c) => c.slug === roadmap.targetSlug);
                         return targetCourse ? (
                           <>
-                            <span className="text-xs font-bold text-[#64748B]">{targetCourse.duration} Program</span>
+                            <span className="text-xs font-bold text-muted-foreground">{targetCourse.duration} Program</span>
                             <Link
                               to={courseDetailRoute(targetCourse.slug)}
-                              className="inline-flex items-center gap-1.5 text-xs font-black text-[#5B35F2] hover:gap-2.5 transition-all"
+                              className="inline-flex items-center gap-1.5 text-xs font-black text-secondary hover:gap-2.5 transition-all"
                             >
                               Explore Course <ArrowRight className="size-3.5" />
                             </Link>
@@ -603,30 +603,30 @@ export default function GuidancePage() {
       </section>
 
       {/* Recommended Courses Banner */}
-      <section className="bg-white px-4 py-16 sm:px-6 lg:px-8 border-t border-[#E5EAF5]">
+      <section className="bg-card px-4 py-16 sm:px-6 lg:px-8 border-t border-border">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between mb-10">
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#5B35F2]">Program Recommendations</p>
-              <h2 className="mt-4 text-3xl font-[900] text-[#111E79] sm:text-5xl">Top Aligned Career Tracks</h2>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-secondary">Program Recommendations</p>
+              <h2 className="mt-4 text-3xl font-[900] text-primary sm:text-5xl">Top Aligned Career Tracks</h2>
             </div>
-            <p className="max-w-md text-sm leading-6 text-[#64748B]">
+            <p className="max-w-md text-sm leading-6 text-muted-foreground">
               Every track includes live mentor labs, localized case studies, and corporate placement support to ensure career outcomes.
             </p>
           </div>
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {courses.slice(0, 3).map((course) => (
-              <article key={course.slug} className="rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-sm flex flex-col justify-between">
+              <article key={course.slug} className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col justify-between">
                 <div>
-                  <img src={course.image} alt={course.title} className="rounded-lg aspect-video w-full object-cover object-center bg-gray-100" />
+                  <img src={course.image} alt={course.title} className="rounded-lg aspect-video w-full object-cover object-center bg-muted" />
                   <span className="inline-block mt-4 rounded-md bg-amber-100 text-amber-700 px-2 py-0.5 text-xs font-black">{course.badge}</span>
-                  <h3 className="text-lg font-black text-[#111E79] mt-2.5 leading-snug">{course.title}</h3>
-                  <p className="text-sm text-[#64748B] mt-2 line-clamp-2 leading-relaxed">{course.summary}</p>
+                  <h3 className="text-lg font-black text-primary mt-2.5 leading-snug">{course.title}</h3>
+                  <p className="text-sm text-muted-foreground mt-2 line-clamp-2 leading-relaxed">{course.summary}</p>
                 </div>
-                <div className="mt-6 pt-4 border-t border-[#E5EAF5] flex items-center justify-between">
-                  <span className="text-lg font-black text-[#5B35F2]">₹{course.price.toLocaleString("en-IN")}</span>
-                  <Link to={courseDetailRoute(course.slug)} className="inline-flex h-9 items-center justify-center rounded-lg bg-[#F1F5FF] px-4 text-xs font-black text-[#5B35F2] hover:bg-[#5B35F2] hover:text-white transition">
+                <div className="mt-6 pt-4 border-t border-border flex items-center justify-between">
+                  <span className="text-lg font-black text-secondary">₹{course.price.toLocaleString("en-IN")}</span>
+                  <Link to={courseDetailRoute(course.slug)} className="inline-flex h-9 items-center justify-center rounded-lg bg-secondary/10 px-4 text-xs font-black text-secondary hover:bg-secondary hover:text-primary-foreground transition">
                     View Details
                   </Link>
                 </div>

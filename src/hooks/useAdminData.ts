@@ -1,6 +1,7 @@
+import { getDashboardMetrics, getDashboardRecent, getDashboardChartData } from "@/services/dashboard.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { Updates } from "@/types/database";
+import type { Inserts, Updates } from "@/types/database";
 import {
   createCourse,
   deleteCourse,
@@ -11,12 +12,20 @@ import {
   type CourseListParams,
 } from "@/services/courses.service";
 import {
+  listAdmins,
+  type AdminListParams,
+} from "@/services/admins.service";
+import {
+  listAuditLogs,
+  type AuditLogListParams,
+} from "@/services/auditLogs.service";
+import {
   createLead,
   listLeads,
   updateLead,
   type LeadListParams,
 } from "@/services/crm.service";
-import { getDashboardChartData, getDashboardMetrics, getDashboardRecent } from "@/services/dashboard.service";
+
 import {
   createMentor,
   listMentors,
@@ -33,20 +42,21 @@ import {
   createSuccessStory,
   listSuccessStories,
   updateSuccessStory,
-  type SuccessStoryInput,
   type SuccessStoryListParams,
 } from "@/services/successStories.service";
 
 export const adminQueryKeys = {
   courses: (params: CourseListParams) => ["admin", "courses", params] as const,
   courseCategories: ["admin", "course-categories"] as const,
-  mentors: (params: MentorListParams) => ["admin", "mentors", params] as const,
+  mentors: (params: MentorListParams) => ["admin", "mentor_profiles", params] as const,
   students: (params: StudentListParams) => ["admin", "students", params] as const,
   leads: (params: LeadListParams) => ["admin", "leads", params] as const,
   successStories: (params: SuccessStoryListParams) => ["admin", "success-stories", params] as const,
   dashboardMetrics: ["admin", "dashboard", "metrics"] as const,
   dashboardRecent: ["admin", "dashboard", "recent"] as const,
   dashboardCharts: ["admin", "dashboard", "charts"] as const,
+  admins: (params: AdminListParams) => ["admin", "admins", params] as const,
+  auditLogs: (params: AuditLogListParams) => ["admin", "audit-logs", params] as const,
 };
 
 export function useCourses(params: CourseListParams = {}) {
@@ -86,12 +96,12 @@ export function useMentors(params: MentorListParams = {}) {
 
 export function useMentorMutations() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "mentors"] });
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "mentor_profiles"] });
 
   return {
     create: useMutation({ mutationFn: createMentor, onSuccess: invalidate }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: Updates<"mentors"> }) => updateMentor(id, input),
+      mutationFn: ({ id, input }: { id: string; input: Updates<"mentor_profiles"> }) => updateMentor(id, input),
       onSuccess: invalidate,
     }),
   };
@@ -111,7 +121,7 @@ export function useStudentMutations() {
   return {
     create: useMutation({ mutationFn: createStudent, onSuccess: invalidate }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: Updates<"students"> }) => updateStudent(id, input),
+      mutationFn: ({ id, input }: { id: string; input: Updates<"profiles"> }) => updateStudent(id, input),
       onSuccess: invalidate,
     }),
   };
@@ -120,7 +130,7 @@ export function useStudentMutations() {
 export function useLeads(params: LeadListParams = {}) {
   return useQuery({
     queryKey: adminQueryKeys.leads(params),
-    queryFn: () => listLeads(params),
+    queryFn: () => listLeads(params as unknown as never),
   });
 }
 
@@ -131,7 +141,7 @@ export function useLeadMutations() {
   return {
     create: useMutation({ mutationFn: createLead, onSuccess: invalidate }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: Updates<"leads"> }) => updateLead(id, input),
+      mutationFn: ({ id, input }: { id: string; input: Updates<"profiles"> }) => updateLead(id, input),
       onSuccess: invalidate,
     }),
   };
@@ -149,9 +159,9 @@ export function useSuccessStoryMutations() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "success-stories"] });
 
   return {
-    create: useMutation({ mutationFn: (input: SuccessStoryInput) => createSuccessStory(input), onSuccess: invalidate }),
+    create: useMutation({ mutationFn: (input: Record<string, unknown>) => createSuccessStory(input), onSuccess: invalidate }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: Updates<"success_stories"> }) => updateSuccessStory(id, input),
+      mutationFn: ({ id, input }: { id: number; input: Record<string, unknown> }) => updateSuccessStory(id, input),
       onSuccess: invalidate,
     }),
   };
@@ -163,4 +173,18 @@ export function useDashboardData() {
   const charts = useQuery({ queryKey: adminQueryKeys.dashboardCharts, queryFn: getDashboardChartData });
 
   return { metrics, recent, charts };
+}
+
+export function useAdmins(params: unknown = {}) {
+  return useQuery({
+    queryKey: adminQueryKeys.admins(params),
+    queryFn: () => listAdmins(params),
+  });
+}
+
+export function useAuditLogs(params: unknown = {}) {
+  return useQuery({
+    queryKey: adminQueryKeys.auditLogs(params),
+    queryFn: () => listAuditLogs(params),
+  });
 }

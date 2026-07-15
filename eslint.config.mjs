@@ -21,6 +21,23 @@ const eslintConfig = [
   {
     files: ["**/*.{js,mjs,cjs}"],
     ...tseslint.configs.disableTypeChecked,
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+  {
+    files: ["**/*.cjs"],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+      "@typescript-eslint/no-var-requires": "off",
+    },
   },
   {
     files: ["**/*.{ts,tsx}"],
@@ -49,13 +66,57 @@ const eslintConfig = [
         },
       ],
       "@typescript-eslint/no-unused-vars": [
-        "error",
+        "warn",
         {
           argsIgnorePattern: "^_",
           varsIgnorePattern: "^_",
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+    },
+  },
+  {
+    files: [
+      "src/pages/**/*.{ts,tsx}",
+      "src/components/**/*.{ts,tsx}",
+      "src/hooks/**/*.{ts,tsx}",
+      "src/contexts/**/*.{ts,tsx}",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            {
+              name: "@/types/database.types",
+              message:
+                "React components, hooks, and contexts must never import database.types.ts directly. Use Domain Models or DTOs.",
+            },
+          ],
+          patterns: [
+            {
+              group: ["**/database.types", "@/persistence/*", "**/persistence/*"],
+              message:
+                "React components must not import from persistence or raw database types.",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/ban-ts-comment": [
+        "error",
+        {
+          "ts-ignore": "allow-with-description",
+          "ts-expect-error": "allow-with-description",
+          minimumDescriptionLength: 10,
+        },
+      ],
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/require-await": "warn"
     },
   },
 ];

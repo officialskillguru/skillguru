@@ -68,7 +68,7 @@ export function Drawer({
       aria-modal={open}
       aria-label="Navigation menu"
     >
-      <button type="button" className="absolute inset-0 bg-[#031B34]/80 backdrop-blur-sm transition-opacity" aria-label="Close navigation" onClick={onClose} />
+      <button type="button" className="absolute inset-0 bg-slate-900/80 backdrop-blur-sm transition-opacity" aria-label="Close navigation" onClick={onClose} />
       <aside ref={drawerRef} className="absolute left-0 top-0 flex h-full w-[min(88vw,380px)] flex-col overflow-y-auto bg-white p-6 pb-[calc(1.5rem+env(safe-area-inset-bottom))] shadow-2xl">
         <button type="button" onClick={onClose} className="ml-auto flex rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close menu">
           <X className="size-5" />

@@ -29,7 +29,7 @@ export function SearchPopular() {
             <button
               key={query}
               onClick={() => setQuery(query)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-[#E5EAF5] text-xs font-semibold text-slate-600 hover:border-[#5B35F2] hover:text-[#5B35F2] hover:shadow-sm transition"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-border text-xs font-semibold text-slate-600 hover:border-secondary hover:text-secondary hover:shadow-sm transition"
             >
               <TrendingUp className="size-3" />
               {query}
@@ -46,13 +46,13 @@ export function SearchPopular() {
             <button
               key={cat.label}
               onClick={() => setQuery(cat.label)}
-              className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-[#E5EAF5] hover:border-[#5B35F2] hover:shadow-md transition group text-left"
+              className="w-full flex items-center justify-between px-4 py-3 bg-white rounded-xl border border-border hover:border-secondary hover:shadow-md transition group text-left"
             >
               <div className="flex items-center gap-3">
                 <span className="text-xl">{cat.icon}</span>
-                <span className="text-sm font-bold text-[#111E79]">{cat.label}</span>
+                <span className="text-sm font-bold text-primary">{cat.label}</span>
               </div>
-              <ArrowRight className="size-4 text-slate-300 group-hover:text-[#5B35F2] transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="size-4 text-slate-300 group-hover:text-secondary transition-transform group-hover:translate-x-1" />
             </button>
           ))}
         </div>

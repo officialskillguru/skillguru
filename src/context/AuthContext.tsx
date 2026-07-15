@@ -1,93 +1,143 @@
-import type { Session, User } from "@supabase/supabase-js";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useReducer, type ReactNode, useCallback } from "react";
+import type { Session } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase/client";
+import { logger } from "@/config/logger";
+import { authService } from "@/services/auth.service";
+import { identityService } from "@/services/IdentityService";
+import type { LoginFormData, SignupFormData } from "@/schemas/auth.schema";
+import { type Result, ok, UnexpectedError } from "@/utils/result";
 
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
-import { hasAdminAccess } from "@/lib/supabase/auth";
+import { AuthContext, type AuthAction, type ExtendedAuthContextState } from "./AuthContextObj";
 
-type AuthContextValue = {
-  session: Session | null;
-  user: User | null;
-  loading: boolean;
-  configured: boolean;
-  isAdmin: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signOut: () => Promise<void>;
+const initialState: ExtendedAuthContextState = {
+  status: "INITIALIZING",
+  loadingState: "IDLE",
+  session: null,
+  user: null,
+  authUser: null,
+  error: null,
 };
 
-const AuthContext = createContext<AuthContextValue | null>(null);
+function authReducerBase(state: ExtendedAuthContextState, action: AuthAction): ExtendedAuthContextState {
+  switch (action.type) {
+    case "START_AUTH":
+      return { ...state, status: "AUTHENTICATING", error: null };
+    case "AUTH_SUCCESS":
+      return {
+        ...state,
+        status: "LOADING_PROFILE",
+        session: action.payload.session,
+        user: action.payload.user,
+        error: null,
+      };
+    case "AUTH_FAIL":
+      return { ...state, status: "UNAUTHENTICATED", session: null, user: null, authUser: null };
+    case "IDENTITY_LOADED":
+      return {
+        ...state,
+        status: "READY",
+        authUser: action.payload.authUser,
+      };
+    case "SESSION_EXPIRED":
+      return { ...initialState, status: "SESSION_EXPIRED" };
+    case "LOGOUT":
+      return { ...initialState, status: "UNAUTHENTICATED" };
+    case "ERROR":
+      return { ...state, status: "ERROR", error: action.payload };
+    default:
+      return state;
+  }
+}
 
-export function AuthProvider({ children }: Readonly<{ children: ReactNode }>) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(Boolean(supabase));
+function authReducer(state: ExtendedAuthContextState, action: AuthAction): ExtendedAuthContextState {
+  const nextState = authReducerBase(state, action);
+  console.log(new Date().toISOString(), "Auth Transition:", { previousState: state, action, nextState });
+  return nextState;
+}
 
-  useEffect(() => {
-    if (!supabase) {
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [state, dispatch] = useReducer(authReducer, initialState);
+
+  const processSession = useCallback((session: Session | null) => {
+    if (!session) {
+      dispatch({ type: "AUTH_FAIL" });
       return;
     }
+    dispatch({ type: "AUTH_SUCCESS", payload: { session, user: session.user } });
+  }, []);
 
-    let active = true;
-    void supabase.auth.getSession().then(({ data }) => {
-      if (active) {
-        setSession(data.session);
-        setLoading(false);
+  // Listen to Supabase Auth events
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log(new Date().toISOString(), `Auth event: ${event}`);
+      if (event === "SIGNED_OUT") {
+        dispatch({ type: "LOGOUT" });
+        return;
+      }
+      if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "INITIAL_SESSION") {
+        void processSession(session);
       }
     });
 
-    const { data } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      setSession(nextSession);
-      setLoading(false);
-    });
-
     return () => {
-      active = false;
-      data.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [processSession]);
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      session,
-      user: session?.user ?? null,
-      loading,
-      configured: Boolean(supabase),
-      isAdmin: hasAdminAccess(session?.user ?? null),
-      async signIn(email, password) {
-        if (!supabase) {
-          throw new Error("Supabase is not configured.");
+  // Load Identity when Session exists
+  useEffect(() => {
+    async function fetchIdentity() {
+      if (state.status === "LOADING_PROFILE" && state.user) {
+        try {
+          const result = await identityService.loadCurrentUser();
+          if (!result.success) {
+            dispatch({ type: "ERROR", payload: result.error });
+            return;
+          }
+          dispatch({ type: "IDENTITY_LOADED", payload: { authUser: result.data } });
+        } catch (err: unknown) {
+          logger.error("Failed to fetch identity", err);
+          dispatch({ type: "ERROR", payload: new UnexpectedError("Failed to fetch identity", "fetchIdentity_exception", "Try again", err) });
         }
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) {
-          throw error;
-        }
-      },
-      async signUp(email, password, fullName) {
-        if (!supabase) {
-          throw new Error("Supabase is not configured.");
-        }
-        const { error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName } } });
-        if (error) {
-          throw error;
-        }
-      },
-      async signOut() {
-        if (!supabase) {
-          return;
-        }
-        await supabase.auth.signOut();
-      },
-    }),
-    [loading, session, supabase],
+      }
+    }
+
+    void fetchIdentity();
+  }, [state.status, state.user]);
+
+  // Public Context Methods
+  const login = useCallback(async (credentials: LoginFormData): Promise<Result<void>> => {
+    dispatch({ type: "START_AUTH" });
+    const result = await authService.login(credentials);
+    if (!result.success) {
+      dispatch({ type: "AUTH_FAIL" });
+      return result;
+    }
+    return ok(undefined);
+  }, []);
+
+  const signupStudent = useCallback(async (credentials: SignupFormData): Promise<Result<void>> => {
+    dispatch({ type: "START_AUTH" });
+    const result = await authService.signup(credentials);
+    if (!result.success) {
+      dispatch({ type: "AUTH_FAIL" });
+      return result;
+    }
+    return ok(undefined);
+  }, []);
+
+  const logout = useCallback(async (): Promise<Result<void>> => {
+    dispatch({ type: "LOGOUT" });
+    return await authService.logout();
+  }, []);
+
+  const resetPassword = useCallback(async (email: string): Promise<Result<void>> => {
+    return await authService.resetPassword(email);
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ state, dispatch, login, signupStudent, logout, resetPassword }}>
+      {children}
+    </AuthContext.Provider>
   );
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used inside AuthProvider.");
-  }
-  return context;
 }

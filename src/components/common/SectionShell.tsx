@@ -19,9 +19,9 @@ export function SectionShell({
     <section
       className={cn(
         "relative py-10 sm:py-16 lg:py-24",
-        tone === "light" && "bg-[#F8FAFF]",
+        tone === "light" && "bg-muted",
         tone === "white" && "bg-white",
-        tone === "dark" && "bg-[#111E79] text-white",
+        tone === "dark" && "bg-primary text-white",
         className,
       )}
     >

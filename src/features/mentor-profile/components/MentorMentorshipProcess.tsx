@@ -13,8 +13,8 @@ export function MentorMentorshipProcess({ mentor }: { mentor: Mentor }) {
       <div className="flex flex-col gap-4">
         {mentor.mentorshipProcess.map((step, idx) => (
           <div key={idx} className="relative">
-            <div className="flex gap-6 items-start p-6 rounded-2xl bg-[#F8FAFC] border border-slate-100">
-              <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0 text-[#111E79] font-bold text-lg">
+            <div className="flex gap-6 items-start p-6 rounded-2xl bg-muted border border-slate-100">
+              <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0 text-primary font-bold text-lg">
                 {step.step}
               </div>
               <div>

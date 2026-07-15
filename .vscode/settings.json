@@ -1,5 +1,9 @@
 {
     "files.exclude": {
         "": true
-    }
+    },
+    "deno.enable": true,
+    "deno.enablePaths": [
+        "supabase/functions"
+    ]
 }

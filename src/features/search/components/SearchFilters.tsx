@@ -22,7 +22,7 @@ export function SearchFilters() {
           className={cn(
             "px-3.5 py-1.5 rounded-full text-sm font-semibold whitespace-nowrap transition",
             filter === f.id
-              ? "bg-[#111E79] text-white"
+              ? "bg-primary text-white"
               : "bg-slate-100 text-slate-600 hover:bg-slate-200"
           )}
         >

@@ -19,16 +19,16 @@ export function MentorFAQ({ mentor }: { mentor: Mentor }) {
           return (
             <div 
               key={faq.id} 
-              className={`border rounded-2xl overflow-hidden transition-all duration-300 ${isOpen ? 'border-[#5B35F2]/20 bg-[#F8FAFC]' : 'border-slate-100 bg-white hover:border-slate-200'}`}
+              className={`border rounded-2xl overflow-hidden transition-all duration-300 ${isOpen ? 'border-secondary/20 bg-muted' : 'border-slate-100 bg-white hover:border-slate-200'}`}
             >
               <button
                 className="w-full flex items-center justify-between p-5 text-left focus:outline-none"
                 onClick={() => setOpenId(isOpen ? null : faq.id)}
               >
-                <span className={`font-semibold text-lg transition-colors ${isOpen ? 'text-[#111E79]' : 'text-slate-800'}`}>
+                <span className={`font-semibold text-lg transition-colors ${isOpen ? 'text-primary' : 'text-slate-800'}`}>
                   {faq.question}
                 </span>
-                <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 ${isOpen ? 'bg-[#5B35F2]/10 text-[#5B35F2] rotate-180' : 'bg-slate-50 text-slate-400'}`}>
+                <span className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-transform duration-300 ${isOpen ? 'bg-secondary/10 text-secondary rotate-180' : 'bg-slate-50 text-slate-400'}`}>
                   <ChevronDown className="w-5 h-5" />
                 </span>
               </button>

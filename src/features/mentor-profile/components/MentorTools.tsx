@@ -12,7 +12,7 @@ export function MentorTools({ mentor }: { mentor: Mentor }) {
         {mentor.tools.map((tool, i) => (
           <div 
             key={i}
-            className="px-4 py-2.5 bg-slate-50 text-slate-700 font-medium rounded-xl border border-slate-200 hover:border-[#19C7C8] hover:text-[#111E79] hover:bg-[#19C7C8]/5 transition-colors cursor-default"
+            className="px-4 py-2.5 bg-slate-50 text-slate-700 font-medium rounded-xl border border-slate-200 hover:border-accent hover:text-primary hover:bg-accent/5 transition-colors cursor-default"
           >
             {tool}
           </div>

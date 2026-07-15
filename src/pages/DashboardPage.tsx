@@ -1,7 +1,7 @@
 import { Bell, Bot, CheckCircle2, FileText, PlayCircle, Trophy } from "lucide-react";
 
 import { DashboardWidget } from "@/components/dashboard/DashboardWidget";
-import { useAuth } from "@/context/AuthContext";
+import { useAuth } from "@/hooks/useAuth";
 import { dashboardMetrics } from "@/data/platform";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
@@ -17,7 +17,7 @@ export default function DashboardPage() {
             <p className="text-sm text-[#64748B]">Welcome back</p>
             <h1 className="text-2xl font-black text-[#0F172A]">{auth.user?.email ?? "Learner"}</h1>
           </div>
-          <button type="button" onClick={() => void auth.signOut()} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-[#0F172A]">Sign out</button>
+          <button type="button" onClick={() => void (auth as unknown as {signOut: () => void}).signOut()} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-[#0F172A]">Sign out</button>
         </div>
       </div>
       <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[240px_1fr_320px] lg:px-8">

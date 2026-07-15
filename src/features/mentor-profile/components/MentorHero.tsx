@@ -7,10 +7,10 @@ interface MentorHeroProps {
 
 export function MentorHero({ mentor }: MentorHeroProps) {
   return (
-    <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-[#111E79] via-[#2F1F8A] to-[#5B35F2] text-white p-8 md:p-12 mb-8 shadow-xl shadow-[#5B35F2]/10 border border-white/10 isolate">
+    <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-primary via-indigo-900 to-[#5B35F2] text-white p-8 md:p-12 mb-8 shadow-xl shadow-secondary/10 border border-white/10 isolate">
       {/* Background glow effects */}
-      <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-96 h-96 bg-[#19C7C8] rounded-full blur-[120px] opacity-20 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-96 h-96 bg-[#5B35F2] rounded-full blur-[100px] opacity-40 pointer-events-none" />
+      <div className="absolute top-0 right-0 -translate-y-12 translate-x-1/3 w-96 h-96 bg-accent rounded-full blur-[120px] opacity-20 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 translate-y-1/3 -translate-x-1/3 w-96 h-96 bg-secondary rounded-full blur-[100px] opacity-40 pointer-events-none" />
 
       <div className="relative z-10 flex flex-col md:flex-row gap-8 items-start md:items-center">
         {/* Avatar */}
@@ -26,7 +26,7 @@ export function MentorHero({ mentor }: MentorHeroProps) {
             <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl" />
           </div>
           {mentor.verified && (
-            <div className="absolute -bottom-3 -right-3 bg-white text-[#19C7C8] p-1.5 rounded-full shadow-lg">
+            <div className="absolute -bottom-3 -right-3 bg-white text-accent p-1.5 rounded-full shadow-lg">
               <CheckCircle2 className="w-6 h-6 fill-[#19C7C8] text-white" />
             </div>
           )}
@@ -36,7 +36,7 @@ export function MentorHero({ mentor }: MentorHeroProps) {
         <div className="grow">
           <div className="flex flex-wrap items-center gap-3 mb-2">
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{mentor.name}</h1>
-            <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/10 text-[#19C7C8]">
+            <span className="px-3 py-1 bg-white/10 backdrop-blur-md rounded-full text-sm font-medium border border-white/10 text-accent">
               Top Mentor
             </span>
           </div>
@@ -72,7 +72,7 @@ export function MentorHero({ mentor }: MentorHeroProps) {
 
         {/* Quick Actions (Desktop only, mobile will have sticky bar) */}
         <div className="hidden md:flex flex-col gap-3 shrink-0 w-48">
-          <button className="w-full py-3 px-4 bg-white text-[#111E79] font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200 text-sm">
+          <button className="w-full py-3 px-4 bg-white text-primary font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200 text-sm">
             Book Counselling
           </button>
           <button className="w-full py-3 px-4 bg-white/10 backdrop-blur-md text-white font-medium rounded-xl hover:bg-white/20 border border-white/20 transition-all flex items-center justify-center gap-2 text-sm">

@@ -18,6 +18,7 @@ export type PaginatedResult<TRecord> = {
   count: number;
   page: number;
   pageSize: number;
+  totalPages: number;
 };
 
 export function getSupabaseClientOrThrow() {

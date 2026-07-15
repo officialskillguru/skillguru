@@ -19,7 +19,7 @@ export function MentorReviews({ mentor }: { mentor: Mentor }) {
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                     {review.studentName}
-                    {review.isVerified && <CheckCircle className="w-3.5 h-3.5 text-[#19C7C8]" />}
+                    {review.isVerified && <CheckCircle className="w-3.5 h-3.5 text-accent" />}
                   </h3>
                   <div className="text-xs font-medium text-slate-500">{review.courseName}</div>
                 </div>

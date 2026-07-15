@@ -29,7 +29,7 @@ export function FileUpload({ bucket, folder, label, value, onUploaded, onClear }
       const result = await uploadFile(bucket, file, folder);
       onUploaded(result);
       toast.success("File uploaded successfully.");
-    } catch (error) {
+    } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "File upload failed.");
     } finally {
       setUploading(false);
@@ -39,13 +39,13 @@ export function FileUpload({ bucket, folder, label, value, onUploaded, onClear }
 
   return (
     <div className="space-y-2">
-      <label htmlFor={inputId} className="text-xs font-black text-[#111E79] dark:text-slate-300">
+      <label htmlFor={inputId} className="text-xs font-black text-primary dark:text-slate-300">
         {label}
       </label>
-      <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-[#F8FAFC] p-3 dark:border-slate-800 dark:bg-slate-900">
+      <div className="flex items-center gap-3 rounded-xl border border-dashed border-slate-300 bg-muted p-3 dark:border-slate-800 dark:bg-slate-900">
         <label
           htmlFor={inputId}
-          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-[#111E79] px-4 text-xs font-black text-white dark:bg-cyan-400 dark:text-[#111E79]"
+          className="inline-flex h-10 cursor-pointer items-center gap-2 rounded-lg bg-primary px-4 text-xs font-black text-white dark:bg-cyan-400 dark:text-primary"
         >
           <Upload className="size-4" />
           <span>{uploading ? "Uploading..." : "Choose File"}</span>

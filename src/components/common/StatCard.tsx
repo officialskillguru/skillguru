@@ -51,11 +51,11 @@ export function StatCard({
       <div className="mb-5 flex size-11 items-center justify-center rounded-xl bg-[#00C2FF]/10 text-[#00A8E8]">
         {renderStatIcon(icon)}
       </div>
-      <p className={dark ? "text-3xl font-black text-white" : "text-3xl font-black text-[#0F172A]"}>
+      <p className={dark ? "text-3xl font-black text-white" : "text-3xl font-black text-foreground"}>
         <CountUp end={value} duration={2} enableScrollSpy scrollSpyOnce />
         {suffix}
       </p>
-      <p className={dark ? "mt-1 text-sm text-white/60" : "mt-1 text-sm text-[#64748B]"}>{label}</p>
+      <p className={dark ? "mt-1 text-sm text-white/60" : "mt-1 text-sm text-muted-foreground"}>{label}</p>
     </div>
   );
 }

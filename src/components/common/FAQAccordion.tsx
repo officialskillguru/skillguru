@@ -13,13 +13,13 @@ export function FAQAccordion({ items }: Readonly<{ items: FAQItem[] }>) {
         <div key={item.question}>
           <button
             type="button"
-            className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-base font-bold text-[#0F172A]"
+            className="flex w-full items-center justify-between gap-4 px-6 py-5 text-left text-base font-bold text-foreground"
             onClick={() => setOpenIndex(index === openIndex ? -1 : index)}
           >
             {item.question}
-            <ChevronDown className={cn("size-5 shrink-0 text-[#007BFF] transition", index === openIndex && "rotate-180")} />
+            <ChevronDown className={cn("size-5 shrink-0 text-primary transition", index === openIndex && "rotate-180")} />
           </button>
-          {index === openIndex ? <p className="px-6 pb-6 text-sm leading-7 text-[#64748B]">{item.answer}</p> : null}
+          {index === openIndex ? <p className="px-6 pb-6 text-sm leading-7 text-muted-foreground">{item.answer}</p> : null}
         </div>
       ))}
     </div>

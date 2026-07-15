@@ -21,8 +21,8 @@ export function CTAButton({
       className={cn(
         "group inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] px-5 text-sm font-bold transition duration-300",
         variant === "primary" &&
-          "bg-[#5B35F2] text-white shadow-[0_18px_45px_rgba(17,71,255,0.24)] hover:-translate-y-1 hover:bg-[#111E79]",
-        variant === "secondary" && "border border-[#5B35F2] bg-white text-[#5B35F2] hover:-translate-y-1 hover:bg-[#F1F5FF]",
+          "bg-secondary text-white shadow-[0_18px_45px_rgba(17,71,255,0.24)] hover:-translate-y-1 hover:bg-primary",
+        variant === "secondary" && "border border-secondary bg-white text-secondary hover:-translate-y-1 hover:bg-indigo-50",
         variant === "ghost" && "border border-white/20 bg-white/5 text-white hover:bg-white/10",
         className,
       )}

@@ -58,7 +58,7 @@ export default function PlacementStoryPage() {
       });
       form.reset();
       setCallbackStatus("Callback request logged! We will contact you shortly.");
-    } catch (err) {
+    } catch (err: unknown) {
       setCallbackStatus(err instanceof Error ? err.message : "Failed to log callback request.");
     }
   }
@@ -66,16 +66,16 @@ export default function PlacementStoryPage() {
   return (
     <main ref={pageRef} className="page-shell">
       {/* Breadcrumb & Navigation */}
-      <section className="bg-white px-4 py-5 border-b border-[#E5EAF5] sm:px-6 lg:px-8">
+      <section className="bg-card px-4 py-5 border-b border-border sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="flex items-center justify-between">
             <Link
               to={routes.placements}
-              className="inline-flex items-center gap-2 text-sm font-black text-[#5B35F2] hover:-translate-x-0.5 transition"
+              className="inline-flex items-center gap-2 text-sm font-black text-secondary hover:-translate-x-0.5 transition"
             >
               <ArrowLeft className="size-4" /> Back to Placements
             </Link>
-            <div className="flex items-center gap-2 text-xs font-semibold text-[#64748B] hidden sm:flex">
+            <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hidden sm:flex">
               <Link to={routes.home}>Home</Link>
               <ChevronRight className="size-3" />
               <Link to={routes.placements}>Placements</Link>
@@ -87,7 +87,7 @@ export default function PlacementStoryPage() {
       </section>
 
       {/* Hero Header Section */}
-      <section className="relative overflow-hidden bg-[#111E79] px-4 py-12 text-white sm:px-6 lg:px-8 lg:py-16">
+      <section className="relative overflow-hidden bg-primary px-4 py-12 text-primary-foreground sm:px-6 lg:px-8 lg:py-16">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_15%,rgba(25,217,255,0.22),transparent_26rem)]" />
         <div className="relative mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[150px_1fr] lg:items-center">
@@ -98,7 +98,7 @@ export default function PlacementStoryPage() {
 
             <div>
               <div className="premium-reveal flex flex-wrap items-center gap-3">
-                <span className="rounded-md bg-[#19C7C8] px-2.5 py-1 text-xs font-black text-[#111E79] uppercase tracking-wider">
+                <span className="rounded-md bg-accent px-2.5 py-1 text-xs font-black text-primary uppercase tracking-wider">
                   Success Story
                 </span>
                 <span className="rounded-md bg-green-500/20 border border-green-500/35 px-2.5 py-1 text-xs font-black text-green-300">
@@ -110,17 +110,17 @@ export default function PlacementStoryPage() {
                 How {story.name} Landed a Role as {story.role}
               </h1>
               
-              <div className="premium-reveal mt-6 grid gap-4 sm:grid-cols-3 max-w-3xl text-sm text-white/80">
+              <div className="premium-reveal mt-6 grid gap-4 sm:grid-cols-3 max-w-3xl text-sm text-primary-foreground/80">
                 <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl p-3">
-                  <Building2 className="size-5 text-[#19C7C8]" />
+                  <Building2 className="size-5 text-accent" />
                   <span>Placed At: <strong>{story.company}</strong></span>
                 </div>
                 <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl p-3">
-                  <Clock className="size-5 text-[#19C7C8]" />
+                  <Clock className="size-5 text-accent" />
                   <span>Course Term: <strong>{story.duration}</strong></span>
                 </div>
                 <div className="flex items-center gap-2.5 bg-white/5 border border-white/10 rounded-xl p-3">
-                  <TrendingUp className="size-5 text-[#19C7C8]" />
+                  <TrendingUp className="size-5 text-accent" />
                   <span>Package Growth: <strong>{story.growth}</strong></span>
                 </div>
               </div>
@@ -130,7 +130,7 @@ export default function PlacementStoryPage() {
       </section>
 
       {/* Main Details Section */}
-      <section className="bg-[#F8FAFF] px-4 py-12 sm:px-6 lg:px-8">
+      <section className="bg-muted px-4 py-12 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
             
@@ -141,27 +141,27 @@ export default function PlacementStoryPage() {
               <div className="premium-card-motion grid gap-4 sm:grid-cols-2">
                 <div className="rounded-xl border border-red-100 bg-red-50/50 p-6">
                   <p className="text-xs font-black uppercase tracking-wider text-red-700">Before SkillGuru</p>
-                  <h3 className="text-xl font-black text-[#111E79] mt-2">{story.before}</h3>
-                  <p className="text-xs text-[#64748B] mt-2">
+                  <h3 className="text-xl font-black text-primary mt-2">{story.before}</h3>
+                  <p className="text-xs text-muted-foreground mt-2">
                     Faced obstacles switching domains, lacked active developer projects, and wanted structured guidance.
                   </p>
                 </div>
                 <div className="rounded-xl border border-green-100 bg-green-50/50 p-6">
                   <p className="text-xs font-black uppercase tracking-wider text-green-700">Placed Outcome</p>
-                  <h3 className="text-xl font-black text-[#111E79] mt-2">{story.after}</h3>
-                  <p className="text-xs text-[#64748B] mt-2">
+                  <h3 className="text-xl font-black text-primary mt-2">{story.after}</h3>
+                  <p className="text-xs text-muted-foreground mt-2">
                     Landed placement at a tier-1 partner with high technical score, portfolio proof, and custom salary packages.
                   </p>
                 </div>
               </div>
 
               {/* Mock Video Interview Block */}
-              <div className="premium-card-motion overflow-hidden rounded-xl border border-[#E5EAF5] bg-white shadow-sm p-6">
-                <h2 className="text-xl font-black text-[#111E79] mb-4 flex items-center gap-2">
-                  <Video className="size-5 text-[#5B35F2]" /> Video Testimonial Preview
+              <div className="premium-card-motion overflow-hidden rounded-xl border border-border bg-card shadow-sm p-6">
+                <h2 className="text-xl font-black text-primary mb-4 flex items-center gap-2">
+                  <Video className="size-5 text-secondary" /> Video Testimonial Preview
                 </h2>
                 
-                <div className="relative aspect-video rounded-xl bg-[#020817] overflow-hidden border border-slate-800">
+                <div className="relative aspect-video rounded-xl bg-card overflow-hidden border border-border">
                   {!isPlayingVideo ? (
                     <>
                       <img
@@ -173,7 +173,7 @@ export default function PlacementStoryPage() {
                         <button
                           type="button"
                           onClick={() => setIsPlayingVideo(true)}
-                          className="grid size-16 place-items-center rounded-full bg-white text-[#5B35F2] shadow-lg transition hover:scale-105 hover:bg-[#19C7C8] hover:text-[#111E79]"
+                          className="grid size-16 place-items-center rounded-full bg-white text-secondary shadow-lg transition hover:scale-105 hover:bg-accent hover:text-primary"
                           aria-label="Play story video"
                         >
                           <Play className="ml-1 size-7 fill-current" />
@@ -185,11 +185,11 @@ export default function PlacementStoryPage() {
                     </>
                   ) : (
                     <div className="size-full flex flex-col items-center justify-center p-6 bg-slate-900 text-white text-center">
-                      <Quote className="size-10 text-[#19C7C8] opacity-60 mb-4" />
+                      <Quote className="size-10 text-accent opacity-60 mb-4" />
                       <p className="max-w-md text-sm leading-6 italic text-white/90">
                         &quot;{story.quote}&quot;
                       </p>
-                      <p className="mt-4 text-xs font-black text-[#19C7C8]">
+                      <p className="mt-4 text-xs font-black text-accent">
                         - {story.name} ({story.role} at {story.company})
                       </p>
                       <button
@@ -205,43 +205,43 @@ export default function PlacementStoryPage() {
               </div>
 
               {/* Case Narrative */}
-              <div className="premium-card-motion rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-sm sm:p-8 space-y-6">
+              <div className="premium-card-motion rounded-xl border border-border bg-card p-6 shadow-sm sm:p-8 space-y-6">
                 <section>
-                  <h3 className="text-lg font-black text-[#111E79]">The Challenge</h3>
-                  <p className="text-sm leading-7 text-[#64748B] mt-2">
+                  <h3 className="text-lg font-black text-primary">The Challenge</h3>
+                  <p className="text-sm leading-7 text-muted-foreground mt-2">
                     Coming from a background of {story.before}, {story.name} faced difficulty getting recruiter callbacks. Hiring managers were looking for verifiable project proof, custom repository contributions, and familiarity with production standards that self-study courses often omit.
                   </p>
                 </section>
 
-                <section className="border-t border-[#E5EAF5] pt-5">
-                  <h3 className="text-lg font-black text-[#111E79]">The SkillGuru Experience</h3>
-                  <p className="text-sm leading-7 text-[#64748B] mt-2">
+                <section className="border-t border-border pt-5">
+                  <h3 className="text-lg font-black text-primary">The SkillGuru Experience</h3>
+                  <p className="text-sm leading-7 text-muted-foreground mt-2">
                     Enrolling in the <strong>{story.course}</strong>, they were matched with a senior industry mentor. The core study strategy involved:
                   </p>
-                  <ul className="mt-3 space-y-2 text-sm text-[#64748B] pl-4 list-disc">
+                  <ul className="mt-3 space-y-2 text-sm text-muted-foreground pl-4 list-disc">
                     <li>Completing structured labs and technical submissions.</li>
                     <li>Building mock projects featuring real APIs and databases.</li>
                     <li>Conducting 1-on-1 mock interview loops with mentor review gates.</li>
                   </ul>
                 </section>
 
-                <section className="border-t border-[#E5EAF5] pt-5">
-                  <h3 className="text-lg font-black text-[#111E79]">The Outcome</h3>
-                  <p className="text-sm leading-7 text-[#64748B] mt-2">
+                <section className="border-t border-border pt-5">
+                  <h3 className="text-lg font-black text-primary">The Outcome</h3>
+                  <p className="text-sm leading-7 text-muted-foreground mt-2">
                     Upon passing the recruitment readiness review, {story.name} was entered into the corporate placement pipeline, securing multiple offers and ultimately accepting a package of <strong>{story.package}</strong> to work as a {story.role} at {story.company}.
                   </p>
                 </section>
               </div>
 
               {/* Course Call-to-action */}
-              <div className="premium-card-motion rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="premium-card-motion rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-wider text-[#5B35F2]">Program Taken</p>
-                  <h4 className="text-lg font-black text-[#111E79] mt-1">{story.course}</h4>
+                  <p className="text-xs font-black uppercase tracking-wider text-secondary">Program Taken</p>
+                  <h4 className="text-lg font-black text-primary mt-1">{story.course}</h4>
                 </div>
                 <Link
                   to={routes.courses}
-                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-[#5B35F2] px-5 text-xs font-black text-white hover:bg-[#111E79] transition"
+                  className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-secondary px-5 text-xs font-black text-primary-foreground hover:bg-primary transition"
                 >
                   Explore Program <ExternalLink className="size-3.5" />
                 </Link>
@@ -252,9 +252,9 @@ export default function PlacementStoryPage() {
             <aside className="space-y-6">
               
               {/* Form Block */}
-              <div className="rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
-                <h3 className="font-black text-[#111E79] text-lg">Replicate this success</h3>
-                <p className="text-xs text-[#64748B] mt-1 leading-5">
+              <div className="rounded-xl border border-border bg-card p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
+                <h3 className="font-black text-primary text-lg">Replicate this success</h3>
+                <p className="text-xs text-muted-foreground mt-1 leading-5">
                   Leave your contact details and our team will advise you on course selection and customized career transition goals.
                 </p>
 
@@ -263,29 +263,29 @@ export default function PlacementStoryPage() {
                     name="fullName"
                     required
                     placeholder="Full Name"
-                    className="w-full h-11 rounded-lg border border-[#E5EAF5] px-3.5 text-xs outline-none focus:border-[#5B35F2] transition bg-white"
+                    className="w-full h-11 rounded-lg border border-border px-3.5 text-xs outline-none focus:border-secondary transition bg-card"
                   />
                   <input
                     name="phone"
                     required
                     placeholder="Phone Number"
-                    className="w-full h-11 rounded-lg border border-[#E5EAF5] px-3.5 text-xs outline-none focus:border-[#5B35F2] transition bg-white"
+                    className="w-full h-11 rounded-lg border border-border px-3.5 text-xs outline-none focus:border-secondary transition bg-card"
                   />
                   <input
                     name="email"
                     required
                     type="email"
                     placeholder="Email Address"
-                    className="w-full h-11 rounded-lg border border-[#E5EAF5] px-3.5 text-xs outline-none focus:border-[#5B35F2] transition bg-white"
+                    className="w-full h-11 rounded-lg border border-border px-3.5 text-xs outline-none focus:border-secondary transition bg-card"
                   />
                   <button
                     type="submit"
-                    className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-[#5B35F2] text-xs font-black text-white hover:bg-[#111E79] transition"
+                    className="w-full h-11 inline-flex items-center justify-center gap-2 rounded-lg bg-secondary text-xs font-black text-primary-foreground hover:bg-primary transition"
                   >
                     Request Callback <Send className="size-3" />
                   </button>
                   {callbackStatus && (
-                    <p className="mt-3 rounded-md bg-[#F1F5FF] p-2.5 text-xs font-semibold text-[#5B35F2] leading-5">
+                    <p className="mt-3 rounded-md bg-secondary/10 p-2.5 text-xs font-semibold text-secondary leading-5">
                       {callbackStatus}
                     </p>
                   )}
@@ -293,8 +293,8 @@ export default function PlacementStoryPage() {
               </div>
 
               {/* Review metrics */}
-              <div className="rounded-xl border border-[#E5EAF5] bg-white p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
-                <h3 className="font-black text-[#111E79] text-base">Key Metrics</h3>
+              <div className="rounded-xl border border-border bg-card p-6 shadow-[0_16px_50px_rgba(10,42,136,0.05)]">
+                <h3 className="font-black text-primary text-base">Key Metrics</h3>
                 <div className="mt-4 space-y-4">
                   {[
                     ["Package Offered", story.package, Star],
@@ -304,12 +304,12 @@ export default function PlacementStoryPage() {
                     const IconComp = Icon as React.ComponentType<{ className?: string }>;
                     return (
                       <div key={label as string} className="flex items-center gap-3">
-                        <span className="grid size-8 place-items-center rounded-lg bg-[#F1F5FF] text-[#5B35F2] shrink-0">
+                        <span className="grid size-8 place-items-center rounded-lg bg-secondary/10 text-secondary shrink-0">
                           <IconComp className="size-4" />
                         </span>
                         <div>
-                          <p className="text-xs text-[#64748B]">{label as string}</p>
-                          <p className="text-sm font-black text-[#111E79] mt-0.5">{val as string}</p>
+                          <p className="text-xs text-muted-foreground">{label as string}</p>
+                          <p className="text-sm font-black text-primary mt-0.5">{val as string}</p>
                         </div>
                       </div>
                     );

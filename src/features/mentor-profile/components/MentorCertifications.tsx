@@ -22,7 +22,7 @@ export function MentorCertifications({ mentor }: { mentor: Mentor }) {
             </div>
             
             <div>
-              <h3 className="text-lg font-bold text-slate-900 group-hover:text-[#111E79] transition-colors line-clamp-2 leading-tight mb-1">
+              <h3 className="text-lg font-bold text-slate-900 group-hover:text-primary transition-colors line-clamp-2 leading-tight mb-1">
                 {cert.name}
               </h3>
               <div className="text-sm font-medium text-slate-500">

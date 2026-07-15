@@ -18,13 +18,13 @@ export function CTABanner({
             <div className="mt-6 flex flex-wrap gap-3 text-xs font-bold text-white/75">
               {["Expert Mentors", "Placement Assistance", "Interview Preparation"].map((item) => (
                 <span key={item} className="inline-flex items-center gap-2">
-                  <CheckCircle2 className="size-4 text-[#19C7C8]" />
+                  <CheckCircle2 className="size-4 text-accent" />
                   {item}
                 </span>
               ))}
             </div>
           </div>
-          <CTAButton to={routes.freeCounselling} className="shrink-0 bg-[#19C7C8] text-[#111E79] hover:bg-white">
+          <CTAButton to={routes.freeCounselling} className="shrink-0 bg-accent text-primary hover:bg-white">
             Book Free Counselling
           </CTAButton>
         </div>

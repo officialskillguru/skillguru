@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ES2022",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "baseUrl": "../../",
+    "paths": {
+      "@supabase/supabase-js": ["node_modules/@supabase/supabase-js"]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "deno.d.ts"
+  ]
+}

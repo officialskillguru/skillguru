@@ -37,7 +37,7 @@ export function MentorStudentOutcomes({ mentor }: { mentor: Mentor }) {
                 </div>
                 
                 <div className="flex flex-col pl-4 md:pl-4">
-                  <span className="text-xs font-bold text-[#19C7C8] uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <span className="text-xs font-bold text-accent uppercase tracking-wider mb-1 flex items-center gap-1.5">
                     <TrendingUp className="w-3 h-3" /> After {test.mentorshipDuration}
                   </span>
                   <div className="flex items-center gap-2 mb-0.5">
@@ -46,7 +46,7 @@ export function MentorStudentOutcomes({ mentor }: { mentor: Mentor }) {
                     )}
                     <span className="font-bold text-slate-900">{test.currentRole}</span>
                   </div>
-                  <span className="text-sm font-bold text-[#111E79]">{test.currentSalary}</span>
+                  <span className="text-sm font-bold text-primary">{test.currentSalary}</span>
                 </div>
               </div>
             </div>

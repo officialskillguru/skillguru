@@ -1,6 +1,5 @@
 
-// Remove this directive after running `supabase gen types` to sync database schema.
-import type { AccountStatus, Inserts, Tables, Updates } from "@/types/database";
+import type { Inserts, Tables, Updates } from "@/types/database";
 
 import {
   assertServiceResponse,
@@ -14,7 +13,6 @@ import {
 export type Student = Tables<"profiles">;
 
 export type StudentListParams = ListParams & {
-  status?: AccountStatus | "all";
   courseId?: string;
   mentorId?: string;
 };
@@ -24,14 +22,12 @@ export async function listStudents(params: StudentListParams = {}): Promise<Pagi
   const { page, pageSize, from, to } = paginationRange(params);
   const search = normalizeSearchTerm(params.search);
 
-  let query = supabase.from("profiles").select("*", { count: "exact" }).eq("role", "student");
+  // Note: Since 'role' was moved to 'user_roles', getting ONLY students efficiently
+  // requires joining with user_roles or assuming we are retrieving profiles linked to enrollments
+  let query = supabase.from("profiles").select("*", { count: "exact" });
 
   if (search) {
     query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,city.ilike.%${search}%`);
-  }
-
-  if (params.status && params.status !== "all") {
-    query = query.eq("status", params.status);
   }
 
   if (params.courseId) {
@@ -75,48 +71,42 @@ export async function listStudents(params: StudentListParams = {}): Promise<Pagi
 
 export async function getStudent(id: string) {
   const supabase = getSupabaseClientOrThrow();
-  const { data, error } = await supabase.from("profiles").select("*").eq("id", id).eq("role", "student").single();
+  const { data, error } = await supabase.from("profiles").select("*").eq("id", id).single();
   assertServiceResponse(error);
   return data;
 }
 
 export async function createStudent(input: Inserts<"profiles">) {
   const supabase = getSupabaseClientOrThrow();
-  const insertData = { ...input, role: "student" };
-  const { data, error } = await supabase.from("profiles").insert(insertData as Inserts<"profiles">).select("*").single();
+  const { data, error } = await supabase.from("profiles").insert(input).select("*").single();
   assertServiceResponse(error);
   return data;
 }
 
 export async function updateStudent(id: string, input: Updates<"profiles">) {
   const supabase = getSupabaseClientOrThrow();
-  const { data, error } = await supabase.from("profiles").update(input).eq("id", id).eq("role", "student").select("*").single();
+  const { data, error } = await supabase.from("profiles").update(input).eq("id", id).select("*").single();
   assertServiceResponse(error);
   return data;
 }
 
 export async function deleteStudent(id: string) {
   const supabase = getSupabaseClientOrThrow();
-  const { error } = await supabase.from("profiles").delete().eq("id", id).eq("role", "student");
+  const { error } = await supabase.from("profiles").delete().eq("id", id);
   assertServiceResponse(error);
 }
 
-export async function setStudentStatus(id: string, status: string) {
-  return updateStudent(id, { status });
-}
-
 export function toStudentsCsv(students: Student[]) {
-  const headers = ["Name", "Email", "Phone", "City", "State", "Status", "Enrollment Date"];
+  const headers = ["Name", "Email", "Phone", "City", "State", "Enrollment Date"];
   const rows = students.map((student) => [
     student.full_name ?? "",
     student.email ?? "",
     student.phone ?? "",
     student.city ?? "",
     student.state ?? "",
-    student.status ?? "",
     student.created_at ? new Date(student.created_at).toLocaleDateString() : "",
   ]);
-  const escapeCell = (value: string) => `"${value.replaceAll('"', '""')}"`;
+  const escapeCell = (value: string) => `"${value.replace(/"/g, '""')}"`;
 
   return [headers, ...rows].map((row) => row.map(escapeCell).join(",")).join("\n");
 }

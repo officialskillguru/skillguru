@@ -43,10 +43,10 @@ export function MentorExperience({ mentor }: { mentor: Mentor }) {
             </ul>
 
             {exp.achievements?.length > 0 && (
-              <div className="bg-[#F8FAFC] rounded-xl p-5 border border-slate-100">
+              <div className="bg-muted rounded-xl p-5 border border-slate-100">
                 <h4 className="text-sm font-bold text-slate-900 uppercase tracking-wider mb-3 flex items-center gap-2">
-                  <span className="w-4 h-4 rounded-full bg-[#19C7C8]/20 flex items-center justify-center">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#19C7C8]" />
+                  <span className="w-4 h-4 rounded-full bg-accent/20 flex items-center justify-center">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
                   </span>
                   Key Achievements
                 </h4>

@@ -20,7 +20,7 @@ export function MentorAbout({ mentor }: MentorAboutProps) {
       </div>
 
       {mentor.teachingPhilosophy && (
-        <div className="bg-[#F8FAFC] rounded-2xl p-6 border border-slate-100">
+        <div className="bg-muted rounded-2xl p-6 border border-slate-100">
           <h3 className="text-lg font-bold text-slate-900 mb-3">Teaching Philosophy</h3>
           <p className="text-slate-600 italic leading-relaxed">
             "{mentor.teachingPhilosophy}"

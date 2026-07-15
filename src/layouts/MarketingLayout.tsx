@@ -5,7 +5,7 @@ import { Navbar } from "@/components/site/Navbar";
 
 export function MarketingLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <div className="min-h-svh bg-white text-[#0F172A]">
+    <div className="min-h-svh bg-background text-foreground">
       <Navbar />
       <div id="main-content">
         {children}

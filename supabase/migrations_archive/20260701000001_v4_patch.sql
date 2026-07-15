@@ -1,0 +1,1 @@
+ALTER TABLE IF EXISTS public.certificates ADD COLUMN IF NOT EXISTS credential_id text, ADD COLUMN IF NOT EXISTS verification_hash text, ADD COLUMN IF NOT EXISTS verification_url text, ADD COLUMN IF NOT EXISTS pdf_file_id uuid, ADD COLUMN IF NOT EXISTS issued_by uuid;

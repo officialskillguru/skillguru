@@ -37,7 +37,7 @@ function HighlightText({ text, matches, textKey }: { text: string; matches: { ke
       parts.push(<span key={`text-${lastIndex}`}>{text.slice(lastIndex, start)}</span>);
     }
     parts.push(
-      <span key={`match-${start}`} className="bg-yellow-200 text-[#111E79] font-bold">
+      <span key={`match-${start}`} className="bg-yellow-200 text-primary font-bold">
         {text.slice(start, end + 1)}
       </span>
     );
@@ -68,13 +68,13 @@ export function SearchResultCard({ result, isActive, onMouseEnter, onClick }: Pr
       onClick={onClick}
       className={cn(
         "w-full flex items-center justify-between p-3 rounded-xl transition text-left group",
-        isActive ? "bg-[#F1F5FF]" : "hover:bg-slate-50"
+        isActive ? "bg-indigo-50" : "hover:bg-slate-50"
       )}
     >
       <div className="flex items-center gap-4 flex-1 min-w-0">
         <div className={cn(
           "shrink-0 grid place-items-center size-10 rounded-lg",
-          isActive ? "bg-white shadow-sm text-[#5B35F2]" : "bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm"
+          isActive ? "bg-white shadow-sm text-secondary" : "bg-slate-100 text-slate-500 group-hover:bg-white group-hover:shadow-sm"
         )}>
           {record.image ? (
             <img src={record.image} alt="" className="w-full h-full object-cover rounded-lg" />
@@ -85,7 +85,7 @@ export function SearchResultCard({ result, isActive, onMouseEnter, onClick }: Pr
         <div className="flex flex-col min-w-0">
           <span className={cn(
             "text-sm font-semibold truncate",
-            isActive ? "text-[#111E79]" : "text-slate-900"
+            isActive ? "text-primary" : "text-slate-900"
           )}>
             <HighlightText text={record.title} matches={matches} textKey="title" />
           </span>
@@ -99,7 +99,7 @@ export function SearchResultCard({ result, isActive, onMouseEnter, onClick }: Pr
       
       <ArrowRight className={cn(
         "shrink-0 size-4 transition ml-4",
-        isActive ? "text-[#5B35F2] opacity-100" : "text-slate-300 opacity-0 group-hover:opacity-100"
+        isActive ? "text-secondary opacity-100" : "text-slate-300 opacity-0 group-hover:opacity-100"
       )} />
     </button>
   );

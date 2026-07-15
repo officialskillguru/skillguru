@@ -48,11 +48,11 @@ export function MentorBookingWidget({ mentor, isMobileModal = false }: { mentor:
   const displayDates = availableDates.slice(0, 4); // show next 4 available days
 
   return (
-    <div className={`bg-white ${!isMobileModal ? "rounded-3xl p-6 md:p-8 shadow-xl shadow-[#111E79]/5 border border-slate-100 sticky top-24" : "p-2"}`}>
+    <div className={`bg-white ${!isMobileModal ? "rounded-3xl p-6 md:p-8 shadow-xl shadow-primary/5 border border-slate-100 sticky top-24" : "p-2"}`}>
       {!isMobileModal && (
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-slate-900">Book Free Counselling</h3>
-          <span className="px-2.5 py-1 bg-[#19C7C8]/10 text-[#19C7C8] text-xs font-bold rounded-lg uppercase tracking-wider">
+          <span className="px-2.5 py-1 bg-accent/10 text-accent text-xs font-bold rounded-lg uppercase tracking-wider">
             Free
           </span>
         </div>
@@ -96,8 +96,8 @@ export function MentorBookingWidget({ mentor, isMobileModal = false }: { mentor:
                 }}
                 className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all duration-200 ${
                   isSelected 
-                    ? 'border-[#111E79] bg-[#111E79] text-white shadow-md' 
-                    : 'border-slate-200 bg-white text-slate-700 hover:border-[#111E79]/30 hover:bg-slate-50'
+                    ? 'border-primary bg-primary text-white shadow-md' 
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-primary/30 hover:bg-slate-50'
                 }`}
               >
                 <span className={`text-xs font-medium mb-1 ${isSelected ? 'text-white/80' : 'text-slate-500'}`}>{dayName}</span>
@@ -124,8 +124,8 @@ export function MentorBookingWidget({ mentor, isMobileModal = false }: { mentor:
                     !slot.isAvailable 
                       ? 'border-slate-100 bg-slate-50 text-slate-300 cursor-not-allowed line-through'
                       : isSelected
-                        ? 'border-[#19C7C8] bg-[#19C7C8]/10 text-[#111E79]'
-                        : 'border-slate-200 bg-white text-slate-700 hover:border-[#19C7C8]/50'
+                        ? 'border-accent bg-accent/10 text-primary'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-accent/50'
                   }`}
                 >
                   {slot.startTime}
@@ -142,7 +142,7 @@ export function MentorBookingWidget({ mentor, isMobileModal = false }: { mentor:
         disabled={!selectedDate || !selectedSlot || bookingState === 'loading'}
         className={`w-full py-4 px-6 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all duration-300 ${
           selectedDate && selectedSlot && bookingState !== 'loading'
-            ? 'bg-linear-to-r from-[#111E79] to-[#2F1F8A] text-white shadow-lg shadow-[#111E79]/20 hover:shadow-xl hover:-translate-y-0.5'
+            ? 'bg-linear-to-r from-primary to-indigo-900 text-white shadow-lg shadow-primary/20 hover:shadow-xl hover:-translate-y-0.5'
             : 'bg-slate-100 text-slate-400 cursor-not-allowed'
         }`}
       >

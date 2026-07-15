@@ -1,12 +1,10 @@
 import { lazy, Suspense, type ReactNode } from "react";
-import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PageLoader } from "@/components/common/PageLoader";
-import { ScrollToTop } from "@/components/common/ScrollToTop";
-import { AnalyticsProvider } from "@/context/AnalyticsProvider";
-import { MarketingLayout } from "@/layouts/MarketingLayout";
 import { routes } from "@/lib/routes";
-import { AdminProtectedRoute, ProtectedRoute } from "@/routes/guards";
+import { AdminProtectedRoute, ProtectedRoute, MentorProtectedRoute } from "@/routes/guards";
 
+import { DashboardLayout } from "@/layouts/DashboardLayout";
 const HomePage = lazy(() => import("@/pages/HomePage"));
 const CoursesPage = lazy(() => import("@/pages/CoursesPage"));
 const CourseDetailsPage = lazy(() => import("@/pages/CourseDetailsPage"));
@@ -19,10 +17,19 @@ const ContactPage = lazy(() => import("@/pages/ContactPage"));
 const GuidancePage = lazy(() => import("@/pages/GuidancePage"));
 const AuthPage = lazy(() => import("@/pages/AuthPage"));
 const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const MentorDashboardPage = lazy(() => import("@/pages/MentorDashboardPage"));
+const MyCoursesPage = lazy(() => import("@/pages/student/MyCoursesPage").catch(() => ({ default: () => <></> })));
+const MyCertificatesPage = lazy(() => import("@/pages/student/MyCertificatesPage").catch(() => ({ default: () => <></> })));
+const ProfileSettingsPage = lazy(() => import("@/pages/student/ProfileSettingsPage").catch(() => ({ default: () => <></> })));
+const CourseLearningPage = lazy(() => import("@/pages/student/CourseLearningPage").catch(() => ({ default: () => <></> })));
+const PaymentHistoryPage = lazy(() => import("@/pages/student/PaymentHistoryPage").catch(() => ({ default: () => <></> })));
+const ProfileCompletionPage = lazy(() => import("@/pages/student/ProfileCompletionPage"));
 const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
 const AdminPage = lazy(() => import("@/pages/AdminPage"));
 const LegalPage = lazy(() => import("@/pages/LegalPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+const PaymentSuccessPage = lazy(() => import("@/pages/PaymentSuccessPage"));
+const PaymentFailedPage = lazy(() => import("@/pages/PaymentFailedPage"));
 
 // Lazy load premium admin pages
 const AdminDashboardPage = lazy(() => import("@/pages/AdminDashboardPage"));
@@ -37,28 +44,13 @@ const AdminCMSPage = lazy(() => import("@/pages/AdminCMSPage"));
 const AdminAnalyticsPage = lazy(() => import("@/pages/AdminAnalyticsPage"));
 const AdminRolePage = lazy(() => import("@/pages/AdminRolePage"));
 const AdminSettingsPage = lazy(() => import("@/pages/AdminSettingsPage"));
+const AdminPaymentsPage = lazy(() => import("@/pages/AdminPaymentsPage"));
 
 function withSuspense(element: ReactNode) {
   return <Suspense fallback={<PageLoader />}>{element}</Suspense>;
 }
 
-function MarketingRoute({ children }: Readonly<{ children: ReactNode }>) {
-  return <MarketingLayout>{children}</MarketingLayout>;
-}
-
-import { SearchProvider, SearchModal } from "@/features/search";
-
-function RootRoute() {
-  return (
-    <AnalyticsProvider>
-      <SearchProvider>
-        <ScrollToTop />
-        <SearchModal />
-        <Outlet />
-      </SearchProvider>
-    </AnalyticsProvider>
-  );
-}
+import { RootRoute, MarketingRoute } from "./layouts";
 
 export const router = createBrowserRouter([
   {
@@ -74,14 +66,40 @@ export const router = createBrowserRouter([
       { path: "/mentors/:slug", element: withSuspense(<MarketingRoute><MentorProfilePage /></MarketingRoute>) },
       { path: routes.guidance, element: withSuspense(<MarketingRoute><GuidancePage /></MarketingRoute>) },
       { path: routes.contact, element: withSuspense(<MarketingRoute><ContactPage /></MarketingRoute>) },
-      { path: routes.login, element: withSuspense(<AuthPage mode="login" />) },
-      { path: routes.signup, element: withSuspense(<AuthPage mode="signup" />) },
+      { path: routes.login, element: withSuspense(<AuthPage />) },
+      { path: routes.signup, element: withSuspense(<AuthPage />) },
+      { path: routes.paymentSuccess, element: withSuspense(<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>) },
+      { path: routes.paymentFailed, element: withSuspense(<ProtectedRoute><PaymentFailedPage /></ProtectedRoute>) },
+      { 
+        path: "/onboarding", 
+        element: withSuspense(
+          <ProtectedRoute>
+            <ProfileCompletionPage />
+          </ProtectedRoute>
+        ) 
+      },
       {
         path: routes.dashboard,
         element: withSuspense(
           <ProtectedRoute>
-            <DashboardPage />
+            <DashboardLayout />
           </ProtectedRoute>,
+        ),
+        children: [
+          { index: true, element: withSuspense(<DashboardPage />) },
+          { path: "courses", element: withSuspense(<MyCoursesPage />) },
+          { path: "courses/:id", element: withSuspense(<CourseLearningPage />) },
+          { path: "certificates", element: withSuspense(<MyCertificatesPage />) },
+          { path: "payments", element: withSuspense(<PaymentHistoryPage />) },
+          { path: "profile", element: withSuspense(<ProfileSettingsPage />) },
+        ],
+      },
+      {
+        path: "/mentor/dashboard",
+        element: withSuspense(
+          <MentorProtectedRoute>
+            <MentorDashboardPage />
+          </MentorProtectedRoute>,
         ),
       },
       { path: routes.admin.login, element: withSuspense(<AdminLoginPage />) },
@@ -120,6 +138,7 @@ export const router = createBrowserRouter([
           { path: "transactions", element: withSuspense(<AdminAnalyticsPage />) },
           { path: "coupons", element: withSuspense(<AdminAnalyticsPage />) },
           { path: "refunds", element: withSuspense(<AdminAnalyticsPage />) },
+          { path: "payments", element: withSuspense(<AdminPaymentsPage />) },
           { path: "ai-guidance", element: withSuspense(<AdminAIGuidancePage />) },
           { path: "counselling", element: withSuspense(<AdminAIGuidancePage />) },
           { path: "users-roles", element: withSuspense(<AdminRolePage />) },

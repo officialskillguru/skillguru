@@ -13,7 +13,7 @@ export class ProgressService {
         completed_at: new Date().toISOString()
       });
 
-      if (!progressResult.success) return progressResult as any; // Cast for now, will map properly if needed
+      if (!progressResult.success) return progressResult; // Cast for now, will map properly if needed
       return ok(progressResult.data);
     } catch (err: unknown) {
       logger.error("ProgressService Error", err);
@@ -26,11 +26,12 @@ export class ProgressService {
       enrollment_id: enrollmentId,
       lesson_id: lessonId,
       video_position_seconds: seconds,
-      status: "started"
+      status: "in_progress"
     });
-    return result as any; // Map return type properly 
+    return result; // Map return type properly 
   }
 }
 
-export const progressService = new ProgressService();
 
+
+export const progressService = new ProgressService();

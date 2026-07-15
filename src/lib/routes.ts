@@ -19,9 +19,12 @@ export const routes = {
   privacyPolicy: "/privacy-policy",
   terms: "/terms",
   refundPolicy: "/refund-policy",
+  paymentSuccess: "/payment-success",
+  paymentFailed: "/payment-failed",
   admin: {
     login: "/admin/login",
     dashboard: "/admin",
+    payments: "/admin/payments",
     leads: "/admin/leads",
     courses: "/admin/courses",
     blogs: "/admin/blogs",
@@ -30,6 +33,9 @@ export const routes = {
     events: "/admin/events",
     seo: "/admin/seo",
     audit: "/admin/audit",
+  },
+  mentor: {
+    dashboard: "/mentor/dashboard",
   },
 } as const;
 

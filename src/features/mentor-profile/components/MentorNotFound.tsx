@@ -14,7 +14,7 @@ export function MentorNotFound() {
       
       <Link 
         to="/mentors" 
-        className="inline-flex items-center gap-2 px-6 py-3 bg-[#111E79] text-white font-bold rounded-xl hover:bg-[#1a2b9e] transition-colors shadow-lg shadow-[#111E79]/20"
+        className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white font-bold rounded-xl hover:bg-blue-800 transition-colors shadow-lg shadow-primary/20"
       >
         <ArrowLeft className="w-5 h-5" />
         Explore All Mentors

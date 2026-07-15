@@ -1,62 +1,81 @@
 @import "tailwindcss";
 
 @theme {
-  --color-border: #e5eaf5;
-  --color-background: #f8faff;
-  --color-foreground: #0f172a;
-  --color-primary: #111e79;
-  --color-primary-foreground: #ffffff;
-  --color-secondary: #5b35f2;
-  --color-secondary-foreground: #ffffff;
-  --color-muted: #f1f5ff;
-  --color-muted-foreground: #64748b;
-  --color-accent: #19c7c8;
-  --color-accent-foreground: #111e79;
-  --color-card: #ffffff;
-  --color-card-foreground: #0f172a;
-  --color-input: rgba(15, 23, 42, 0.12);
-  --color-ring: #19c7c8;
-  --radius-lg: 1.25rem;
-  --radius-md: 0.875rem;
-  --radius-sm: 0.75rem;
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+  
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* unified shadows for consistency */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  --shadow-premium: 0 16px 55px rgba(10, 42, 136, 0.08);
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-:root {
-  --font-inter: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
-  --brand-primary: #111e79;
-  --brand-secondary: #5b35f2;
-  --brand-cyan: #19c7c8;
-  --brand-navy: #111e79;
-  --brand-bg: #f8faff;
-  --brand-border: #e5eaf5;
-  --brand-text: #0f172a;
-  --brand-muted: #64748b;
-  --brand-success: #22c55e;
-  --background: 224 100% 99%;
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
-  --primary: 225 86% 29%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 230 100% 53%;
-  --secondary-foreground: 0 0% 100%;
-  --muted: 224 100% 97%;
-  --muted-foreground: 215 16% 47%;
-  --accent: 190 100% 55%;
-  --accent-foreground: 214 89% 11%;
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 0 0% 100%;
-  --border: 220 49% 93%;
-  --input: 220 49% 93%;
-  --ring: 190 100% 55%;
-  --radius: 1.25rem;
+@layer base {
+  :root {
+    --background: 223 100% 98%;      /* #f8faff */
+    --foreground: 222 47% 11%;       /* #0f172a */
+
+    --card: 0 0% 100%;               /* #ffffff */
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 232 75% 27%;          /* #111e79 */
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 252 89% 58%;        /* #5b35f2 */
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 224 100% 97%;           /* #f1f5ff */
+    --muted-foreground: 215 16% 47%; /* #64748b */
+
+    --accent: 180 78% 44%;           /* #19c7c8 */
+    --accent-foreground: 232 75% 27%;/* #111e79 */
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 49% 93%;           /* #e5eaf5 */
+    --input: 220 49% 93%;            /* rgba(15,23,42,0.12) eq */
+    --ring: 180 78% 44%;             /* #19c7c8 */
+
+    --radius: 0.75rem; /* 12px base radius */
+  }
 }
 
 * {
@@ -91,25 +110,26 @@ h3 {
 .page-shell {
   background:
     radial-gradient(circle at 88% 12%, rgba(25, 217, 255, 0.1), transparent 24rem),
-    linear-gradient(180deg, #ffffff 0%, #f8faff 100%);
+    linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%);
 }
 
 .enterprise-card {
-  border: 1px solid var(--brand-border);
-  background: #ffffff;
-  box-shadow: 0 16px 55px rgba(10, 42, 136, 0.08);
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--card));
+  box-shadow: var(--shadow-premium);
+  border-radius: var(--radius-lg);
 }
 
 .enterprise-shadow {
-  box-shadow: 0 18px 60px rgba(10, 42, 136, 0.1);
+  box-shadow: var(--shadow-premium);
 }
 
 .brand-gradient {
-  background: linear-gradient(135deg, #5b35f2 0%, #111e79 58%, #111e79 100%);
+  background: linear-gradient(135deg, hsl(var(--secondary)) 0%, hsl(var(--primary)) 58%, hsl(var(--primary)) 100%);
 }
 
 .cyan-gradient {
-  background: linear-gradient(135deg, #19c7c8 0%, #5b35f2 100%);
+  background: linear-gradient(135deg, hsl(var(--accent)) 0%, hsl(var(--secondary)) 100%);
 }
 
 .hide-scrollbar {
