@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { Outlet, useLocation } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   LogOut,
   Menu,
@@ -68,6 +68,7 @@ export default function AdminPage() {
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem("admin-sidebar-collapsed") === "1");
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
+  const navigate = useNavigate();
   const auth = useAuth();
 
   const toggleCollapsed = () => {
@@ -147,11 +148,16 @@ export default function AdminPage() {
 
               <div className="hidden h-8 w-px bg-border sm:block mx-1" />
 
-              <div className="flex items-center gap-3">
-                <div className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
+              <button
+                type="button"
+                onClick={() => { void navigate("/admin/profile"); }}
+                className="flex items-center gap-3 rounded-xl px-1.5 py-1 transition hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`My Profile — ${auth.authUser?.profile?.fullName ?? "Admin User"}, ${formatRole(auth.authUser?.highestRole)}`}
+              >
+                <div aria-hidden="true" className="relative flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 font-bold text-primary">
                   {initials(auth.authUser?.profile?.fullName, "A")}
                 </div>
-                <div className="hidden md:block text-left">
+                <div aria-hidden="true" className="hidden md:block text-left">
                   <p className="text-sm font-semibold text-foreground leading-tight">
                     {auth.authUser?.profile?.fullName ?? "Admin User"}
                   </p>
@@ -159,7 +165,7 @@ export default function AdminPage() {
                     {formatRole(auth.authUser?.highestRole)}
                   </p>
                 </div>
-              </div>
+              </button>
 
               <button
                 type="button"

@@ -46,7 +46,7 @@ export default function ProfileSettingsPage() {
         toast.error("File size must be less than 2MB");
         return;
       }
-      uploadAvatar.mutate(file);
+      uploadAvatar.mutate({ file });
     }
   };
 

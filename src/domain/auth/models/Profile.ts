@@ -8,6 +8,8 @@ export interface Profile {
   city: string | null;
   state: string | null;
   phone: string | null;
+  username: string | null;
+  bio: string | null;
   orgId: string | null;
   metadata: Record<string, unknown>;
   createdAt: string;
