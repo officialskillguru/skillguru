@@ -1,115 +1,24 @@
-import { useState } from "react";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { useRef, useState } from "react";
+import { Outlet, useLocation } from "react-router-dom";
 import {
-  Activity,
-  Award,
-  BookOpen,
-  BriefcaseBusiness,
-  Calendar,
-  CircleDollarSign,
-  ClipboardList,
-  FileText,
-  Gauge,
-  Heart,
-  LayoutDashboard,
-  Bell,
   LogOut,
   Menu,
-  MessageSquare,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
-  RotateCcw,
   Search,
-  Settings,
-  ShieldCheck,
-  Star,
   Sun,
-  Tag,
-  Ticket,
-  UserPlus,
-  Users,
-  Workflow,
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Logo } from "@/components/common/Logo";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { CommandPalette } from "@/components/common/CommandPalette";
 import { NotificationBell } from "@/components/dashboard/layout/NotificationBell";
-import { isActiveRoute } from "@/lib/routes";
+import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
-
-const navGroups = [
-  {
-    label: "",
-    items: [{ label: "Dashboard", to: "/admin", icon: LayoutDashboard }],
-  },
-  {
-    label: "ACADEMICS",
-    items: [
-      { label: "Courses",       to: "/admin/courses",               icon: BookOpen },
-      { label: "Students",      to: "/admin/students",              icon: Users },
-      { label: "Mentors",       to: "/admin/users/mentors",         icon: BriefcaseBusiness },
-      { label: "Assignments",   to: "/admin/courses/assignments",   icon: ClipboardList },
-      { label: "Certificates",  to: "/admin/students/certificates", icon: Award },
-      { label: "Reviews",       to: "/admin/courses/reviews",       icon: Star },
-    ],
-  },
-  {
-    label: "CRM",
-    items: [
-      { label: "Leads",         to: "/admin/crm",           icon: Workflow },
-      { label: "Pipeline",      to: "/admin/crm/pipeline",  icon: Gauge },
-      { label: "Follow-ups",    to: "/admin/crm/followups", icon: Heart },
-      { label: "Tasks",         to: "/admin/crm/tasks",     icon: ClipboardList },
-    ],
-  },
-  {
-    label: "COMMERCE",
-    items: [
-      { label: "Payments",      to: "/admin/commerce/payments", icon: CircleDollarSign },
-      { label: "Refunds",       to: "/admin/commerce/refunds",  icon: RotateCcw },
-      { label: "Coupons",       to: "/admin/commerce/coupons",  icon: Tag },
-      { label: "Orders",        to: "/admin/commerce/orders",   icon: FileText },
-    ],
-  },
-  {
-    label: "COMMUNICATIONS",
-    items: [
-      { label: "Notifications", to: "/admin/communication/notifications", icon: Bell },
-      { label: "Chat",          to: "/admin/communication/chat",          icon: MessageSquare },
-      { label: "Support",       to: "/admin/communication/tickets",       icon: Ticket },
-    ],
-  },
-  {
-    label: "CONTENT & CALENDAR",
-    items: [
-      { label: "Calendar",      to: "/admin/calendar",       icon: Calendar },
-      { label: "Success Stories",to: "/admin/success-stories",icon: Star },
-      { label: "Placements",    to: "/admin/placements",     icon: BriefcaseBusiness },
-      { label: "CMS Pages",     to: "/admin/cms/pages",      icon: FileText },
-    ],
-  },
-  {
-    label: "ANALYTICS",
-    items: [
-      { label: "Analytics",     to: "/admin/analytics", icon: Gauge },
-    ],
-  },
-  {
-    label: "SYSTEM",
-    items: [
-      { label: "Invitations",    to: "/admin/users/invitations", icon: UserPlus },
-      { label: "Audit Logs",     to: "/admin/audit-logs",        icon: ShieldCheck },
-      { label: "System Health",  to: "/admin/health",            icon: Activity },
-      { label: "Knowledge Base", to: "/admin/knowledge-base",    icon: BookOpen },
-      { label: "Settings",       to: "/admin/settings",          icon: Settings },
-    ],
-  },
-] as const;
+import { useFocusTrapDrawer } from "@/hooks/useFocusTrapDrawer";
 
 function initials(name: string | null | undefined, fallback: string) {
   const source = name?.trim();
@@ -126,69 +35,30 @@ function formatRole(highestRole: string | undefined) {
     .join(" ");
 }
 
-function Sidebar({ collapsed, onNavigate }: Readonly<{ collapsed?: boolean; onNavigate?: () => void }>) {
-  const location = useLocation();
-  const auth = useAuth();
-  const name = auth.authUser?.profile?.fullName;
+function AdminMobileDrawer({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
+  const panelRef = useRef<HTMLElement | null>(null);
+  useFocusTrapDrawer(open, onClose, panelRef);
+
+  if (!open) return null;
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
-      <div className={`flex min-h-[72px] items-center ${collapsed ? "justify-center px-2" : "px-5"}`}>
-        {collapsed ? (
-          <div className="grid size-9 place-items-center rounded-lg bg-sidebar-accent font-black text-sidebar-accent-foreground">S</div>
-        ) : (
-          <Logo className="text-white" />
-        )}
-      </div>
-      <nav className="admin-scrollbar flex-1 overflow-y-auto px-3 py-6">
-        {navGroups.map((group) => (
-          <div key={group.label} className="mb-6">
-            {group.label && !collapsed && (
-              <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-muted">
-                {group.label}
-              </p>
-            )}
-            <div className="grid gap-0.5">
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                const active = isActiveRoute(location.pathname, item.to);
-                return (
-                  <Link
-                    key={item.to}
-                    to={item.to}
-                    onClick={onNavigate}
-                    title={collapsed ? item.label : undefined}
-                    className={[
-                      "group flex min-h-[40px] items-center gap-3 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                      collapsed ? "justify-center px-0" : "px-3",
-                      active
-                        ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                        : "text-sidebar-muted hover:bg-white/5 hover:text-sidebar-foreground",
-                    ].join(" ")}
-                  >
-                    <Icon className="size-4 shrink-0" />
-                    {!collapsed && <span className="truncate">{item.label}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </nav>
-      <div className="mt-auto p-4">
-        <div className={`flex items-center gap-3 rounded-lg bg-white/5 p-3 ${collapsed ? "justify-center" : ""}`}>
-          <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-bold text-sidebar-accent-foreground shadow-inner">
-            {initials(name, "A")}
-            <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar bg-emerald-500" />
-          </div>
-          {!collapsed && (
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-white">{name ?? "Admin User"}</p>
-              <p className="truncate text-[11px] text-sidebar-muted">{auth.authUser?.profile?.email ?? ""}</p>
-            </div>
-          )}
-        </div>
-      </div>
+    <div className="fixed inset-0 z-50 lg:hidden">
+      <button
+        type="button"
+        aria-label="Close admin navigation"
+        className="absolute inset-0 bg-background/80 backdrop-blur-sm"
+        onClick={onClose}
+      />
+      <aside
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Admin navigation"
+        tabIndex={-1}
+        className="absolute inset-y-0 left-0 w-[min(88vw,320px)] shadow-2xl"
+      >
+        <AdminSidebar onNavigate={onClose} />
+      </aside>
     </div>
   );
 }
@@ -223,22 +93,10 @@ export default function AdminPage() {
         Skip to content
       </a>
       <aside className="sticky top-0 hidden h-svh shadow-sm lg:block transition-[width] duration-200">
-        <Sidebar collapsed={collapsed} />
+        <AdminSidebar collapsed={collapsed} />
       </aside>
 
-      {drawerOpen ? (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            aria-label="Close admin navigation"
-            className="absolute inset-0 bg-background/80 backdrop-blur-sm"
-            onClick={() => setDrawerOpen(false)}
-          />
-          <aside className="absolute inset-y-0 left-0 w-[min(88vw,320px)] shadow-2xl">
-            <Sidebar onNavigate={() => setDrawerOpen(false)} />
-          </aside>
-        </div>
-      ) : null}
+      <AdminMobileDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
       <section className="min-w-0">
         <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur-xl supports-backdrop-filter:bg-background/60">
