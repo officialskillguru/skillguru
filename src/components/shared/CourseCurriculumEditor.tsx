@@ -4,8 +4,9 @@ import { toast } from "sonner";
 import { Settings, CheckCircle, Archive, Plus, X, Loader2, ChevronUp, ChevronDown, Trash2, Video, FileText, Edit3, Image as ImageIcon } from "lucide-react";
 import { useCourseCurriculum, useCurriculumMutations, mentorQueryKeys, useLessonQuiz, useQuizQuestions, useQuizAuthoringMutations } from "@/hooks/useMentorPortal";
 import { updateCourseStatus, updateCourse, getCourseById } from "@/services/courses.service";
-import { uploadFile } from "@/services/storage.service";
+import { uploadFile, type UploadResult } from "@/services/storage.service";
 import type { Module, Lesson, LessonInput } from "@/services/curriculum.service";
+import { FileUpload } from "@/components/common/FileUpload";
 
 /**
  * Real module/lesson/quiz curriculum editor for a course. Shared between the
@@ -164,33 +165,28 @@ export function CourseCurriculumEditor({ courseId, courseTitle, courseStatus }: 
 
 type CourseMediaField = "thumbnail_file_id" | "banner_file_id" | "promo_video_file_id";
 
-const COURSE_MEDIA_FIELDS: { field: CourseMediaField; label: string; accept: string }[] = [
-  { field: "thumbnail_file_id", label: "Thumbnail", accept: "image/png,image/jpeg,image/webp" },
-  { field: "banner_file_id", label: "Banner", accept: "image/png,image/jpeg,image/webp" },
-  { field: "promo_video_file_id", label: "Intro Video", accept: "video/mp4,video/webm,video/quicktime" },
+const COURSE_MEDIA_FIELDS: { field: CourseMediaField; label: string; accept: string; hint: string }[] = [
+  { field: "thumbnail_file_id", label: "Thumbnail", accept: "image/png,image/jpeg,image/webp", hint: "png, jpg, or webp" },
+  { field: "banner_file_id", label: "Banner", accept: "image/png,image/jpeg,image/webp", hint: "png, jpg, or webp" },
+  { field: "promo_video_file_id", label: "Intro Video", accept: "video/mp4,video/webm,video/quicktime", hint: "mp4, webm, or mov" },
 ];
 
-/** Course thumbnail/banner/intro-video upload, using the same direct uploadFile() +
- *  field-write pattern already used for lesson video/PDF uploads above. */
+/** Course thumbnail/banner/intro-video upload, using the shared FileUpload component
+ *  so this looks and behaves like every other upload target in the app. */
 function CourseMediaSection({ courseId }: { courseId: string }) {
   const queryClient = useQueryClient();
   const { data: course } = useQuery({
     queryKey: ["course-media", courseId],
     queryFn: () => getCourseById(courseId),
   });
-  const [uploadingField, setUploadingField] = useState<CourseMediaField | null>(null);
 
-  const handleUpload = async (field: CourseMediaField, file: File) => {
-    setUploadingField(field);
+  const handleUploaded = async (field: CourseMediaField, result: UploadResult) => {
     try {
-      const uploaded = await uploadFile("courses", file, courseId);
-      await updateCourse(courseId, { [field]: uploaded.fileId });
+      await updateCourse(courseId, { [field]: result.fileId });
       toast.success("Course media updated.");
       void queryClient.invalidateQueries({ queryKey: ["course-media", courseId] });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Upload failed.");
-    } finally {
-      setUploadingField(null);
+      toast.error(err instanceof Error ? err.message : "Failed to save course media.");
     }
   };
 
@@ -200,41 +196,18 @@ function CourseMediaSection({ courseId }: { courseId: string }) {
         <ImageIcon aria-hidden="true" className="size-3.5" /> Course Media
       </h4>
       <div className="mt-3 grid gap-4 sm:grid-cols-3">
-        {COURSE_MEDIA_FIELDS.map(({ field, label, accept }) => {
-          const hasFile = !!course?.[field];
-          const isBusy = uploadingField === field;
-          const inputId = `course-media-${field}-${courseId}`;
-          return (
-            <div key={field} className="space-y-1.5">
-              <label htmlFor={inputId} className="flex items-center justify-between text-xs font-bold text-foreground">
-                {label}
-                <span
-                  aria-live="polite"
-                  className={`text-[10px] font-black uppercase ${hasFile ? "text-emerald-600" : "text-muted-foreground"}`}
-                >
-                  {hasFile ? "Uploaded" : "None"}
-                </span>
-              </label>
-              <input
-                id={inputId}
-                type="file"
-                accept={accept}
-                disabled={isBusy}
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) void handleUpload(field, file);
-                  e.target.value = "";
-                }}
-                className="w-full text-xs font-semibold text-muted-foreground disabled:opacity-50"
-              />
-              {isBusy && (
-                <p aria-live="polite" className="flex items-center gap-1 text-[10px] font-bold text-muted-foreground">
-                  <Loader2 aria-hidden="true" className="size-3 animate-spin" /> Uploading...
-                </p>
-              )}
-            </div>
-          );
-        })}
+        {COURSE_MEDIA_FIELDS.map(({ field, label, accept, hint }) => (
+          <FileUpload
+            key={field}
+            bucket="courses"
+            folder={courseId}
+            label={label}
+            accept={accept}
+            hint={hint}
+            value={course?.[field] ? "Uploaded" : undefined}
+            onUploaded={(result) => void handleUploaded(field, result)}
+          />
+        ))}
       </div>
     </div>
   );

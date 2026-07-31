@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { DataTable } from "@/components/common/DataTable";
 import { Badge } from "@/components/ui/badge";
+import { CreateStudentDialog } from "@/components/admin/students/CreateStudentDialog";
 import { useStudents, useStudentMutations } from "@/hooks/useAdminData";
 import { getExtendedSupabaseClient } from "@/services/_shared";
 import { certificateViewRoute } from "@/lib/routes";
@@ -394,11 +395,14 @@ export default function AdminStudentsPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-foreground">Students</h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Real enrollment, progress, and certificate data for every student on the platform.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">Students</h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            Real enrollment, progress, and certificate data for every student on the platform.
+          </p>
+        </div>
+        <CreateStudentDialog />
       </div>
 
       <input
