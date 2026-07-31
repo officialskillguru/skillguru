@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   X,
   Download,
@@ -97,7 +98,8 @@ async function fetchMentorRatings(mentorIds: string[]): Promise<Map<string, Ment
 }
 
 export default function AdminMentorsPage() {
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all");
   const [showDeleted, setShowDeleted] = useState(false);
@@ -581,12 +583,12 @@ export default function AdminMentorsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <label htmlFor="admin-mentor-search" className="sr-only">Search mentors by headline or bio</label>
+        <label htmlFor="admin-mentor-search" className="sr-only">Search mentors by name, email, headline, or bio</label>
         <input
           id="admin-mentor-search"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search mentors by headline or bio..."
+          placeholder="Search mentors by name, email, headline, or bio..."
           className="h-10 w-full max-w-sm rounded-xl border border-border bg-card px-3.5 text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
         />
         <label htmlFor="admin-mentor-status-filter" className="sr-only">Filter by status</label>
@@ -607,38 +609,32 @@ export default function AdminMentorsPage() {
       </div>
 
       <div aria-live="polite" aria-atomic="true">
-        {isLoading ? (
-          <div className="space-y-3">
-            <p className="sr-only">Loading mentors...</p>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-14 w-full animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-        ) : (
-          <>
-            <DataTable
-              columns={columns}
-              data={mentors}
-              exportFilename="mentors_export"
-              bulkActions={[
-                { label: "Activate", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "active") },
-                { label: "Suspend", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "suspended") },
-                { label: "Restore", onClick: (rows) => handleBulkRestore(rows.map((r) => r.id)) },
-                { label: "Notify", onClick: (rows) => handleOpenBulkNotify(rows.map((r) => r.id)) },
-                { label: "Delete", onClick: (rows) => handleBulkDelete(rows.map((r) => r.id)), variant: "destructive" },
-              ]}
-            />
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setBulkReassignOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-black text-foreground shadow-sm hover:bg-muted"
-              >
-                Assign / Remove Courses
-              </button>
-            </div>
-          </>
-        )}
+        <DataTable
+          columns={columns}
+          data={mentors}
+          exportFilename="mentors_export"
+          isLoading={isLoading}
+          emptyState={{
+            title: "No Mentors Found",
+            description: "Provision a mentor account to get started, or adjust your search and filters.",
+          }}
+          bulkActions={[
+            { label: "Activate", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "active") },
+            { label: "Suspend", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "suspended") },
+            { label: "Restore", onClick: (rows) => handleBulkRestore(rows.map((r) => r.id)) },
+            { label: "Notify", onClick: (rows) => handleOpenBulkNotify(rows.map((r) => r.id)) },
+            { label: "Delete", onClick: (rows) => handleBulkDelete(rows.map((r) => r.id)), variant: "destructive" },
+          ]}
+        />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setBulkReassignOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-black text-foreground shadow-sm hover:bg-muted"
+          >
+            Assign / Remove Courses
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">

@@ -1,4 +1,4 @@
-import { getExtendedSupabaseClient } from "./_shared";
+import { getExtendedSupabaseClient, normalizeSearchTerm } from "./_shared";
 import { type Result, ok, fail, DatabaseError } from "@/utils/result";
 
 // Provider-agnostic payment service. The frontend only ever calls the
@@ -190,8 +190,9 @@ export const paymentService = {
         .order("created_at", { ascending: false })
         .range(offset, offset + pageSize - 1);
 
-      if (search) {
-        query = query.or(`razorpay_payment_id.ilike.%${search}%,status.ilike.%${search}%`);
+      const normalizedSearch = normalizeSearchTerm(search);
+      if (normalizedSearch) {
+        query = query.or(`razorpay_payment_id.ilike.${normalizedSearch},status.ilike.${normalizedSearch}`);
       }
 
       const { data, error, count } = await query;

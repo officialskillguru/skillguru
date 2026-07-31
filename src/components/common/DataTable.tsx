@@ -1,4 +1,4 @@
-import { useId, useState } from "react";
+import { useId, useState, type ReactNode } from "react";
 import {
   flexRender,
   getCoreRowModel,
@@ -21,7 +21,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { SlidersHorizontal, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Download } from "lucide-react";
+import { SlidersHorizontal, ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, Download, Inbox } from "lucide-react";
 
 import {
   Table,
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { EmptyState } from "@/components/ui/empty-state";
 import { exportToCSV } from "@/utils/export";
 
 interface DataTableProps<TData, TValue> {
@@ -47,6 +48,10 @@ interface DataTableProps<TData, TValue> {
   exportFilename?: string;
   /** Pin the header row so it stays visible while scrolling a tall table. */
   stickyHeader?: boolean;
+  /** Shows animated skeleton rows instead of "No results found" while data is loading. */
+  isLoading?: boolean;
+  /** Custom empty state shown when there are zero rows and isLoading is false. Falls back to a generic one. */
+  emptyState?: { title: string; description: string; primaryAction?: ReactNode; secondaryAction?: ReactNode };
 }
 
 export function DataTable<TData, TValue>({
@@ -59,6 +64,8 @@ export function DataTable<TData, TValue>({
   hidePagination = false,
   exportFilename,
   stickyHeader = false,
+  isLoading = false,
+  emptyState,
 }: Readonly<DataTableProps<TData, TValue>>) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -175,7 +182,13 @@ export function DataTable<TData, TValue>({
         </div>
       )}
 
-      <div className={`rounded-md border border-border bg-card shadow-sm ${stickyHeader ? "max-h-[70vh] overflow-auto" : "overflow-hidden"}`}>
+      <div role="status" aria-live="polite" className="sr-only">
+        {isLoading ? "Loading data…" : `${table.getRowModel().rows?.length ?? 0} rows loaded.`}
+      </div>
+      <div
+        aria-busy={isLoading}
+        className={`rounded-md border border-border bg-card shadow-sm ${stickyHeader ? "max-h-[70vh] overflow-auto" : "overflow-hidden"}`}
+      >
         <Table>
           <TableHeader className={`bg-muted/30 ${stickyHeader ? "sticky top-0 z-10 backdrop-blur-sm" : ""}`}>
             {table.getHeaderGroups().map((headerGroup) => (
@@ -191,7 +204,17 @@ export function DataTable<TData, TValue>({
             ))}
           </TableHeader>
           <TableBody>
-            {table.getRowModel().rows?.length ? (
+            {isLoading ? (
+              Array.from({ length: 6 }).map((_, i) => (
+                <TableRow key={`skeleton-${i}`} className="border-b-border/50">
+                  {columns.map((_col, colIndex) => (
+                    <TableCell key={colIndex} className="py-3">
+                      <div aria-hidden="true" className="h-4 animate-pulse rounded bg-muted" style={{ width: colIndex === 0 ? "70%" : "45%" }} />
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            ) : table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
                 <TableRow key={row.id} data-state={row.getIsSelected() && "selected"} className="border-b-border/50 transition hover:bg-muted/20">
                   {row.getVisibleCells().map((cell) => (
@@ -202,9 +225,17 @@ export function DataTable<TData, TValue>({
                 </TableRow>
               ))
             ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-32 text-center text-muted-foreground font-medium">
-                  No results found.
+              <TableRow className="hover:bg-transparent">
+                <TableCell colSpan={columns.length} className="p-0">
+                  <EmptyState
+                    className="border-0 bg-transparent"
+                    icon={<Inbox className="size-8" aria-hidden="true" />}
+                    title={emptyState?.title ?? "No results found"}
+                    description={emptyState?.description ?? "Try adjusting your search or filters."}
+                    primaryAction={emptyState?.primaryAction}
+                    secondaryAction={emptyState?.secondaryAction}
+                    headingLevel={2}
+                  />
                 </TableCell>
               </TableRow>
             )}

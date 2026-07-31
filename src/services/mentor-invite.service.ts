@@ -1,4 +1,4 @@
-import { getExtendedSupabaseClient } from "./_shared";
+import { getExtendedSupabaseClient, normalizeSearchTerm } from "./_shared";
 import { type Result, ok, fail, DatabaseError } from "@/utils/result";
 
 // ============================================================================
@@ -462,8 +462,9 @@ export const supportService = {
 
       if (filters.status) query = query.eq("status", filters.status);
       if (filters.priority) query = query.eq("priority", filters.priority);
-      if (filters.search) {
-        query = query.or(`title.ilike.%${filters.search}%,description.ilike.%${filters.search}%`);
+      const search = normalizeSearchTerm(filters.search);
+      if (search) {
+        query = query.or(`title.ilike.${search},description.ilike.${search}`);
       }
 
       const { data, error } = await query;

@@ -1,6 +1,7 @@
 import {
   assertServiceResponse,
   getSupabaseClientOrThrow,
+  normalizeSearchTerm,
   paginationRange,
   type ListParams,
   type PaginatedResult,
@@ -36,8 +37,9 @@ export async function listSuccessStories(params: SuccessStoryListParams = {}): P
   if (params.featured !== undefined) {
     query = query.eq("featured", params.featured);
   }
-  if (params.search) {
-    query = query.or(`title.ilike.%${params.search}%,company_name.ilike.%${params.search}%,job_role.ilike.%${params.search}%`);
+  const search = normalizeSearchTerm(params.search);
+  if (search) {
+    query = query.or(`title.ilike.${search},company_name.ilike.${search},job_role.ilike.${search}`);
   }
 
   const { data, error, count } = await query

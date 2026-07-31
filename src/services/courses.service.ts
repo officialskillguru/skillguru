@@ -32,7 +32,8 @@ export async function listCourses(params: CourseListParams = {}): Promise<Pagina
   let query = supabase.from("courses").select("*, course_categories(category_id)", { count: "exact" });
 
   if (search) {
-    query = query.or(`title.ilike.%${search}%,slug.ilike.%${search}%,short_description.ilike.%${search}%`);
+    // normalizeSearchTerm() already wraps the term in %...% - don't wrap it again here.
+    query = query.or(`title.ilike.${search},slug.ilike.${search},description.ilike.${search}`);
   }
 
   if (params.status && params.status !== "all") {

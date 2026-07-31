@@ -197,30 +197,25 @@ export default function AdminCertificatesPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="space-y-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-8 animate-pulse rounded bg-muted" />
-          ))}
+      <DataTable
+        columns={columns}
+        data={certs}
+        exportFilename="certificates_export"
+        hidePagination
+        isLoading={isLoading}
+        emptyState={{
+          title: "No Certificates Found",
+          description: "Certificates are issued automatically when students complete courses.",
+        }}
+      />
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
+          <p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p>
+          <div className="flex gap-2">
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40 hover:bg-muted">Prev</button>
+            <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40 hover:bg-muted">Next</button>
+          </div>
         </div>
-      ) : (
-        <>
-          <DataTable columns={columns} data={certs} exportFilename="certificates_export" hidePagination />
-          {certs.length === 0 && (
-            <p className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-              No certificates found. Certificates are issued when students complete courses.
-            </p>
-          )}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
-              <p className="text-xs text-muted-foreground">Page {page} of {totalPages}</p>
-              <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40 hover:bg-muted">Prev</button>
-                <button disabled={page >= totalPages} onClick={() => setPage(p => p + 1)} className="rounded-lg border px-3 py-1.5 text-xs disabled:opacity-40 hover:bg-muted">Next</button>
-              </div>
-            </div>
-          )}
-        </>
       )}
     </div>
   );

@@ -1,4 +1,4 @@
-import { getExtendedSupabaseClient } from "./_shared";
+import { getExtendedSupabaseClient, normalizeSearchTerm } from "./_shared";
 import { type Result, ok, fail, DatabaseError } from "@/utils/result";
 
 // ============================================================================
@@ -169,8 +169,9 @@ export const crmService = {
       if (filters.source_id) query = query.eq("source_id", filters.source_id);
       if (filters.assigned_mentor_id) query = query.eq("assigned_mentor_id", filters.assigned_mentor_id);
       if (filters.priority) query = query.eq("priority", filters.priority);
-      if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%,phone.ilike.%${filters.search}%`);
+      const search = normalizeSearchTerm(filters.search);
+      if (search) {
+        query = query.or(`name.ilike.${search},email.ilike.${search},phone.ilike.${search}`);
       }
 
       const { data, error, count } = await query;

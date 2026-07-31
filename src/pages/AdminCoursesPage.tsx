@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { type ColumnDef } from "@tanstack/react-table";
 import {
@@ -43,7 +44,8 @@ async function fetchCourseEnrollmentCounts(courseIds: string[]): Promise<Map<str
 }
 
 export default function AdminCoursesPage() {
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
@@ -394,41 +396,31 @@ export default function AdminCoursesPage() {
       </div>
 
       {/* Courses Catalog Table */}
-      {isLoading ? (
-        <div className="space-y-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
-          ))}
+      <DataTable
+        columns={columns}
+        data={filteredCourses}
+        exportFilename="courses_export"
+        hidePagination
+        isLoading={isLoading}
+        emptyState={{
+          title: "No Courses Found",
+          description: "No programs matched your search and filters.",
+        }}
+        bulkActions={[
+          { label: "Publish", onClick: (rows) => handleBulkAction("publish", rows.map((r) => r.id)) },
+          { label: "Archive", onClick: (rows) => handleBulkAction("archive", rows.map((r) => r.id)) },
+          { label: "Delete", onClick: (rows) => handleBulkAction("delete", rows.map((r) => r.id)), variant: "destructive" },
+        ]}
+      />
+      <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-6 py-4">
+        <p className="text-xs font-semibold text-muted-foreground">
+          Showing page {page} of {coursesData?.totalPages || 1}
+        </p>
+        <div className="flex gap-2">
+          <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">Prev</button>
+          <button disabled={page >= (coursesData?.totalPages || 1)} onClick={() => setPage(p => p + 1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">Next</button>
         </div>
-      ) : (
-        <>
-          <DataTable
-            columns={columns}
-            data={filteredCourses}
-            exportFilename="courses_export"
-            hidePagination
-            bulkActions={[
-              { label: "Publish", onClick: (rows) => handleBulkAction("publish", rows.map((r) => r.id)) },
-              { label: "Archive", onClick: (rows) => handleBulkAction("archive", rows.map((r) => r.id)) },
-              { label: "Delete", onClick: (rows) => handleBulkAction("delete", rows.map((r) => r.id)), variant: "destructive" },
-            ]}
-          />
-          {filteredCourses.length === 0 && (
-            <p className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-              No programs matched the criteria.
-            </p>
-          )}
-          <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-6 py-4">
-            <p className="text-xs font-semibold text-muted-foreground">
-              Showing page {page} of {coursesData?.totalPages || 1}
-            </p>
-            <div className="flex gap-2">
-              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">Prev</button>
-              <button disabled={page >= (coursesData?.totalPages || 1)} onClick={() => setPage(p => p + 1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">Next</button>
-            </div>
-          </div>
-        </>
-      )}
+      </div>
 
       {/* Slide-out Course Editor Panel */}
       <DialogPrimitive.Root open={editorOpen && !!selectedCourse} onOpenChange={setEditorOpen}>

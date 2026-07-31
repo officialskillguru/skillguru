@@ -52,7 +52,13 @@ export function assertServiceResponse(error: unknown): asserts error is null {
 
 export function normalizeSearchTerm(search?: string) {
   const term = search?.trim();
-  return term ? `%${term.replaceAll("%", "\\%").replaceAll("_", "\\_")}%` : null;
+  if (!term) return null;
+  // Whitespace is replaced with the ilike wildcard rather than left as a literal space:
+  // supabase-js encodes query param values via URLSearchParams, which turns " " into "+",
+  // and PostgREST does not decode "+" back to a space - a literal space here would silently
+  // never match anything for any multi-word search term.
+  const escaped = term.replaceAll("%", "\\%").replaceAll("_", "\\_").replaceAll(/\s+/g, "%");
+  return `%${escaped}%`;
 }
 
 /**

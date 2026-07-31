@@ -34,7 +34,8 @@ export async function listStudents(params: StudentListParams = {}): Promise<Pagi
   }
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,city.ilike.%${search}%`);
+    // normalizeSearchTerm() already wraps the term in %...% - don't wrap it again here.
+    query = query.or(`full_name.ilike.${search},email.ilike.${search},phone.ilike.${search},city.ilike.${search}`);
   }
 
   if (params.courseId) {

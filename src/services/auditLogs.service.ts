@@ -1,4 +1,4 @@
-import { getSupabaseClientOrThrow, type ListParams } from "./_shared";
+import { getSupabaseClientOrThrow, normalizeSearchTerm, type ListParams } from "./_shared";
 
 export interface AuditLogEntry {
   id: string;
@@ -27,7 +27,8 @@ export async function listAuditLogs(params: AuditLogListParams = {}): Promise<{ 
 
   if (entityType && entityType !== "all") query = query.eq("entity_type", entityType);
   if (entityId) query = query.eq("entity_id", entityId);
-  if (search) query = query.or(`action.ilike.%${search}%,entity_type.ilike.%${search}%`);
+  const normalizedSearch = normalizeSearchTerm(search);
+  if (normalizedSearch) query = query.or(`action.ilike.${normalizedSearch},entity_type.ilike.${normalizedSearch}`);
 
   const { data, error, count } = await query;
   if (error) throw error;
