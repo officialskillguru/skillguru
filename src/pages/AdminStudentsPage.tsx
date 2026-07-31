@@ -1,338 +1,448 @@
-import { useState } from "react";
-import {
-  Search,
-  Award,
-  MoreVertical,
-  X,
-  Link,
-} from "lucide-react";
-import { toast } from "sonner";
+import { useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { type ColumnDef } from "@tanstack/react-table";
+import { Award, X, Eye, ExternalLink, KeyRound, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+import { DataTable } from "@/components/common/DataTable";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useStudents, useStudentMutations } from "@/hooks/useAdminData";
+import { getExtendedSupabaseClient } from "@/services/_shared";
+import { certificateViewRoute } from "@/lib/routes";
+import type { Student } from "@/services/students.service";
 
-interface StudentRecord {
-  id: string;
-  name: string;
-  email: string;
-  course: string;
-  progress: number;
-  score: number;
-  joined: string;
-  status: "Active" | "Completed" | "Pending Approval";
+interface EnrollmentSummary {
+  studentId: string;
+  enrollmentCount: number;
+  activeCount: number;
+  completedCount: number;
+  avgProgress: number;
+  certificateCount: number;
+  enrollments: {
+    id: string;
+    courseTitle: string;
+    status: string;
+    progress: number;
+    certificateId: string | null;
+  }[];
 }
 
-const initialStudents: StudentRecord[] = [
-  { id: "S-1001", name: "Aarav Singhal", email: "aarav.singhal@gmail.com", course: "Full Stack Web Development", progress: 85, score: 92, joined: "Jan 12, 2026", status: "Active" },
-  { id: "S-1002", name: "Priya Patel", email: "priya.patel@yahoo.com", course: "UI/UX Design Expert", progress: 100, score: 88, joined: "Feb 05, 2026", status: "Pending Approval" },
-  { id: "S-1003", name: "Rohan Gupta", email: "rohan.gupta@outlook.com", course: "Data Science & AI/ML", progress: 100, score: 95, joined: "Jan 20, 2026", status: "Completed" },
-  { id: "S-1004", name: "Neha Deshmukh", email: "neha.desh@gmail.com", course: "Cloud Computing (AWS)", progress: 42, score: 78, joined: "Mar 10, 2026", status: "Active" },
-  { id: "S-1005", name: "Sameer Shah", email: "sameer.shah@gmail.com", course: "Full Stack Web Development", progress: 100, score: 91, joined: "Feb 01, 2026", status: "Pending Approval" },
-];
+async function fetchEnrollmentSummaries(studentIds: string[]): Promise<Map<string, EnrollmentSummary>> {
+  const supabase = getExtendedSupabaseClient();
+  const summaries = new Map<string, EnrollmentSummary>();
+  if (studentIds.length === 0) return summaries;
 
-export default function AdminStudentsPage() {
-  const [students, setStudents] = useState<StudentRecord[]>(initialStudents);
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"All" | "Active" | "Completed" | "Pending Approval">("All");
-  const [activeStudent, setActiveStudent] = useState<StudentRecord | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const { data, error } = await supabase
+    .from("enrollments")
+    .select("id, student_id, status, courses(title), course_progress(completion_percentage), certificates(id)")
+    .in("student_id", studentIds);
+  if (error) throw error;
 
-  const filteredStudents = students.filter((s) => {
-    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) || s.course.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "All" || s.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  for (const row of (data ?? []) as unknown as {
+    id: string;
+    student_id: string;
+    status: string;
+    courses: { title: string } | null;
+    course_progress: { completion_percentage: number } | { completion_percentage: number }[] | null;
+    certificates: { id: string } | { id: string }[] | null;
+  }[]) {
+    const progressRow = Array.isArray(row.course_progress) ? row.course_progress[0] : row.course_progress;
+    const certRow = Array.isArray(row.certificates) ? row.certificates[0] : row.certificates;
+    const existing = summaries.get(row.student_id) ?? {
+      studentId: row.student_id,
+      enrollmentCount: 0,
+      activeCount: 0,
+      completedCount: 0,
+      avgProgress: 0,
+      certificateCount: 0,
+      enrollments: [],
+    };
+    existing.enrollmentCount += 1;
+    if (row.status === "active") existing.activeCount += 1;
+    if (row.status === "completed") existing.completedCount += 1;
+    if (certRow) existing.certificateCount += 1;
+    existing.enrollments.push({
+      id: row.id,
+      courseTitle: row.courses?.title ?? "Unknown course",
+      status: row.status,
+      progress: progressRow?.completion_percentage ?? 0,
+      certificateId: certRow?.id ?? null,
+    });
+    summaries.set(row.student_id, existing);
+  }
 
-  const handleRowClick = (student: StudentRecord) => {
-    setActiveStudent(student);
-    setDrawerOpen(true);
+  for (const summary of summaries.values()) {
+    const total = summary.enrollments.reduce((sum, e) => sum + e.progress, 0);
+    summary.avgProgress = summary.enrollments.length > 0 ? Math.round(total / summary.enrollments.length) : 0;
+  }
+
+  return summaries;
+}
+
+const STATUS_BADGE: Record<string, "success" | "info" | "warning" | "muted"> = {
+  active: "info",
+  completed: "success",
+  expired: "warning",
+  cancelled: "muted",
+};
+
+function StudentDrawer({ student, summary, onClose }: Readonly<{ student: Student; summary: EnrollmentSummary | undefined; onClose: () => void }>) {
+  const mutations = useStudentMutations();
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [newEmailInput, setNewEmailInput] = useState("");
+
+  const handleSetPassword = () => {
+    if (newPasswordInput.length < 8) {
+      toast.error("Password must be at least 8 characters.");
+      return;
+    }
+    mutations.setPassword.mutate(
+      { id: student.id, password: newPasswordInput },
+      {
+        onSuccess: () => {
+          toast.success(`Password updated for ${student.full_name ?? "this student"}. Share it with them directly — it will not be shown again.`);
+          setNewPasswordInput("");
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to set password."),
+      }
+    );
   };
 
-  const handleApproveCertificate = (id: string) => {
-    setStudents(
-      students.map((s) => (s.id === id ? { ...s, status: "Completed" } : s))
-    );
-    if (activeStudent && activeStudent.id === id) {
-      setActiveStudent({ ...activeStudent, status: "Completed" });
+  const handleForceReset = () => {
+    mutations.forcePasswordChange.mutate(student.id, {
+      onSuccess: () => toast.success(`${student.full_name ?? "This student"} will be required to set a new password at next login.`),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to force a password reset."),
+    });
+  };
+
+  const handleForceLogout = () => {
+    if (!window.confirm(`Sign ${student.full_name ?? "this student"} out of every active session immediately?`)) return;
+    mutations.forceLogout.mutate(student.id, {
+      onSuccess: () => toast.success(`${student.full_name ?? "Student"} has been signed out everywhere.`),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to force logout."),
+    });
+  };
+
+  const handleChangeEmail = () => {
+    const trimmed = newEmailInput.trim();
+    if (!trimmed || !trimmed.includes("@")) {
+      toast.error("Enter a valid email address.");
+      return;
     }
-    toast.success("Tuition verification approved. PG Certificate generated and mailed.");
+    if (!window.confirm(`Change ${student.full_name ?? "this student"}'s login email to ${trimmed}? They'll use it to sign in immediately — no confirmation email is sent.`)) return;
+    mutations.changeEmail.mutate(
+      { id: student.id, newEmail: trimmed },
+      {
+        onSuccess: () => {
+          toast.success(`Login email updated to ${trimmed}.`);
+          setNewEmailInput("");
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to change email."),
+      }
+    );
   };
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-black tracking-tight text-[#111E79] dark:text-cyan-200">
-            Student Registers & Outcomes
-          </h1>
-          <p className="mt-1 text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">
-            Monitor active syllabus progress, verify capstone project scores, and approve tuition PG Certificates.
-          </p>
-        </div>
-      </div>
-
-      {/* Navigation tabs */}
-      <div className="flex border-b border-[#DDE7F6] dark:border-slate-800">
-        {[
-          { id: "All", label: "All Students" },
-          { id: "Active", label: "Active Learners" },
-          { id: "Completed", label: "Alumni / Completed" },
-          { id: "Pending Approval", label: "Certificates Pending" }
-        ].map((tb) => (
-          <button
-            key={tb.id}
-            onClick={() => setStatusFilter(tb.id as typeof statusFilter)}
-            className={[
-              "py-3.5 px-5 text-xs font-black border-b-2 transition-all",
-              statusFilter === tb.id
-                ? "border-[#111E79] text-[#111E79] dark:border-cyan-400 dark:text-cyan-300"
-                : "border-transparent text-slate-450 hover:text-[#111E79] dark:hover:text-white",
-            ].join(" ")}
-          >
-            {tb.label}
+    <div className="fixed inset-0 z-50 flex justify-end bg-foreground/40 backdrop-blur-xs">
+      <button className="absolute inset-0 cursor-default" onClick={onClose} aria-label="Close" />
+      <motion.div
+        initial={{ x: "100%" }}
+        animate={{ x: 0 }}
+        exit={{ x: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 220 }}
+        className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-border bg-card shadow-2xl"
+      >
+        <div className="flex items-center justify-between border-b border-border px-6 py-5">
+          <div>
+            <h3 className="text-lg font-black text-foreground">{student.full_name ?? "Unnamed Student"}</h3>
+            <p className="text-xs font-semibold text-muted-foreground">{student.email}</p>
+          </div>
+          <button onClick={onClose} className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Close drawer">
+            <X className="size-5" />
           </button>
-        ))}
-      </div>
-
-      {/* Filter and Search Bar */}
-      <div className="flex items-center gap-3 rounded-2xl border border-[#DDE7F6] bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#111E79] dark:text-cyan-300" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search students by name, course focus..."
-            className="h-11 w-full rounded-xl border border-slate-200 bg-[#F8FAFC] pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-[#111E79] dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-          />
-        </div>
-      </div>
-
-      {/* Students Data Table */}
-      <div className="overflow-hidden rounded-2xl border border-[#DDE7F6] bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto hidden md:block">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-[#DDE7F6] bg-[#EEF3FA]/40 text-[10px] font-black uppercase tracking-wider text-[#64748B] dark:border-slate-850 dark:bg-slate-900/50">
-                <th className="px-6 py-4">Student</th>
-                <th className="px-6 py-4">Registered Program</th>
-                <th className="px-6 py-4">Syllabus Progress</th>
-                <th className="px-6 py-4">Median Score</th>
-                <th className="px-6 py-4">Enrollment Date</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#DDE7F6] dark:divide-slate-850">
-              {filteredStudents.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-sm font-semibold text-slate-400">
-                    No student records matched the active filter.
-                  </td>
-                </tr>
-              ) : (
-                filteredStudents.map((s) => (
-                  <tr
-                    key={s.id}
-                    onClick={() => handleRowClick(s)}
-                    className="group cursor-pointer hover:bg-slate-50/50 dark:hover:bg-slate-800/10 transition-all text-xs"
-                  >
-                    <td className="px-6 py-4.5">
-                      <div className="flex items-center gap-3">
-                        <div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#111E79] to-blue-800 text-white font-black text-xs shrink-0">
-                          {s.name.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-black text-[#111E79] dark:text-slate-100">{s.name}</p>
-                          <p className="text-[10px] font-bold text-slate-400">{s.email}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4.5 font-semibold text-slate-600 dark:text-slate-350">{s.course}</td>
-                    <td className="px-6 py-4.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-black text-slate-700 dark:text-slate-200">{s.progress}%</span>
-                        <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-850 shrink-0">
-                          <div className="h-full bg-[#22D3EE] rounded-full" style={{ width: `${s.progress}%` }} />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4.5 font-black text-cyan-600 dark:text-cyan-400">{s.score}%</td>
-                    <td className="px-6 py-4.5 text-slate-450 font-bold">{s.joined}</td>
-                    <td className="px-6 py-4.5">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider ${
-                        s.status === "Completed"
-                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-450"
-                          : s.status === "Pending Approval"
-                          ? "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-450"
-                          : "bg-blue-50 text-blue-600 dark:bg-blue-950/20 dark:text-blue-450"
-                      }`}>
-                        {s.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4.5 text-right">
-                      <button className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100">
-                        <MoreVertical className="size-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
         </div>
 
-        {/* Mobile Cards View */}
-        <div className="md:hidden divide-y divide-[#DDE7F6] dark:divide-slate-850">
-          {filteredStudents.length === 0 ? (
-            <div className="p-8 text-center text-sm font-semibold text-slate-400">
-              No student records matched the active filter.
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
+          <div className="grid grid-cols-3 gap-3">
+            <div className="rounded-xl border border-border p-3 text-center">
+              <p className="text-[10px] font-black uppercase text-muted-foreground">Enrollments</p>
+              <p className="mt-1 text-xl font-black text-foreground">{summary?.enrollmentCount ?? 0}</p>
             </div>
-          ) : (
-            filteredStudents.map((s) => (
-              <div key={s.id} onClick={() => handleRowClick(s)} className="p-4 hover:bg-slate-50 dark:hover:bg-slate-800/20 cursor-pointer">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-3">
-                    <div className="grid size-9 place-items-center rounded-xl bg-gradient-to-br from-[#111E79] to-blue-800 text-white font-black text-xs shrink-0">
-                      {s.name.slice(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-black text-[#111E79] dark:text-slate-100">{s.name}</p>
-                      <p className="text-[10px] font-bold text-slate-400">{s.email}</p>
-                    </div>
-                  </div>
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
-                    s.status === "Active" ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400" :
-                    s.status === "Completed" ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400" :
-                    "bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400"
-                  }`}>
-                    {s.status}
-                  </span>
-                </div>
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-semibold">Program:</span>
-                    <span className="font-bold text-slate-700 dark:text-slate-200">{s.course}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-semibold">Progress:</span>
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-850 shrink-0">
-                        <div className="h-full bg-[#22D3EE] rounded-full" style={{ width: `${s.progress}%` }} />
-                      </div>
-                      <span className="font-black text-slate-700 dark:text-slate-200">{s.progress}%</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-semibold">Median Score:</span>
-                    <span className="font-black text-cyan-600 dark:text-cyan-400">{s.score}%</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-500 font-semibold">Joined:</span>
-                    <span className="font-bold text-slate-450">{s.joined}</span>
-                  </div>
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button onClick={(e) => { e.stopPropagation(); toast.success("Magic Login link dispatched."); }} className="flex items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-bold text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                    <Link className="size-3" /> Magic Link
-                  </button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+            <div className="rounded-xl border border-border p-3 text-center">
+              <p className="text-[10px] font-black uppercase text-muted-foreground">Avg Progress</p>
+              <p className="mt-1 text-xl font-black text-primary">{summary?.avgProgress ?? 0}%</p>
+            </div>
+            <div className="rounded-xl border border-border p-3 text-center">
+              <p className="text-[10px] font-black uppercase text-muted-foreground">Certificates</p>
+              <p className="mt-1 text-xl font-black text-emerald-600">{summary?.certificateCount ?? 0}</p>
+            </div>
+          </div>
 
-      {/* Progress drawer */}
-      <AnimatePresence>
-        {drawerOpen && activeStudent && (
-          <div className="fixed inset-0 z-50 flex justify-end bg-[#020617]/50 backdrop-blur-xs">
-            <button className="absolute inset-0 cursor-default" onClick={() => setDrawerOpen(false)} />
-
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="relative z-10 flex h-full w-full max-w-md flex-col border-l border-[#DDE7F6] bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
-            >
-              {/* Header */}
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-850">
-                <div>
-                  <h3 className="text-lg font-black text-[#111E79] dark:text-white">Academic Progress Roadmap</h3>
-                  <p className="text-xs font-semibold text-slate-400">{activeStudent.name} • {activeStudent.id}</p>
-                </div>
-                <button onClick={() => setDrawerOpen(false)} className="rounded-xl p-2 text-slate-400 hover:bg-slate-100">
-                  <X className="size-5" />
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">Security</h4>
+            <div className="rounded-xl border border-border p-4">
+              <h5 className="text-xs font-black uppercase tracking-wider text-foreground mb-1">Set New Password</h5>
+              <p className="text-xs font-semibold text-muted-foreground mb-3">
+                Sets the student's password directly. No approval, OTP, or reset email is sent.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={newPasswordInput}
+                  onChange={(e) => setNewPasswordInput(e.target.value)}
+                  placeholder="New password (min. 8 characters)"
+                  aria-label="New password"
+                  className="h-10 flex-1 rounded-lg border border-border bg-muted px-3 text-sm outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={handleSetPassword}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+                >
+                  <KeyRound className="size-3.5" aria-hidden="true" /> Set Password
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={handleForceReset}
+                className="mt-3 flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-foreground hover:bg-accent/10"
+              >
+                <KeyRound className="size-3.5" aria-hidden="true" /> Force Password Change on Next Login
+              </button>
+            </div>
 
-              {/* Body */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Score meters */}
-                <div className="grid gap-4 grid-cols-2">
-                  <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-850">
-                    <p className="text-[9px] font-black uppercase text-slate-450">Syllabus Complete</p>
-                    <p className="mt-1 text-xl font-black text-[#111E79] dark:text-white">{activeStudent.progress}%</p>
-                  </div>
-                  <div className="rounded-2xl border border-slate-100 p-4 dark:border-slate-850">
-                    <p className="text-[9px] font-black uppercase text-slate-450">Median Test Score</p>
-                    <p className="mt-1 text-xl font-black text-cyan-600 dark:text-cyan-400">{activeStudent.score}%</p>
-                  </div>
-                </div>
-
-                {/* Course outline module list */}
-                <div className="space-y-4">
-                  <h4 className="text-xs font-black text-[#111E79] dark:text-cyan-200 uppercase tracking-wider">Syllabus modules audit</h4>
-                  {[
-                    { name: "Frontend Core Frameworks", status: "Cleared", score: "94%" },
-                    { name: "Backend APIs & Databases Modeling", status: activeStudent.progress > 50 ? "Cleared" : "In Progress", score: activeStudent.progress > 50 ? "90%" : "—" },
-                    { name: "Cloud Architecture Deployments", status: activeStudent.progress === 100 ? "Cleared" : "Locked", score: "—" },
-                  ].map((mod, index) => (
-                    <div key={mod.name} className="flex items-center justify-between rounded-xl border border-slate-100 p-3.5 dark:border-slate-850">
-                      <div className="space-y-0.5">
-                        <p className="text-xs font-black text-[#111E79] dark:text-slate-350">Module {index + 1}: {mod.name}</p>
-                        <p className="text-[10px] font-bold text-slate-400">Score: {mod.score}</p>
-                      </div>
-                      <span className={`rounded-lg px-2 py-0.5 text-[9px] font-black uppercase tracking-wider ${
-                        mod.status === "Cleared"
-                          ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20"
-                          : mod.status === "In Progress"
-                          ? "bg-blue-50 text-blue-600 dark:bg-blue-950/20"
-                          : "bg-slate-100 text-slate-450 dark:bg-slate-800"
-                      }`}>
-                        {mod.status}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Certificate action section */}
-                {activeStudent.status === "Pending Approval" && (
-                  <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/20 p-5 space-y-4 dark:border-amber-900/50">
-                    <div className="space-y-1">
-                      <h4 className="text-xs font-black text-amber-600 dark:text-amber-450 uppercase tracking-wider flex items-center gap-2">
-                        <Award className="size-4" />
-                        <span>Pending Certification Approval</span>
-                      </h4>
-                      <p className="text-[10px] font-bold text-slate-450 leading-normal">
-                        Candidate has successfully completed 100% of coursework syllabus. Verify grade profiles and release PG Diploma.
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleApproveCertificate(activeStudent.id)}
-                      className="h-10 w-full rounded-xl bg-[#111E79] text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-[#111E79]"
-                    >
-                      Approve & Generate PG Certificate
-                    </button>
-                  </div>
-                )}
+            <div className="rounded-xl border border-border p-4">
+              <h5 className="text-xs font-black uppercase tracking-wider text-foreground mb-1">Change Login Email</h5>
+              <p className="text-xs font-semibold text-muted-foreground mb-3">
+                Updates the email used to sign in directly — confirmed immediately, no confirmation email sent.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={newEmailInput}
+                  onChange={(e) => setNewEmailInput(e.target.value)}
+                  placeholder="new-email@example.com"
+                  aria-label="New login email"
+                  className="h-10 flex-1 rounded-lg border border-border bg-muted px-3 text-sm outline-none focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={handleChangeEmail}
+                  className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground hover:bg-primary/90"
+                >
+                  <KeyRound className="size-3.5" aria-hidden="true" /> Change Email
+                </button>
               </div>
+            </div>
 
-              {/* Footer */}
-              <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-850">
-                <button type="button" onClick={() => setDrawerOpen(false)} className="h-11 rounded-xl px-5 text-xs font-black text-slate-500 hover:bg-slate-100">Close</button>
-              </div>
-            </motion.div>
+            <div className="rounded-xl border border-border p-4">
+              <h5 className="text-xs font-black uppercase tracking-wider text-foreground mb-1">Sessions</h5>
+              <p className="text-xs font-semibold text-muted-foreground mb-3">
+                Immediately invalidate every active session for this student.
+              </p>
+              <button
+                type="button"
+                onClick={handleForceLogout}
+                className="flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-800 hover:bg-amber-200"
+              >
+                <LogOut className="size-3.5" aria-hidden="true" /> Force Logout Everywhere
+              </button>
+            </div>
           </div>
+
+          <div className="space-y-3">
+            <h4 className="text-xs font-black uppercase tracking-wider text-muted-foreground">Courses</h4>
+            {!summary || summary.enrollments.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No enrollments yet.</p>
+            ) : (
+              summary.enrollments.map((e) => (
+                <div key={e.id} className="rounded-xl border border-border p-3.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-sm font-bold text-foreground">{e.courseTitle}</p>
+                    <Badge variant={STATUS_BADGE[e.status] ?? "muted"} className="capitalize">{e.status}</Badge>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                      <div className="h-full rounded-full bg-primary" style={{ width: `${e.progress}%` }} />
+                    </div>
+                    <span className="text-xs font-bold text-muted-foreground">{e.progress}%</span>
+                  </div>
+                  {e.certificateId && (
+                    <Link
+                      to={certificateViewRoute(e.certificateId)}
+                      className="mt-2 flex items-center gap-1 text-xs font-bold text-primary hover:underline"
+                    >
+                      <Award className="size-3.5" /> View certificate <ExternalLink className="size-3" />
+                    </Link>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
+          <button type="button" onClick={onClose} className="h-10 rounded-xl px-5 text-xs font-black text-muted-foreground hover:bg-muted">
+            Close
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+export default function AdminStudentsPage() {
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [activeStudent, setActiveStudent] = useState<Student | null>(null);
+
+  const { data: studentsData, isLoading } = useStudents({ search: search || undefined, page, pageSize: 20 });
+  const students = useMemo(() => studentsData?.data ?? [], [studentsData]);
+  const studentIds = useMemo(() => students.map((s) => s.id), [students]);
+
+  const { data: summaries } = useQuery({
+    queryKey: ["admin-students-summary", studentIds],
+    queryFn: () => fetchEnrollmentSummaries(studentIds),
+    enabled: studentIds.length > 0,
+  });
+
+  const columns = useMemo<ColumnDef<Student>[]>(
+    () => [
+      {
+        id: "name",
+        accessorFn: (row) => row.full_name ?? "",
+        header: "Student",
+        cell: ({ row }) => {
+          const s = row.original;
+          const label = s.full_name ?? "Unnamed";
+          return (
+            <div className="flex items-center gap-3">
+              <div className="grid size-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-xs font-black text-primary">
+                {label.slice(0, 2).toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="truncate font-bold text-foreground">{label}</p>
+                <p className="truncate text-[11px] font-semibold text-muted-foreground">{s.email}</p>
+              </div>
+            </div>
+          );
+        },
+      },
+      {
+        id: "enrollments",
+        header: "Enrollments",
+        cell: ({ row }) => {
+          const summary = summaries?.get(row.original.id);
+          return <span className="font-bold text-foreground">{summary?.enrollmentCount ?? 0}</span>;
+        },
+      },
+      {
+        id: "progress",
+        header: "Avg Progress",
+        cell: ({ row }) => {
+          const summary = summaries?.get(row.original.id);
+          const pct = summary?.avgProgress ?? 0;
+          return (
+            <div className="flex items-center gap-2">
+              <div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${pct}%` }} />
+              </div>
+              <span className="text-xs font-bold text-muted-foreground">{pct}%</span>
+            </div>
+          );
+        },
+      },
+      {
+        id: "certificates",
+        header: "Certificates",
+        cell: ({ row }) => {
+          const summary = summaries?.get(row.original.id);
+          const count = summary?.certificateCount ?? 0;
+          return count > 0 ? (
+            <Badge variant="success" className="gap-1"><Award className="size-3" /> {count}</Badge>
+          ) : (
+            <span className="text-xs text-muted-foreground">—</span>
+          );
+        },
+      },
+      {
+        id: "joined",
+        header: "Joined",
+        cell: ({ row }) => (
+          <span className="text-xs font-semibold text-muted-foreground">
+            {row.original.created_at ? new Date(row.original.created_at).toLocaleDateString() : "—"}
+          </span>
+        ),
+      },
+      {
+        id: "actions",
+        header: "",
+        cell: ({ row }) => (
+          <button
+            onClick={() => setActiveStudent(row.original)}
+            className="flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-bold text-primary hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          >
+            <Eye className="size-3.5" /> View
+          </button>
+        ),
+      },
+    ],
+    [summaries]
+  );
+
+  return (
+    <div className="space-y-6 pb-12">
+      <div>
+        <h1 className="text-3xl font-black tracking-tight text-foreground">Students</h1>
+        <p className="mt-1 text-sm font-semibold text-muted-foreground">
+          Real enrollment, progress, and certificate data for every student on the platform.
+        </p>
+      </div>
+
+      <input
+        value={search}
+        onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+        placeholder="Search students by name, email, phone, or city..."
+        className="h-10 w-full max-w-sm rounded-xl border border-border bg-card px-3.5 text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
+      />
+
+      {isLoading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-14 w-full rounded-xl" />
+          ))}
+        </div>
+      ) : (
+        <DataTable columns={columns} data={students} exportFilename="students_export" />
+      )}
+
+      <div className="flex items-center justify-between">
+        <p className="text-xs font-semibold text-muted-foreground">
+          Page {page} of {studentsData?.totalPages || 1} — {studentsData?.count ?? 0} total students
+        </p>
+        <div className="flex gap-2">
+          <button
+            disabled={page === 1}
+            onClick={() => setPage((p) => p - 1)}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            Prev
+          </button>
+          <button
+            disabled={page >= (studentsData?.totalPages || 1)}
+            onClick={() => setPage((p) => p + 1)}
+            className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-foreground hover:bg-muted disabled:opacity-50"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+
+      <AnimatePresence>
+        {activeStudent && (
+          <StudentDrawer student={activeStudent} summary={summaries?.get(activeStudent.id)} onClose={() => setActiveStudent(null)} />
         )}
       </AnimatePresence>
     </div>

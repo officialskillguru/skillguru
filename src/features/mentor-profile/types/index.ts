@@ -16,16 +16,6 @@ export interface MentorExperience {
   achievements: string[];
 }
 
-export interface MentorEducation {
-  id: string;
-  institution: string;
-  degree: string;
-  branch: string;
-  graduationYear: number;
-  cgpa?: string;
-  coursework?: string[];
-}
-
 export interface MentorCertification {
   id: string;
   name: string;
@@ -38,8 +28,6 @@ export interface MentorCertification {
 export interface MentorSkill {
   id: string;
   name: string;
-  proficiency: number; // 0-100
-  category: "Technical" | "Soft" | "Tool";
 }
 
 export interface MentorCourse {
@@ -83,26 +71,8 @@ export interface MentorReview {
   rating: number; // 1-5
   date: string;
   content: string;
-  companyJoined?: string;
-  salaryBefore?: string;
-  salaryAfter?: string;
   isVerified: boolean;
-}
-
-export interface MentorTestimonial {
-  id: string;
-  studentName: string;
-  studentAvatar: string;
-  studentRole: string;
-  quote: string;
-  companyLogo: string;
-  companyName: string;
-  previousRole?: string;
-  currentRole?: string;
-  previousSalary?: string;
-  currentSalary?: string;
-  mentorshipDuration: string;
-  courseName?: string;
+  mentorReply?: string;
 }
 
 export interface MentorFAQ {
@@ -111,20 +81,11 @@ export interface MentorFAQ {
   answer: string;
 }
 
-export interface MentorAvailabilitySlot {
-  id: string;
-  startTime: string; // ISO format or time string
-  endTime: string;
-  isAvailable: boolean;
-}
-
 export interface MentorAvailability {
   timezone: string;
   availableDays: string[]; // e.g. ['Monday', 'Wednesday']
-  nextAvailableDate?: string;
-  slots: Record<string, MentorAvailabilitySlot[]>; // Map of date (YYYY-MM-DD) to slots
   sessionDurationMinutes: number;
-  status: "Available" | "Limited Slots" | "Busy" | "Unavailable";
+  status: "Available" | "Limited Slots" | "Unavailable";
 }
 
 export interface Mentor {
@@ -151,20 +112,16 @@ export interface Mentor {
     portfolio?: string;
     twitter?: string;
   };
-  videoIntroductionUrl?: string;
-  resumeUrl?: string;
-  
-  // Relations mapped by the service/API layer
+
+  // Relations mapped by the repository from real Supabase tables
   stats: MentorStatistic[];
   experience: MentorExperience[];
-  education: MentorEducation[];
   certifications: MentorCertification[];
   skills: MentorSkill[];
   coursesTaught: MentorCourse[];
   projects: MentorProject[];
   achievements: MentorAchievement[];
   reviews: MentorReview[];
-  testimonials: MentorTestimonial[]; // Student outcomes specific to this mentor
   faqs: MentorFAQ[];
   availability: MentorAvailability;
 }

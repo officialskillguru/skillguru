@@ -1,7 +1,7 @@
 import { getDashboardMetrics, getDashboardRecent, getDashboardChartData } from "@/services/dashboard.service";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import type { Inserts, Updates } from "@/types/database";
+import type { Updates } from "@/types/database";
 import {
   createCourse,
   deleteCourse,
@@ -16,26 +16,36 @@ import {
   type AdminListParams,
 } from "@/services/admins.service";
 import {
-  listAuditLogs,
-  type AuditLogListParams,
-} from "@/services/auditLogs.service";
-import {
-  createLead,
-  listLeads,
-  updateLead,
-  type LeadListParams,
+  crmService,
+  type Lead,
 } from "@/services/crm.service";
+
+type LeadListParams = Parameters<typeof crmService.listLeads>[0];
 
 import {
   createMentor,
   listMentors,
-  updateMentor,
+  updateMentorFull,
+  setMentorStatus,
+  softDeleteMentor,
+  restoreMentor,
+  setMentorPassword,
+  forceMentorPasswordChange,
+  forceMentorLogout,
+  lockMentor,
+  unlockMentor,
+  changeMentorEmail,
   type MentorListParams,
+  type MentorFullUpdateInput,
 } from "@/services/mentors.service";
 import {
   createStudent,
   listStudents,
   updateStudent,
+  setStudentPassword,
+  forceStudentPasswordChange,
+  forceStudentLogout,
+  changeStudentEmail,
   type StudentListParams,
 } from "@/services/students.service";
 import {
@@ -56,7 +66,6 @@ export const adminQueryKeys = {
   dashboardRecent: ["admin", "dashboard", "recent"] as const,
   dashboardCharts: ["admin", "dashboard", "charts"] as const,
   admins: (params: AdminListParams) => ["admin", "admins", params] as const,
-  auditLogs: (params: AuditLogListParams) => ["admin", "audit-logs", params] as const,
 };
 
 export function useCourses(params: CourseListParams = {}) {
@@ -101,7 +110,27 @@ export function useMentorMutations() {
   return {
     create: useMutation({ mutationFn: createMentor, onSuccess: invalidate }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: Updates<"mentor_profiles"> }) => updateMentor(id, input),
+      mutationFn: ({ id, input }: { id: string; input: MentorFullUpdateInput }) => updateMentorFull(id, input),
+      onSuccess: invalidate,
+    }),
+    setStatus: useMutation({
+      mutationFn: ({ id, status }: { id: string; status: "active" | "suspended" }) => setMentorStatus(id, status),
+      onSuccess: invalidate,
+    }),
+    softDelete: useMutation({ mutationFn: (id: string) => softDeleteMentor(id), onSuccess: invalidate }),
+    restore: useMutation({ mutationFn: (id: string) => restoreMentor(id), onSuccess: invalidate }),
+    setPassword: useMutation({
+      mutationFn: ({ id, password }: { id: string; password: string }) => setMentorPassword(id, password),
+    }),
+    forcePasswordChange: useMutation({ mutationFn: (id: string) => forceMentorPasswordChange(id) }),
+    forceLogout: useMutation({ mutationFn: (id: string) => forceMentorLogout(id) }),
+    lock: useMutation({
+      mutationFn: ({ id, reason }: { id: string; reason?: string }) => lockMentor(id, reason),
+      onSuccess: invalidate,
+    }),
+    unlock: useMutation({ mutationFn: (id: string) => unlockMentor(id), onSuccess: invalidate }),
+    changeEmail: useMutation({
+      mutationFn: ({ id, newEmail }: { id: string; newEmail: string }) => changeMentorEmail(id, newEmail),
       onSuccess: invalidate,
     }),
   };
@@ -124,13 +153,26 @@ export function useStudentMutations() {
       mutationFn: ({ id, input }: { id: string; input: Updates<"profiles"> }) => updateStudent(id, input),
       onSuccess: invalidate,
     }),
+    setPassword: useMutation({
+      mutationFn: ({ id, password }: { id: string; password: string }) => setStudentPassword(id, password),
+    }),
+    forcePasswordChange: useMutation({ mutationFn: (id: string) => forceStudentPasswordChange(id) }),
+    forceLogout: useMutation({ mutationFn: (id: string) => forceStudentLogout(id) }),
+    changeEmail: useMutation({
+      mutationFn: ({ id, newEmail }: { id: string; newEmail: string }) => changeStudentEmail(id, newEmail),
+      onSuccess: invalidate,
+    }),
   };
 }
 
 export function useLeads(params: LeadListParams = {}) {
   return useQuery({
     queryKey: adminQueryKeys.leads(params),
-    queryFn: () => listLeads(params as unknown as never),
+    queryFn: async () => {
+      const r = await crmService.listLeads(params);
+      if (!r.success) throw r.error;
+      return r.data;
+    },
   });
 }
 
@@ -139,9 +181,20 @@ export function useLeadMutations() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "leads"] });
 
   return {
-    create: useMutation({ mutationFn: createLead, onSuccess: invalidate }),
+    create: useMutation({
+      mutationFn: async (input: Partial<Lead>) => {
+        const r = await crmService.createLead(input);
+        if (!r.success) throw r.error;
+        return r.data;
+      },
+      onSuccess: invalidate,
+    }),
     update: useMutation({
-      mutationFn: ({ id, input }: { id: string; input: Updates<"profiles"> }) => updateLead(id, input),
+      mutationFn: async ({ id, input }: { id: string; input: Partial<Lead> }) => {
+        const r = await crmService.updateLead(id, input);
+        if (!r.success) throw r.error;
+        return r.data;
+      },
       onSuccess: invalidate,
     }),
   };
@@ -182,9 +235,3 @@ export function useAdmins(params: unknown = {}) {
   });
 }
 
-export function useAuditLogs(params: unknown = {}) {
-  return useQuery({
-    queryKey: adminQueryKeys.auditLogs(params),
-    queryFn: () => listAuditLogs(params),
-  });
-}

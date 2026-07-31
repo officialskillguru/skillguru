@@ -1,11 +1,28 @@
 import { CheckCircle2, MapPin, Share2 } from "lucide-react";
+import { toast } from "sonner";
 import { type Mentor } from "../types";
 
 interface MentorHeroProps {
   mentor: Mentor;
+  onBookClick?: () => void;
 }
 
-export function MentorHero({ mentor }: MentorHeroProps) {
+async function handleShare(mentor: Mentor) {
+  const url = window.location.href;
+  const shareData = { title: `${mentor.name} - Mentor at Skill Guru`, url };
+  if (navigator.share) {
+    try {
+      await navigator.share(shareData);
+    } catch {
+      // user cancelled the native share sheet - not an error
+    }
+    return;
+  }
+  await navigator.clipboard.writeText(url);
+  toast.success("Profile link copied to clipboard");
+}
+
+export function MentorHero({ mentor, onBookClick }: MentorHeroProps) {
   return (
     <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-primary via-indigo-900 to-[#5B35F2] text-white p-8 md:p-12 mb-8 shadow-xl shadow-secondary/10 border border-white/10 isolate">
       {/* Background glow effects */}
@@ -26,8 +43,8 @@ export function MentorHero({ mentor }: MentorHeroProps) {
             <div className="absolute inset-0 ring-1 ring-inset ring-black/10 rounded-2xl" />
           </div>
           {mentor.verified && (
-            <div className="absolute -bottom-3 -right-3 bg-white text-accent p-1.5 rounded-full shadow-lg">
-              <CheckCircle2 className="w-6 h-6 fill-[#19C7C8] text-white" />
+            <div className="absolute -bottom-3 -right-3 bg-white text-accent p-1.5 rounded-full shadow-lg" role="img" aria-label="Verified mentor">
+              <CheckCircle2 className="w-6 h-6 fill-[#19C7C8] text-white" aria-hidden="true" />
             </div>
           )}
         </div>
@@ -72,10 +89,16 @@ export function MentorHero({ mentor }: MentorHeroProps) {
 
         {/* Quick Actions (Desktop only, mobile will have sticky bar) */}
         <div className="hidden md:flex flex-col gap-3 shrink-0 w-48">
-          <button className="w-full py-3 px-4 bg-white text-primary font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200 text-sm">
+          <button
+            onClick={onBookClick}
+            className="w-full py-3 px-4 bg-white text-primary font-bold rounded-xl hover:bg-slate-50 transition-colors shadow-lg hover:shadow-xl hover:-translate-y-0.5 duration-200 text-sm"
+          >
             Book Counselling
           </button>
-          <button className="w-full py-3 px-4 bg-white/10 backdrop-blur-md text-white font-medium rounded-xl hover:bg-white/20 border border-white/20 transition-all flex items-center justify-center gap-2 text-sm">
+          <button
+            onClick={() => void handleShare(mentor)}
+            className="w-full py-3 px-4 bg-white/10 backdrop-blur-md text-white font-medium rounded-xl hover:bg-white/20 border border-white/20 transition-all flex items-center justify-center gap-2 text-sm"
+          >
             <Share2 className="w-4 h-4" />
             Share Profile
           </button>

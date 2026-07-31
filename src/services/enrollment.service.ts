@@ -2,6 +2,36 @@ import { type Result, ok, fail, type AppError, DatabaseError } from "@/utils/res
 import { supabase } from "@/lib/supabase/client";
 import { type Database } from "../types/database.types";
 
+interface EnrollFreeResponse {
+  success: boolean;
+  message: string;
+  data: EnrollmentRow | null;
+  errors: unknown[];
+}
+
+/**
+ * Grants enrollment in a free (price 0/null) published course via the `enroll-free`
+ * Edge Function. Runs server-side with the service-role key because `enrollments` has
+ * no student-facing INSERT policy - only admins may write there directly - so this
+ * cannot be done as a direct client-side insert (see MockEnrollmentProvider below,
+ * which is why it's unused).
+ */
+export async function enrollInFreeCourse(courseId: string): Promise<Result<EnrollmentRow, AppError>> {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- supabase-js's FunctionsError union resolves loosely here
+  const { data, error } = await supabase.functions.invoke<EnrollFreeResponse>("enroll-free", {
+    body: { courseId },
+  });
+
+  if (error) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument -- see above
+    return fail(new DatabaseError(error.message, "enroll_free_invoke_failed"));
+  }
+  if (!data?.success || !data.data) {
+    return fail(new DatabaseError(data?.message ?? "Failed to enroll", "enroll_free_failed"));
+  }
+  return ok(data.data);
+}
+
 export type EnrollmentRow = Database["public"]["Tables"]["enrollments"]["Row"];
 
 export interface IEnrollmentProvider {

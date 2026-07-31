@@ -22,9 +22,16 @@ export async function listStudents(params: StudentListParams = {}): Promise<Pagi
   const { page, pageSize, from, to } = paginationRange(params);
   const search = normalizeSearchTerm(params.search);
 
-  // Note: Since 'role' was moved to 'user_roles', getting ONLY students efficiently
-  // requires joining with user_roles or assuming we are retrieving profiles linked to enrollments
   let query = supabase.from("profiles").select("*", { count: "exact" });
+
+  // Scope to the student role by default so this never silently includes admins/mentors.
+  const { data: studentRole } = await supabase.from("roles").select("id").eq("code", "student").maybeSingle();
+  if (studentRole) {
+    const { data: studentUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", studentRole.id);
+    const studentIds = (studentUserRoles ?? []).map((ur) => ur.user_id);
+    if (studentIds.length === 0) return { data: [], count: 0, page, pageSize, totalPages: 0 };
+    query = query.in("id", studentIds);
+  }
 
   if (search) {
     query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,city.ilike.%${search}%`);
@@ -94,6 +101,47 @@ export async function deleteStudent(id: string) {
   const supabase = getSupabaseClientOrThrow();
   const { error } = await supabase.from("profiles").delete().eq("id", id);
   assertServiceResponse(error);
+}
+
+// ─── Account Security (no-email-dependency admin actions) ───────────────────
+// Same generic edge function mentors' equivalent actions use — see
+// admin-account-action, which targets any user with a profiles row.
+
+interface StudentAccountActionResponse {
+  success: boolean;
+  message?: string;
+  data?: { userId: string };
+}
+
+async function invokeStudentAccountAction(body: Record<string, unknown>): Promise<{ userId: string }> {
+  const supabase = getSupabaseClientOrThrow();
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- supabase-js's FunctionsError union resolves loosely here
+  const { data, error } = await supabase.functions.invoke<StudentAccountActionResponse>("admin-account-action", { body });
+  if (error) throw error;
+  if (!data?.success || !data.data) {
+    throw new Error(data?.message || "Student account action failed");
+  }
+  return data.data;
+}
+
+/** Sets a student's password directly — no approval, no reset email. Never returned/logged. */
+export async function setStudentPassword(studentId: string, password: string) {
+  return invokeStudentAccountAction({ action: "set_password", userId: studentId, password });
+}
+
+/** Forces the student to change their password on next login. */
+export async function forceStudentPasswordChange(studentId: string) {
+  return invokeStudentAccountAction({ action: "force_password_change", userId: studentId });
+}
+
+/** Invalidates every active session for this student immediately. */
+export async function forceStudentLogout(studentId: string) {
+  return invokeStudentAccountAction({ action: "force_logout", userId: studentId });
+}
+
+/** Changes login email directly (service-role, auto-confirmed) — no confirmation email to the old or new address. */
+export async function changeStudentEmail(studentId: string, newEmail: string) {
+  return invokeStudentAccountAction({ action: "change_email", userId: studentId, newEmail });
 }
 
 export function toStudentsCsv(students: Student[]) {

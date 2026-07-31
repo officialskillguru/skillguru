@@ -74,8 +74,6 @@ export class CoursePersistence {
       q = q.eq("status", "published");
     }
 
-    // Notice we ignore price because it's not in the courses table
-
     switch (sort) {
       case "newest":
         q = q.order("created_at", { ascending: false });

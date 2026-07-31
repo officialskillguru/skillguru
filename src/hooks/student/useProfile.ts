@@ -28,12 +28,13 @@ export function useProfile() {
       if (!res.success) throw res.error;
       return res.data;
     },
-    onMutate: async () => {
-      await queryClient.cancelQueries({ queryKey: ["auth-profile"] });
-      toast.success("Avatar updated successfully");
+    onSuccess: () => {
+      toast.success("Profile updated successfully");
+      void queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
     },
-    onSettled: () => { void queryClient.invalidateQueries({ queryKey: ["auth-profile"] });
-    }
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to update profile.");
+    },
   });
 
   const uploadAvatar = useMutation({

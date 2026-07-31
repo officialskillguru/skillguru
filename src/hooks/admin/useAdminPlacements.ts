@@ -1,0 +1,229 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  listHiringPartners,
+  createHiringPartner,
+  updateHiringPartner,
+  softDeleteHiringPartner,
+  restoreHiringPartner,
+  type HiringPartnerInput,
+} from "@/services/placement-partners.service";
+import {
+  listAllJobPostings,
+  createJobPosting,
+  updateJobPosting,
+  softDeleteJobPosting,
+  type JobPostingInput,
+} from "@/services/placement-jobs.service";
+import {
+  listApplicantsForJob,
+  listAllApplications,
+  advanceApplicationStage,
+  listStatusHistory,
+  type PlacementStage,
+} from "@/services/placement-applications.service";
+import {
+  scheduleInterviewRound,
+  recordInterviewFeedback,
+  listInterviewRounds,
+  listFeedbackForRound,
+  type ScheduleInterviewInput,
+  type RecordFeedbackInput,
+} from "@/services/placement-interviews.service";
+import { releaseOffer, markPlacementJoined, getOfferForApplication, type ReleaseOfferInput } from "@/services/placement-offers.service";
+
+export const adminPlacementQueryKeys = {
+  hiringPartners: ["admin", "placements", "hiring-partners"] as const,
+  jobPostings: ["admin", "placements", "job-postings"] as const,
+  applicantsForJob: (jobId: string) => ["admin", "placements", "applicants", jobId] as const,
+  allApplications: ["admin", "placements", "all-applications"] as const,
+  interviewRounds: (applicationId: string) => ["admin", "placements", "interview-rounds", applicationId] as const,
+  feedbackForRound: (roundId: string) => ["admin", "placements", "feedback", roundId] as const,
+  offerForApplication: (applicationId: string) => ["admin", "placements", "offer", applicationId] as const,
+  statusHistory: (applicationId: string) => ["admin", "placements", "status-history", applicationId] as const,
+};
+
+// ─── Hiring partners ─────────────────────────────────────────────────────────
+
+export function useAdminHiringPartners() {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.hiringPartners,
+    queryFn: () => listHiringPartners(true),
+  });
+}
+
+export function useCreateHiringPartner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: HiringPartnerInput) => createHiringPartner(input),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.hiringPartners }),
+  });
+}
+
+export function useUpdateHiringPartner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; patch: Partial<HiringPartnerInput> }) => updateHiringPartner(input.id, input.patch),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.hiringPartners }),
+  });
+}
+
+export function useSoftDeleteHiringPartner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => softDeleteHiringPartner(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.hiringPartners }),
+  });
+}
+
+export function useRestoreHiringPartner() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => restoreHiringPartner(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.hiringPartners }),
+  });
+}
+
+// ─── Job postings ────────────────────────────────────────────────────────────
+
+export function useAdminJobPostings() {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.jobPostings,
+    queryFn: () => listAllJobPostings(),
+  });
+}
+
+export function useCreateJobPosting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: JobPostingInput) => createJobPosting(input),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.jobPostings }),
+  });
+}
+
+export function useUpdateJobPosting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { id: string; patch: Partial<JobPostingInput> }) => updateJobPosting(input.id, input.patch),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.jobPostings }),
+  });
+}
+
+export function useSoftDeleteJobPosting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => softDeleteJobPosting(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.jobPostings }),
+  });
+}
+
+// ─── Applications / pipeline ─────────────────────────────────────────────────
+
+export function useApplicantsForJob(jobId: string | undefined) {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.applicantsForJob(jobId ?? ""),
+    queryFn: () => listApplicantsForJob(jobId ?? ""),
+    enabled: !!jobId,
+  });
+}
+
+export function useAllApplications() {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.allApplications,
+    queryFn: () => listAllApplications(),
+  });
+}
+
+export function useAdvanceApplicationStage() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { applicationId: string; newStatus: PlacementStage; note?: string }) =>
+      advanceApplicationStage(input.applicationId, input.newStatus, input.note),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.allApplications });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.statusHistory(variables.applicationId) });
+    },
+  });
+}
+
+export function useAdminStatusHistory(applicationId: string | undefined) {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.statusHistory(applicationId ?? ""),
+    queryFn: () => listStatusHistory(applicationId ?? ""),
+    enabled: !!applicationId,
+  });
+}
+
+// ─── Interviews ──────────────────────────────────────────────────────────────
+
+export function useAdminInterviewRounds(applicationId: string | undefined) {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.interviewRounds(applicationId ?? ""),
+    queryFn: () => listInterviewRounds(applicationId ?? ""),
+    enabled: !!applicationId,
+  });
+}
+
+export function useScheduleInterviewRound() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ScheduleInterviewInput) => scheduleInterviewRound(input),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.interviewRounds(variables.applicationId) });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.allApplications });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.statusHistory(variables.applicationId) });
+    },
+  });
+}
+
+export function useFeedbackForRound(roundId: string | undefined) {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.feedbackForRound(roundId ?? ""),
+    queryFn: () => listFeedbackForRound(roundId ?? ""),
+    enabled: !!roundId,
+  });
+}
+
+export function useRecordInterviewFeedback(applicationId: string | undefined) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: RecordFeedbackInput) => recordInterviewFeedback(input),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.feedbackForRound(variables.interviewRoundId) });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.interviewRounds(applicationId ?? "") });
+    },
+  });
+}
+
+// ─── Offers ──────────────────────────────────────────────────────────────────
+
+export function useOfferForApplication(applicationId: string | undefined) {
+  return useQuery({
+    queryKey: adminPlacementQueryKeys.offerForApplication(applicationId ?? ""),
+    queryFn: () => getOfferForApplication(applicationId ?? ""),
+    enabled: !!applicationId,
+  });
+}
+
+export function useReleaseOffer() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: ReleaseOfferInput) => releaseOffer(input),
+    onSuccess: (_data, variables) => {
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.offerForApplication(variables.applicationId) });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.allApplications });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.statusHistory(variables.applicationId) });
+    },
+  });
+}
+
+export function useMarkPlacementJoined() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (applicationId: string) => markPlacementJoined(applicationId),
+    onSuccess: (_data, applicationId) => {
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.allApplications });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.offerForApplication(applicationId) });
+      void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.statusHistory(applicationId) });
+    },
+  });
+}

@@ -1,56 +1,98 @@
-import { test } from '@playwright/test';
-import { toErrorMessage } from '../../src/utils/error';
+import { test, expect } from '@playwright/test';
 
-test('debug signup flow', async ({ page }) => {
-  console.log("--- STARTING BROWSER TEST ---");
+test.describe('Auth Signup Flow Hardening', () => {
+  test('prevents duplicate submissions via single-flight lock', async ({ page }) => {
+    // Intercept signup requests to simulate network delay
+    await page.route('**/auth/v1/signup', async (route) => {
+      // Delay response by 2 seconds to keep the lock active
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      await route.continue();
+    });
 
-  // Capture all console logs from the browser
-  page.on('console', msg => {
-    console.log(`BROWSER CONSOLE: ${msg.type().toUpperCase()} - ${msg.text()}`);
-  });
+    await page.goto('http://localhost:5173/signup');
+    await page.waitForLoadState('networkidle');
 
-  // Capture all network requests to /auth/v1/signup
-  let signupRequests = 0;
-  page.on('request', request => {
-    if (request.url().includes('/auth/v1/signup')) {
-      signupRequests++;
-      console.log(`NETWORK REQUEST ${signupRequests}: ${request.method()} ${request.url()}`);
-      console.log(`NETWORK REQUEST ${signupRequests} POST DATA: ${request.postData()}`);
-    }
-  });
+    // Fill form
+    const randomEmail = `test${Date.now()}@example.com`;
+    await page.fill('input[name="fullName"]', 'Test User');
+    await page.fill('input[name="email"]', randomEmail);
+    await page.fill('input[name="password"]', 'Password123!');
 
-  page.on('response', async response => {
-    if (response.url().includes('/auth/v1/signup')) {
-      console.log(`NETWORK RESPONSE: ${response.status()} ${response.statusText()}`);
-      try {
-        const body = await response.text();
-        console.log(`NETWORK RESPONSE BODY: ${body}`);
-      } catch (e: unknown) {
-        console.log(`Could not read response body: ${toErrorMessage(e)}`);
+    // Track requests
+    let signupRequests = 0;
+    page.on('request', (request) => {
+      if (request.url().includes('/auth/v1/signup')) {
+        signupRequests++;
       }
-    }
+    });
+
+    // Spam click the submit button
+    const submitBtn = page.locator('button[type="submit"]');
+    await submitBtn.click();
+    // Use force: true so playwright doesn't wait for the button to become enabled again
+    await submitBtn.click({ force: true });
+    await submitBtn.click({ force: true });
+
+    // Verify UI is locked
+    await expect(submitBtn).toBeDisabled();
+    
+    // Wait for the single request to complete
+    await page.waitForTimeout(2500);
+
+    // Only one network request should have been sent despite 3 clicks
+    expect(signupRequests).toBe(1);
   });
 
-  // Go to signup page
-  await page.goto('http://127.0.0.1:5173/signup');
-  await page.waitForLoadState('networkidle');
+  test('handles rate limit gracefully and routes to verify email on success', async ({ page, context }) => {
+    // 1. Initial success -> routes to verify email
+    await page.goto('http://localhost:5173/signup');
+    const randomEmail = `ratelimit${Date.now()}@example.com`;
+    
+    await page.fill('input[name="fullName"]', 'Rate Limit Test');
+    await page.fill('input[name="email"]', randomEmail);
+    await page.fill('input[name="password"]', 'Password123!');
+    await page.click('button[type="submit"]');
 
-  // Generate a random email
-  const randomEmail = `test${Date.now()}@example.com`;
-  console.log(`Using email: ${randomEmail}`);
+    // Should redirect to verify email
+    await expect(page).toHaveURL(new RegExp(`/verify-email\\?email=${encodeURIComponent(randomEmail)}`));
+    await expect(page.locator('text=Check your inbox')).toBeVisible();
 
-  // Fill out the form
-  await page.fill('input[name="fullName"]', 'Test User');
-  await page.fill('input[name="email"]', randomEmail);
-  await page.fill('input[name="password"]', 'Password123!');
+    // 2. Open new tab, try to sign up with SAME email -> should get EMAIL_EXISTS
+    const newPage = await context.newPage();
+    await newPage.goto('http://localhost:5173/signup');
+    
+    // Mock the duplicate email response to prevent hitting real Supabase rate limits
+    await newPage.route('**/auth/v1/signup', async (route) => {
+      await route.fulfill({
+        status: 400,
+        json: { code: "user_already_exists", msg: "User already registered" }
+      });
+    });
 
-  // Submit
-  console.log("Submitting form...");
-  await page.click('button[type="submit"]');
+    await newPage.fill('input[name="fullName"]', 'Rate Limit Test 2');
+    await newPage.fill('input[name="email"]', randomEmail);
+    await newPage.fill('input[name="password"]', 'Password123!');
+    await newPage.click('button[type="submit"]');
 
-  // Wait a few seconds to let all async processes finish
-  await page.waitForTimeout(5000);
+    // Should show conflict error toast
+    await expect(newPage.locator('text=An account with this email already exists')).toBeVisible();
 
-  console.log("--- TEST COMPLETE ---");
-  console.log(`Total /signup network requests: ${signupRequests}`);
+    // 3. To test 429, we would need to mock Supabase or hit it 4 times.
+    // Playwright route mocking is the best way to verify the UI handles the 429 correctly.
+    await newPage.route('**/auth/v1/signup', async (route) => {
+      await route.fulfill({
+        status: 429,
+        json: { code: "over_email_send_rate_limit", message: "email rate limit exceeded" }
+      });
+    });
+
+    // Use a fresh email to bypass the server's "email exists" check (since we are mocking the network anyway)
+    await newPage.fill('input[name="email"]', `fresh${Date.now()}@example.com`);
+    await newPage.click('button[type="submit"]');
+
+    // Should stay on page and show rate limit banner
+    await expect(newPage).toHaveURL(/.*\/signup/);
+    await expect(newPage.locator('text="Please wait"')).toBeVisible();
+    await expect(newPage.locator('text=Continue to Verify Email')).toBeVisible();
+  });
 });

@@ -29,6 +29,13 @@ export default function AdminSuccessStoriesPage() {
   // Search Logic (handled mostly by backend, but we can do extra client side if needed)
   const filteredStories = stories;
 
+  const packageValues = stories
+    .map((s) => Number.parseFloat(s.package ?? ""))
+    .filter((n) => !Number.isNaN(n));
+  const topPackage = packageValues.length > 0 ? Math.max(...packageValues) : null;
+  const avgPackage = packageValues.length > 0 ? packageValues.reduce((a, b) => a + b, 0) / packageValues.length : null;
+  const publishedCount = stories.filter((s) => s.published).length;
+
   const handleEdit = (story: SuccessStory) => {
     setSelectedStory(story);
     setEditorOpen(true);
@@ -52,7 +59,8 @@ export default function AdminSuccessStoriesPage() {
       onSuccess: () => {
         toast.error("Success story unpublished.");
         setActiveMenu(null);
-      }
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to unpublish success story."),
     });
   };
 
@@ -65,7 +73,8 @@ export default function AdminSuccessStoriesPage() {
         onSuccess: () => {
           toast.success(`Success story "${selectedStory.title}" updated.`);
           setEditorOpen(false);
-        }
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to update success story."),
       });
     } else {
       const newStory = {
@@ -77,7 +86,8 @@ export default function AdminSuccessStoriesPage() {
         onSuccess: () => {
           toast.success(`Success story "${selectedStory.title}" created.`);
           setEditorOpen(false);
-        }
+        },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to create success story."),
       });
     }
   };
@@ -107,12 +117,12 @@ export default function AdminSuccessStoriesPage() {
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
           { label: "Stories Active", count: stories.length, color: "text-primary" },
-          { label: "Top Package", count: "24 LPA", color: "text-emerald-500" },
-          { label: "Average Package", count: "8.5 LPA", color: "text-amber-500" },
-          { label: "Cities Reached", count: "25+", color: "text-cyan-600" }
+          { label: "Published", count: publishedCount, color: "text-emerald-500" },
+          { label: "Top Package", count: topPackage !== null ? `${topPackage} LPA` : "—", color: "text-amber-500" },
+          { label: "Average Package", count: avgPackage !== null ? `${avgPackage.toFixed(1)} LPA` : "—", color: "text-cyan-600" }
         ].map(st => (
-          <div key={st.label} className="rounded-2xl border border-border bg-card p-4 dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{st.label}</p>
+          <div key={st.label} className="rounded-2xl border border-border bg-card p-4">
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{st.label}</p>
             <p className={`mt-1.5 text-2xl font-black ${st.color}`}>{st.count}</p>
           </div>
         ))}

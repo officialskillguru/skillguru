@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { type ColumnDef } from "@tanstack/react-table";
 import {
   Search,
   Plus,
@@ -9,29 +11,47 @@ import {
   Archive,
   Trash2,
   X,
-  PlusCircle,
   Video,
-  Download
+  Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { ContentStatus } from "@/types/database";
 import type { CourseInput, CourseWithCategories } from "@/services/courses.service";
-import { useCourseCategories, useCourseMutations } from "@/hooks/useAdminData";
+import { useCourseCategories, useCourseMutations, useMentors } from "@/hooks/useAdminData";
 import { useAdminCourses, useBulkUpdateCourseStatus, useBulkDeleteCourses } from "@/hooks/admin/useAdminCourses";
-import { exportToCSV } from "@/utils/export";
+import { getExtendedSupabaseClient } from "@/services/_shared";
+import { uploadFile } from "@/services/storage.service";
+import { CourseCurriculumEditor } from "@/components/shared/CourseCurriculumEditor";
+import { DataTable } from "@/components/common/DataTable";
+import { Badge } from "@/components/ui/badge";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+
+async function fetchCourseEnrollmentCounts(courseIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (courseIds.length === 0) return counts;
+
+  const supabase = getExtendedSupabaseClient();
+  const { data, error } = await supabase.from("enrollments").select("course_id").in("course_id", courseIds);
+  if (error) throw error;
+
+  for (const row of (data ?? []) as { course_id: string }[]) {
+    counts.set(row.course_id, (counts.get(row.course_id) ?? 0) + 1);
+  }
+  return counts;
+}
 
 export default function AdminCoursesPage() {
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
   const [statusFilter, setStatusFilter] = useState("All");
   const [page, setPage] = useState(1);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  
+
   const [selectedCourse, setSelectedCourse] = useState<Partial<CourseWithCategories> | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorTab, setEditorTab] = useState<"basic" | "curriculum" | "pricing" | "seo" | "mentors" | "placement" | "certificate" | "media">("basic");
-  const [activeActionMenu, setActiveActionMenu] = useState<string | null>(null);
+  const [thumbnailUploading, setThumbnailUploading] = useState(false);
 
   const { data: coursesData, isLoading } = useAdminCourses({
     search: search || undefined,
@@ -43,7 +63,17 @@ export default function AdminCoursesPage() {
   const { data: categoriesData } = useCourseCategories();
   const dbCategories = categoriesData || [];
   const courses = coursesData?.data || [];
-  
+
+  const courseIds = courses.map((c) => c.id);
+  const { data: enrollmentCounts } = useQuery({
+    queryKey: ["admin_courses", "enrollment_counts", courseIds],
+    queryFn: () => fetchCourseEnrollmentCounts(courseIds),
+    enabled: courseIds.length > 0,
+  });
+
+  const { data: mentorsData } = useMentors({ pageSize: 200 });
+  const mentors = mentorsData?.data ?? [];
+
   const mutations = useCourseMutations();
   const bulkUpdateStatusMutation = useBulkUpdateCourseStatus();
   const bulkDeleteMutation = useBulkDeleteCourses();
@@ -55,61 +85,26 @@ export default function AdminCoursesPage() {
     return categoryFilter === "All Categories" || catName === categoryFilter;
   });
 
-  const toggleSelection = (id: string) => {
-    const newSet = new Set(selectedIds);
-    if (newSet.has(id)) newSet.delete(id);
-    else newSet.add(id);
-    setSelectedIds(newSet);
-  };
+  const handleBulkAction = (action: "publish" | "archive" | "delete", ids: string[]) => {
+    if (ids.length === 0) return toast.error("No courses selected.");
 
-  const toggleAll = () => {
-    if (selectedIds.size === filteredCourses.length) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(filteredCourses.map(c => c.id)));
-    }
-  };
-
-  const handleBulkAction = (action: "publish" | "archive" | "delete") => {
-    if (selectedIds.size === 0) return toast.error("No courses selected.");
-    
     if (action === "delete") {
-      bulkDeleteMutation.mutate({ courseIds: Array.from(selectedIds) }, {
-        onSuccess: () => {
-          toast.success(`Deleted ${selectedIds.size} courses successfully.`);
-          setSelectedIds(new Set());
-        }
+      bulkDeleteMutation.mutate({ courseIds: ids }, {
+        onSuccess: () => toast.success(`Deleted ${ids.length} courses successfully.`),
       });
       return;
     }
 
     const newStatus = action === "publish" ? "published" : "archived";
-    bulkUpdateStatusMutation.mutate({ courseIds: Array.from(selectedIds), status: newStatus }, {
-      onSuccess: () => {
-        toast.success(`Successfully updated ${selectedIds.size} courses to ${newStatus}.`);
-        setSelectedIds(new Set());
-      }
+    bulkUpdateStatusMutation.mutate({ courseIds: ids, status: newStatus }, {
+      onSuccess: () => toast.success(`Successfully updated ${ids.length} courses to ${newStatus}.`),
     });
-  };
-
-  const handleExport = () => {
-    if (filteredCourses.length === 0) return toast.error("No data to export.");
-    const exportData = filteredCourses.map(c => ({
-      ID: c.id,
-      Title: c.title,
-      Category: dbCategoryMap.get(c.selectedCategoryIds?.[0] || "") || "Uncategorized",
-      /* price removed */
-      Status: c.status,
-      Created: new Date(c.created_at).toLocaleDateString()
-    }));
-    exportToCSV(exportData, "courses_export");
   };
 
   const handleEdit = (course: CourseWithCategories) => {
     setSelectedCourse(course);
     setEditorTab("basic");
     setEditorOpen(true);
-    setActiveActionMenu(null);
   };
 
   const handleCreate = () => {
@@ -117,7 +112,7 @@ export default function AdminCoursesPage() {
       slug: "",
       title: "",
       selectedCategoryIds: [dbCategories[0]?.id || ""],
-      
+      mentor_id: mentors[0]?.id || "",
       status: "draft",
     });
     setEditorTab("basic");
@@ -136,7 +131,6 @@ export default function AdminCoursesPage() {
     mutations.create.mutate(input, {
       onSuccess: () => {
         toast.success(`Duplicated "${course.title}" successfully.`);
-        setActiveActionMenu(null);
       }
     });
   };
@@ -145,7 +139,6 @@ export default function AdminCoursesPage() {
     mutations.remove.mutate(id, {
       onSuccess: () => {
         toast.error("Course deleted.");
-        setActiveActionMenu(null);
       }
     });
   };
@@ -154,9 +147,31 @@ export default function AdminCoursesPage() {
     mutations.update.mutate({ id, input: { status: newStatus as ContentStatus } }, {
       onSuccess: () => {
         toast.success(`Course status updated to ${newStatus}.`);
-        setActiveActionMenu(null);
       }
     });
+  };
+
+  const handleThumbnailUpload = async (file: File | null) => {
+    if (!file || !selectedCourse?.id) return;
+    const courseId = selectedCourse.id;
+    setThumbnailUploading(true);
+    try {
+      const uploaded = await uploadFile("courses", file, courseId);
+      mutations.update.mutate(
+        { id: courseId, input: { thumbnail_file_id: uploaded.fileId } },
+        {
+          onSuccess: () => {
+            setSelectedCourse({ ...selectedCourse, thumbnail_file_id: uploaded.fileId });
+            toast.success("Thumbnail uploaded.");
+          },
+          onError: () => toast.error("Failed to save thumbnail."),
+        }
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Thumbnail upload failed.");
+    } finally {
+      setThumbnailUploading(false);
+    }
   };
 
   const saveCourse = (e: React.FormEvent) => {
@@ -186,27 +201,134 @@ export default function AdminCoursesPage() {
     }
   };
 
+  const columns: ColumnDef<CourseWithCategories>[] = [
+    {
+      id: "select",
+      header: ({ table }) => (
+        <input
+          type="checkbox"
+          checked={table.getIsAllPageRowsSelected()}
+          onChange={table.getToggleAllPageRowsSelectedHandler()}
+          aria-label="Select all courses"
+          className="rounded border-border"
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={row.getIsSelected()}
+          onChange={row.getToggleSelectedHandler()}
+          aria-label={`Select ${row.original.title}`}
+          className="rounded border-border"
+        />
+      ),
+      enableSorting: false,
+    },
+    {
+      accessorKey: "title",
+      header: "Title",
+      cell: ({ row }) => {
+        const c = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="grid size-10 place-items-center rounded-xl bg-linear-to-br from-primary to-secondary text-primary-foreground font-black text-[10px] shrink-0" aria-hidden="true">
+              {c.title?.slice(0, 2).toUpperCase()}
+            </div>
+            <div>
+              <p className="text-xs font-black text-foreground max-w-[200px] truncate" title={c.title || ""}>{c.title}</p>
+              <p className="text-[10px] font-bold text-muted-foreground truncate max-w-[200px]">{c.slug}</p>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      id: "category",
+      header: "Category",
+      cell: ({ row }) => (
+        <span className="rounded-lg bg-muted px-2.5 py-1 text-[10px] font-bold text-muted-foreground whitespace-nowrap">
+          {dbCategoryMap.get(row.original.selectedCategoryIds?.[0] || "") || "Uncategorized"}
+        </span>
+      ),
+    },
+    {
+      id: "enrollments",
+      header: "Enrollments",
+      cell: ({ row }) => (
+        <span className="text-xs font-black text-foreground">{enrollmentCounts?.get(row.original.id) ?? 0}</span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => {
+        const status = row.original.status;
+        return (
+          <Badge variant={status === "published" ? "success" : status === "draft" ? "warning" : "muted"} className="capitalize">
+            {status}
+          </Badge>
+        );
+      },
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const c = row.original;
+        return (
+          <div className="relative flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+                  aria-label={`Actions for ${c.title}`}
+                >
+                  <MoreVertical className="size-4" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-44">
+                <DropdownMenuItem onClick={() => handleEdit(c)} className="gap-2 text-xs font-black text-foreground">
+                  <Edit2 className="size-3.5 text-primary" aria-hidden="true" /> Edit Course
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDuplicate(c)} className="gap-2 text-xs font-black text-foreground">
+                  <Copy className="size-3.5 text-muted-foreground" aria-hidden="true" /> Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => handleStatusChange(c.id, "published")} className="gap-2 text-xs font-bold text-success">
+                  <Globe className="size-3.5" aria-hidden="true" /> Publish
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleStatusChange(c.id, "archived")} className="gap-2 text-xs font-bold text-warning">
+                  <Archive className="size-3.5" aria-hidden="true" /> Archive
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleDelete(c.id)} className="gap-2 text-xs font-bold text-destructive-text">
+                  <Trash2 className="size-3.5" aria-hidden="true" /> Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        );
+      },
+    },
+  ];
+
   return (
     <div className="space-y-6 pb-12">
       {/* Page Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-primary dark:text-cyan-200">
+          <h1 className="text-3xl font-black tracking-tight text-foreground">
             Academics Catalogue
           </h1>
-          <p className="mt-1 text-sm font-semibold text-muted-foreground dark:text-slate-400">
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
             Author curriculum, specify certifications, and map mentor profiles.
           </p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleExport} className="flex h-10 items-center gap-2 rounded-xl bg-white px-4 text-xs font-black text-slate-700 shadow-sm border border-slate-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 transition">
-            <Download className="size-4" /> Export CSV
-          </button>
           <button
             onClick={handleCreate}
-            className="flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-black text-white hover:bg-opacity-90 shadow-lg shadow-primary/15 dark:bg-cyan-400 dark:text-primary transition"
+            className="flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/15 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            <Plus className="size-4" /> Create Course
+            <Plus className="size-4" aria-hidden="true" /> Create Course
           </button>
         </div>
       </div>
@@ -214,35 +336,39 @@ export default function AdminCoursesPage() {
       {/* Stats Counter Row */}
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         {[
-          { label: "Active Courses", count: courses.filter(c => c.status === "published").length, color: "text-emerald-500" },
-          { label: "Draft Programs", count: courses.filter(c => c.status === "draft").length, color: "text-amber-500" },
-          { label: "Archived Tracks", count: courses.filter(c => c.status === "archived").length, color: "text-slate-400" },
+          { label: "Active Courses", count: courses.filter(c => c.status === "published").length, color: "text-success" },
+          { label: "Draft Programs", count: courses.filter(c => c.status === "draft").length, color: "text-warning" },
+          { label: "Archived Tracks", count: courses.filter(c => c.status === "archived").length, color: "text-muted-foreground" },
           { label: "Total Programs", count: coursesData?.count || 0, color: "text-primary" }
         ].map(st => (
-          <div key={st.label} className="rounded-2xl border border-border bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">{st.label}</p>
+          <div key={st.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{st.label}</p>
             <p className={`mt-1.5 text-2xl font-black ${st.color}`}>{st.count}</p>
           </div>
         ))}
       </div>
 
-      {/* Filters & Bulk Actions Header */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm">
         <div className="relative w-full sm:max-w-md flex-1">
-          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-primary dark:text-cyan-300" />
+          <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+          <label htmlFor="course-search" className="sr-only">Search programs, tags</label>
           <input
+            id="course-search"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             placeholder="Search programs, tags..."
-            className="h-11 w-full rounded-xl border border-slate-200 bg-muted pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
+            className="h-11 w-full rounded-xl border border-border bg-muted pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-muted-foreground focus:border-primary"
           />
         </div>
 
         <div className="flex gap-2">
+          <label htmlFor="course-category-filter" className="sr-only">Filter by category</label>
           <select
+            id="course-category-filter"
             value={categoryFilter}
             onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
-            className="h-11 rounded-xl border border-slate-200 bg-muted px-4 text-xs font-black text-primary outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white md:w-48"
+            className="h-11 rounded-xl border border-border bg-muted px-4 text-xs font-black text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring md:w-48"
           >
             <option>All Categories</option>
             {dbCategories.map((cat) => (
@@ -252,10 +378,12 @@ export default function AdminCoursesPage() {
             ))}
           </select>
 
+          <label htmlFor="course-status-filter" className="sr-only">Filter by status</label>
           <select
+            id="course-status-filter"
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="h-11 rounded-xl border border-slate-200 bg-muted px-4 text-xs font-black text-primary outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white md:w-36"
+            className="h-11 rounded-xl border border-border bg-muted px-4 text-xs font-black text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring md:w-36"
           >
             <option value="All">All Status</option>
             <option value="published">Published</option>
@@ -265,202 +393,86 @@ export default function AdminCoursesPage() {
         </div>
       </div>
 
-      <AnimatePresence>
-        {selectedIds.size > 0 && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm"
-          >
-            <span className="text-xs font-bold text-slate-500 mr-2 px-2">{selectedIds.size} Selected</span>
-            <button onClick={() => handleBulkAction("publish")} className="flex items-center gap-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-[10px] font-black uppercase text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 transition">
-              <Globe className="size-3.5" /> Publish
-            </button>
-            <button onClick={() => handleBulkAction("archive")} className="flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[10px] font-black uppercase text-amber-600 hover:bg-amber-100 dark:bg-amber-950/30 dark:text-amber-400 transition">
-              <Archive className="size-3.5" /> Archive
-            </button>
-            <button onClick={() => handleBulkAction("delete")} className="flex items-center gap-1.5 rounded-lg bg-rose-50 px-3 py-2 text-[10px] font-black uppercase text-rose-600 hover:bg-rose-100 dark:bg-rose-950/30 dark:text-rose-400 transition">
-              <Trash2 className="size-3.5" /> Delete
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Courses Catalog Table */}
-      <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-border bg-slate-100/40 text-[10px] font-black uppercase tracking-wider text-muted-foreground dark:border-slate-850 dark:bg-slate-900/50">
-                <th className="px-6 py-4 w-12">
-                  <input type="checkbox" onChange={toggleAll} checked={filteredCourses.length > 0 && selectedIds.size === filteredCourses.length} className="rounded border-slate-300 dark:border-slate-700" />
-                </th>
-                <th className="px-6 py-4">Title</th>
-                <th className="px-6 py-4">Category</th>
-                <th className="px-6 py-4">Enrollments</th>
-                <th className="px-6 py-4">Status</th>
-                <th className="px-6 py-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#DDE7F6] dark:divide-slate-850">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-sm font-semibold text-slate-400">
-                    Loading programs...
-                  </td>
-                </tr>
-              ) : filteredCourses.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="py-12 text-center text-sm font-semibold text-slate-400">
-                    No programs matched the criteria.
-                  </td>
-                </tr>
-              ) : (
-                filteredCourses.map((c) => (
-                  <tr
-                    key={c.id}
-                    onClick={(e) => {
-                      if ((e.target as HTMLElement).tagName !== "INPUT" && (e.target as HTMLElement).tagName !== "BUTTON") {
-                        handleEdit(c);
-                      }
-                    }}
-                    className="group cursor-pointer transition-all hover:bg-slate-50/50 dark:hover:bg-slate-800/10 text-xs"
-                  >
-                    <td className="px-6 py-4.5">
-                      <input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleSelection(c.id)} className="rounded border-slate-300 dark:border-slate-700" />
-                    </td>
-                    <td className="px-6 py-4.5">
-                      <div className="flex items-center gap-3">
-                        <div className="grid size-10 place-items-center rounded-xl bg-gradient-to-br from-primary to-blue-800 text-white font-black text-[10px] shrink-0">
-                          {c.title?.slice(0, 2).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-xs font-black text-primary dark:text-slate-100 max-w-[200px] truncate" title={c.title || ""}>
-                            {c.title}
-                          </p>
-                          <p className="text-[10px] font-bold text-slate-400 truncate max-w-[200px]">{c.slug}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4.5">
-                      <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-[10px] font-bold text-slate-600 dark:bg-slate-800 dark:text-slate-400 whitespace-nowrap">
-                        {dbCategoryMap.get(c.selectedCategoryIds?.[0] || "") || "Uncategorized"}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4.5 text-xs font-black text-slate-600 dark:text-slate-350">0</td>
-                    <td className="px-6 py-4.5">
-                      <span
-                        className={[
-                          "inline-flex rounded-full px-2.5 py-0.5 text-[9px] font-black uppercase tracking-wider whitespace-nowrap",
-                          c.status === "published"
-                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400"
-                            : c.status === "draft"
-                            ? "bg-amber-50 text-amber-600 dark:bg-amber-950/20 dark:text-amber-400"
-                            : "bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
-                        ].join(" ")}
-                      >
-                        {c.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4.5 text-right relative">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setActiveActionMenu(activeActionMenu === c.id ? null : c.id); }}
-                        className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
-                      >
-                        <MoreVertical className="size-4" />
-                      </button>
-
-                      {/* Floating Dropdown Action Menu */}
-                      <AnimatePresence>
-                        {activeActionMenu === c.id && (
-                          <>
-                            <button
-                              type="button"
-                              className="fixed inset-0 z-10 cursor-default"
-                              onClick={(e) => { e.stopPropagation(); setActiveActionMenu(null); }}
-                            />
-                            <motion.div
-                              initial={{ opacity: 0, scale: 0.95 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              exit={{ opacity: 0, scale: 0.95 }}
-                              className="absolute right-8 top-4 z-20 w-44 rounded-xl border border-slate-100 bg-white p-1.5 shadow-xl dark:border-slate-800 dark:bg-slate-950"
-                            >
-                              <button onClick={(e) => { e.stopPropagation(); handleEdit(c); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-black text-slate-700 hover:bg-slate-50 dark:text-slate-350 dark:hover:bg-slate-900">
-                                <Edit2 className="size-3.5 text-primary" /> Edit Course
-                              </button>
-                              <button onClick={(e) => { e.stopPropagation(); handleDuplicate(c); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-black text-slate-700 hover:bg-slate-50 dark:text-slate-350 dark:hover:bg-slate-900">
-                                <Copy className="size-3.5 text-blue-500" /> Duplicate
-                              </button>
-                              <div className="my-1 border-t border-slate-100 dark:border-slate-900" />
-                              <button onClick={(e) => { e.stopPropagation(); handleStatusChange(c.id, "published"); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-xs font-bold text-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/15">
-                                <Globe className="size-3.5" /> Publish
-                              </button>
-                              <button onClick={(e) => { e.stopPropagation(); handleStatusChange(c.id, "archived"); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-xs font-bold text-amber-600 hover:bg-amber-50/50 dark:hover:bg-amber-950/15">
-                                <Archive className="size-3.5" /> Archive
-                              </button>
-                              <button onClick={(e) => { e.stopPropagation(); handleDelete(c.id); }} className="flex w-full items-center gap-2 rounded-lg px-3 py-1.5 text-left text-xs font-bold text-rose-600 hover:bg-rose-50/50 dark:hover:bg-rose-950/15">
-                                <Trash2 className="size-3.5" /> Delete
-                              </button>
-                            </motion.div>
-                          </>
-                        )}
-                      </AnimatePresence>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {isLoading ? (
+        <div className="space-y-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
+          ))}
         </div>
-
-        {/* Pagination */}
-        <div className="border-t border-border px-6 py-4 flex items-center justify-between dark:border-slate-800">
-          <p className="text-xs font-semibold text-slate-500">
-            Showing page {page} of {coursesData?.totalPages || 1}
-          </p>
-          <div className="flex gap-2">
-            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Prev</button>
-            <button disabled={page >= (coursesData?.totalPages || 1)} onClick={() => setPage(p => p + 1)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Next</button>
+      ) : (
+        <>
+          <DataTable
+            columns={columns}
+            data={filteredCourses}
+            exportFilename="courses_export"
+            hidePagination
+            bulkActions={[
+              { label: "Publish", onClick: (rows) => handleBulkAction("publish", rows.map((r) => r.id)) },
+              { label: "Archive", onClick: (rows) => handleBulkAction("archive", rows.map((r) => r.id)) },
+              { label: "Delete", onClick: (rows) => handleBulkAction("delete", rows.map((r) => r.id)), variant: "destructive" },
+            ]}
+          />
+          {filteredCourses.length === 0 && (
+            <p className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
+              No programs matched the criteria.
+            </p>
+          )}
+          <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-6 py-4">
+            <p className="text-xs font-semibold text-muted-foreground">
+              Showing page {page} of {coursesData?.totalPages || 1}
+            </p>
+            <div className="flex gap-2">
+              <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">Prev</button>
+              <button disabled={page >= (coursesData?.totalPages || 1)} onClick={() => setPage(p => p + 1)} className="rounded-lg border border-border px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50">Next</button>
+            </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* Slide-out Course Editor Panel */}
-      <AnimatePresence>
-        {editorOpen && selectedCourse && (
-          <div className="fixed inset-0 z-50 flex justify-end bg-card/50 backdrop-blur-xs">
-            <button
-              type="button"
-              className="absolute inset-0 cursor-default"
-              onClick={() => setEditorOpen(false)}
-            />
-
-            <motion.div
-              initial={{ x: "100%" }}
-              animate={{ x: 0 }}
-              exit={{ x: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 220 }}
-              className="relative z-10 flex h-full w-full max-w-2xl flex-col border-l border-border bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-950"
-            >
-              <div className="flex items-center justify-between border-b border-slate-100 px-6 py-5 dark:border-slate-850">
+      <DialogPrimitive.Root open={editorOpen && !!selectedCourse} onOpenChange={setEditorOpen}>
+        <AnimatePresence>
+          {editorOpen && selectedCourse && (
+            <DialogPrimitive.Portal forceMount>
+              <DialogPrimitive.Overlay asChild forceMount>
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-50 bg-card/50 backdrop-blur-xs"
+                />
+              </DialogPrimitive.Overlay>
+              <DialogPrimitive.Content asChild forceMount aria-describedby={undefined}>
+                <motion.div
+                  initial={{ x: "100%" }}
+                  animate={{ x: 0 }}
+                  exit={{ x: "100%" }}
+                  transition={{ type: "spring", damping: 25, stiffness: 220 }}
+                  className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-2xl flex-col border-l border-border bg-card shadow-2xl outline-none"
+                >
+              <div className="flex items-center justify-between border-b border-border px-6 py-5">
                 <div>
-                  <h3 className="text-lg font-black text-primary dark:text-white">
-                    {selectedCourse.id ? "Edit Course" : "Create New Course"}
-                  </h3>
-                  <p className="text-xs font-semibold text-slate-400">
+                  <DialogPrimitive.Title asChild>
+                    <h3 className="text-lg font-black text-foreground">
+                      {selectedCourse.id ? "Edit Course" : "Create New Course"}
+                    </h3>
+                  </DialogPrimitive.Title>
+                  <p className="text-xs font-semibold text-muted-foreground">
                     Draft curriculum outlines, certifications templates and media.
                   </p>
                 </div>
-                <button
-                  onClick={() => setEditorOpen(false)}
-                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-850"
-                >
-                  <X className="size-5" />
-                </button>
+                <DialogPrimitive.Close asChild>
+                  <button
+                    aria-label="Close"
+                    className="rounded-xl p-2 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <X className="size-5" aria-hidden="true" />
+                  </button>
+                </DialogPrimitive.Close>
               </div>
 
-              <div className="flex border-b border-slate-100 overflow-x-auto hide-scrollbar px-6 dark:border-slate-850">
+              <div role="tablist" aria-label="Course editor sections" className="flex border-b border-border overflow-x-auto hide-scrollbar px-6">
                 {[
                   { id: "basic", label: "Basic Info" },
                   { id: "curriculum", label: "Curriculum" },
@@ -471,12 +483,14 @@ export default function AdminCoursesPage() {
                 ].map((tb) => (
                   <button
                     key={tb.id}
+                    role="tab"
+                    aria-selected={editorTab === tb.id}
                     onClick={() => setEditorTab(tb.id as typeof editorTab)}
                     className={[
-                      "shrink-0 py-3.5 px-3.5 text-xs font-black transition-all border-b-2",
+                      "shrink-0 py-3.5 px-3.5 text-xs font-black transition-all border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                       editorTab === tb.id
-                        ? "border-primary text-primary dark:border-cyan-400 dark:text-cyan-300"
-                        : "border-transparent text-slate-400 hover:text-primary dark:hover:text-white",
+                        ? "border-primary text-primary"
+                        : "border-transparent text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {tb.label}
@@ -488,31 +502,34 @@ export default function AdminCoursesPage() {
                 {editorTab === "basic" && (
                   <div className="space-y-5">
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-primary dark:text-slate-350">Course Title</label>
+                      <label htmlFor="course-title" className="text-xs font-black text-muted-foreground">Course Title</label>
                       <input
+                        id="course-title"
                         required
                         value={selectedCourse.title || ""}
                         onChange={(e) => setSelectedCourse({ ...selectedCourse, title: e.target.value })}
-                        className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         placeholder="e.g. Master Full Stack Engineering"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-primary dark:text-slate-350">URL Slug</label>
+                      <label htmlFor="course-slug" className="text-xs font-black text-muted-foreground">URL Slug</label>
                       <input
+                        id="course-slug"
                         value={selectedCourse.slug || ""}
                         onChange={(e) => setSelectedCourse({ ...selectedCourse, slug: e.target.value })}
-                        className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                        className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         placeholder="e.g. master-full-stack"
                       />
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-primary dark:text-slate-350">Category</label>
+                        <label htmlFor="course-category" className="text-xs font-black text-muted-foreground">Category</label>
                         <select
+                          id="course-category"
                           value={selectedCourse.selectedCategoryIds?.[0] || ""}
                           onChange={(e) => setSelectedCourse({ ...selectedCourse, selectedCategoryIds: [e.target.value] })}
-                          className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                          className="w-full h-11 rounded-xl border border-border bg-muted px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                         >
                           {dbCategories.map(cat => (
                             <option key={cat.id} value={cat.id}>{cat.name}</option>
@@ -520,12 +537,12 @@ export default function AdminCoursesPage() {
                         </select>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-primary dark:text-slate-350">Duration Length</label>
+                        <label htmlFor="course-duration" className="text-xs font-black text-muted-foreground">Duration Length</label>
                         <input
-                          required
-                          value={0}
-                          onChange={() => {}}
-                          className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                          id="course-duration"
+                          value={selectedCourse.duration || ""}
+                          onChange={(e) => setSelectedCourse({ ...selectedCourse, duration: e.target.value })}
+                          className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           placeholder="e.g. 12 Weeks"
                         />
                       </div>
@@ -533,21 +550,22 @@ export default function AdminCoursesPage() {
 
                     {/* Rich Text Editor Mock */}
                     <div className="space-y-2">
-                      <label className="text-xs font-black text-primary dark:text-slate-350">Full Description</label>
-                      <div className="rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden bg-white dark:bg-slate-950">
+                      <label htmlFor="course-description" className="text-xs font-black text-muted-foreground">Full Description</label>
+                      <div className="rounded-xl border border-border overflow-hidden bg-card">
                         {/* Fake Toolbar */}
-                        <div className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 py-2 flex gap-2">
-                          <button type="button" className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded font-serif font-bold text-xs text-slate-700 dark:text-slate-300">B</button>
-                          <button type="button" className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded font-serif italic text-xs text-slate-700 dark:text-slate-300">I</button>
-                          <button type="button" className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded font-serif underline text-xs text-slate-700 dark:text-slate-300">U</button>
-                          <div className="w-px bg-slate-300 dark:bg-slate-700 my-1 mx-1"></div>
-                          <button type="button" className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded text-xs font-bold text-slate-700 dark:text-slate-300">&lt;/&gt;</button>
+                        <div className="bg-muted border-b border-border px-3 py-2 flex gap-2" aria-hidden="true">
+                          <button type="button" tabIndex={-1} className="p-1.5 hover:bg-muted rounded font-serif font-bold text-xs text-foreground/80">B</button>
+                          <button type="button" tabIndex={-1} className="p-1.5 hover:bg-muted rounded font-serif italic text-xs text-foreground/80">I</button>
+                          <button type="button" tabIndex={-1} className="p-1.5 hover:bg-muted rounded font-serif underline text-xs text-foreground/80">U</button>
+                          <div className="w-px bg-border my-1 mx-1"></div>
+                          <button type="button" tabIndex={-1} className="p-1.5 hover:bg-muted rounded text-xs font-bold text-foreground/80">&lt;/&gt;</button>
                         </div>
                         <textarea
+                          id="course-description"
                           rows={6}
                           value={selectedCourse.description || ""}
                           onChange={(e) => setSelectedCourse({ ...selectedCourse, description: e.target.value })}
-                          className="w-full p-3.5 text-sm outline-none bg-transparent dark:text-white resize-y"
+                          className="w-full p-3.5 text-sm text-foreground outline-none bg-transparent resize-y"
                           placeholder="Write a detailed description..."
                         />
                       </div>
@@ -556,53 +574,44 @@ export default function AdminCoursesPage() {
                 )}
 
                 {editorTab === "curriculum" && (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-black text-primary dark:text-cyan-200">Curriculum Module Syllabus Builder</h4>
-                      <button
-                        type="button"
-                        onClick={() => toast.success("Added new dynamic curriculum slot.")}
-                        className="flex items-center gap-1 text-[10px] font-black text-cyan-600 uppercase"
-                      >
-                        <PlusCircle className="size-3.5" />
-                        <span>Add Module</span>
-                      </button>
-                    </div>
-
-                    {["Frontend Foundations", "Backend Systems", "Job Preparation"].map((mod, index) => (
-                      <div key={mod} className="rounded-xl border border-slate-100 bg-muted p-4 space-y-3 dark:border-slate-800 dark:bg-slate-900/50">
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-black text-primary dark:text-slate-300">Module {index + 1}</p>
-                          <button type="button" className="text-[10px] font-black text-rose-500 uppercase">Remove</button>
-                        </div>
-                        <input className="w-full h-10 rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none dark:border-slate-800 dark:bg-slate-950 dark:text-white" defaultValue={mod} />
-                      </div>
-                    ))}
-                  </div>
+                  selectedCourse.id ? (
+                    <CourseCurriculumEditor
+                      courseId={selectedCourse.id}
+                      courseTitle={selectedCourse.title || "Untitled course"}
+                      courseStatus={selectedCourse.status || "draft"}
+                    />
+                  ) : (
+                    <p className="rounded-xl border border-dashed border-border bg-muted p-6 text-center text-xs font-bold text-muted-foreground">
+                      Save this course first to start adding modules and lessons.
+                    </p>
+                  )
                 )}
 
                 {editorTab === "pricing" && (
                   <div className="space-y-4">
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-primary dark:text-slate-350">Course Base Price (INR)</label>
+                        <label htmlFor="course-price" className="text-xs font-black text-muted-foreground">Course Base Price (INR)</label>
                         <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-slate-400">₹</span>
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-muted-foreground" aria-hidden="true">₹</span>
                           <input
+                            id="course-price"
                             type="number"
                             required
-                            value={0}
-                            onChange={() => {}}
-                            className="w-full h-11 rounded-xl border border-slate-200 bg-muted pl-8 pr-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                            min={0}
+                            value={selectedCourse.price ?? 0}
+                            onChange={(e) => setSelectedCourse({ ...selectedCourse, price: Number(e.target.value) })}
+                            className="w-full h-11 rounded-xl border border-border bg-muted pl-8 pr-3.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                           />
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <label className="text-xs font-black text-primary dark:text-slate-350">Discount Subtitle</label>
+                        <label htmlFor="course-discount-subtitle" className="text-xs font-black text-muted-foreground">Discount Subtitle</label>
                         <input
+                          id="course-discount-subtitle"
                           disabled
                           value=""
-                          className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm outline-none opacity-50 cursor-not-allowed dark:border-slate-800 dark:bg-slate-900 dark:text-white"
+                          className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm text-foreground outline-none opacity-50 cursor-not-allowed"
                           placeholder="Not supported by schema"
                         />
                       </div>
@@ -612,19 +621,28 @@ export default function AdminCoursesPage() {
 
                 {editorTab === "seo" && (
                   <div className="space-y-4">
+                    <p className="rounded-xl border border-dashed border-border bg-muted p-4 text-xs font-bold text-muted-foreground">
+                      Not supported by schema yet — the <code>courses</code> table has no meta title/description columns. These fields are disabled until that's added.
+                    </p>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-primary dark:text-slate-350">SEO Title Tag</label>
+                      <label htmlFor="course-seo-title" className="text-xs font-black text-muted-foreground">SEO Title Tag</label>
                       <input
-                        className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                        placeholder="SEO optimised meta title"
+                        id="course-seo-title"
+                        disabled
+                        value=""
+                        className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm text-foreground outline-none opacity-50 cursor-not-allowed"
+                        placeholder="Not supported by schema"
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-primary dark:text-slate-350">SEO Description</label>
+                      <label htmlFor="course-seo-description" className="text-xs font-black text-muted-foreground">SEO Description</label>
                       <textarea
+                        id="course-seo-description"
+                        disabled
                         rows={4}
-                        className="w-full rounded-xl border border-slate-200 bg-muted p-3 text-sm outline-none dark:border-slate-800 dark:bg-slate-900 dark:text-white"
-                        placeholder="Compelling page meta description..."
+                        value=""
+                        className="w-full rounded-xl border border-border bg-muted p-3 text-sm text-foreground outline-none opacity-50 cursor-not-allowed"
+                        placeholder="Not supported by schema"
                       />
                     </div>
                   </div>
@@ -632,58 +650,73 @@ export default function AdminCoursesPage() {
 
                 {editorTab === "mentors" && (
                   <div className="space-y-4">
-                    <label className="text-xs font-black text-primary dark:text-slate-350">Assign Instructors/Faculty Mentors</label>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {["Rahul Sharma", "Neha Verma", "Amit Singh", "Pooja Rao"].map((m) => (
-                        <label key={m} className="flex items-center gap-3 rounded-xl border border-slate-100 bg-muted p-3 cursor-pointer dark:border-slate-800 dark:bg-slate-900/50">
-                          <input
-                            type="checkbox"
-                            checked={false}
-                            disabled
-                            className="rounded border-slate-200 text-primary focus:ring-[#111E79] opacity-50"
-                          />
-                          <span className="text-xs font-black text-slate-700 dark:text-slate-350">{m}</span>
-                        </label>
+                    <label htmlFor="course-mentor" className="text-xs font-black text-muted-foreground">Assigned Mentor</label>
+                    <p className="text-[10px] font-bold text-muted-foreground">
+                      Each course has exactly one owning mentor (required by the schema) — pick who runs this course.
+                    </p>
+                    <select
+                      id="course-mentor"
+                      required
+                      value={selectedCourse.mentor_id || ""}
+                      onChange={(e) => setSelectedCourse({ ...selectedCourse, mentor_id: e.target.value })}
+                      className="w-full h-11 rounded-xl border border-border bg-muted px-3 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      <option value="" disabled>Select a mentor...</option>
+                      {mentors.map((m) => (
+                        <option key={m.id} value={m.id}>{m.name}</option>
                       ))}
-                    </div>
+                    </select>
                   </div>
                 )}
 
                 {editorTab === "media" && (
                   <div className="space-y-4">
-                    <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center bg-muted dark:border-slate-850 dark:bg-slate-900/50">
-                      <Video className="size-8 mx-auto text-slate-400" />
-                      <p className="mt-3 text-xs font-black text-slate-600 dark:text-slate-350">Uploader Simulation Console</p>
-                      <p className="mt-1 text-[10px] font-bold text-slate-400 leading-normal">
-                        Select banners, thumbnails, or intro mock assets. File path triggers preview instantly.
+                    <div className="rounded-2xl border-2 border-dashed border-border p-8 text-center bg-muted">
+                      <Video className="size-8 mx-auto text-muted-foreground" aria-hidden="true" />
+                      <p className="mt-3 text-xs font-black text-foreground/80">Course Thumbnail</p>
+                      <p className="mt-1 text-[10px] font-bold text-muted-foreground leading-normal">
+                        {selectedCourse.thumbnail_file_id ? "A thumbnail is already attached to this course." : "Upload a jpg, png, or webp thumbnail for the course card."}
                       </p>
-                      <button type="button" onClick={() => toast.success("Selected file: company-mock-banner.png")} className="mt-4 rounded-xl border border-slate-200 bg-white px-4 py-2 text-xs font-black text-slate-700 dark:border-slate-800 dark:bg-slate-950 dark:text-white">
-                        Choose File
-                      </button>
+                      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-black text-foreground/80 hover:bg-muted has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
+                        {thumbnailUploading ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : null}
+                        {thumbnailUploading ? "Uploading..." : "Choose File"}
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp"
+                          className="sr-only"
+                          disabled={thumbnailUploading || !selectedCourse.id}
+                          onChange={(e) => void handleThumbnailUpload(e.target.files?.[0] ?? null)}
+                        />
+                      </label>
+                      {!selectedCourse.id && (
+                        <p className="mt-2 text-[10px] font-bold text-warning">Save the course first to upload a thumbnail.</p>
+                      )}
                     </div>
                   </div>
                 )}
               </form>
 
-              <div className="flex items-center justify-end gap-3 border-t border-slate-100 px-6 py-4 dark:border-slate-850">
+              <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
                 <button
                   type="button"
                   onClick={() => setEditorOpen(false)}
-                  className="h-11 rounded-xl px-5 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850"
+                  className="h-11 rounded-xl px-5 text-xs font-black text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Close
                 </button>
                 <button
                   onClick={saveCourse}
-                  className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-white hover:bg-opacity-90 dark:bg-cyan-400 dark:text-primary"
+                  className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   Save Course Record
                 </button>
               </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                </motion.div>
+              </DialogPrimitive.Content>
+            </DialogPrimitive.Portal>
+          )}
+        </AnimatePresence>
+      </DialogPrimitive.Root>
     </div>
   );
 }

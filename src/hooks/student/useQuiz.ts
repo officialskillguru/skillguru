@@ -1,16 +1,8 @@
-﻿import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { quizService } from "@/services/quiz.service";
-import { useAuth } from "@/hooks/useAuth";
-import type { Database } from "@/types/database";
-
-type QuizAnswerInsert = Database["public"]["Tables"]["quiz_answers"]["Insert"];
 
 export function useQuiz(lessonId: string) {
-  const { user } = useAuth();
-  const studentId = user?.id;
-  const queryClient = useQueryClient();
-
-  const quizQuery = useQuery({
+  return useQuery({
     queryKey: ["quiz", lessonId],
     queryFn: async () => {
       if (!lessonId) return null;
@@ -20,31 +12,33 @@ export function useQuiz(lessonId: string) {
     },
     enabled: !!lessonId,
   });
+}
 
-  const startAttempt = useMutation({
-    mutationFn: async (quizId: string) => {
-      if (!studentId) throw new Error("Not authenticated");
-      const res = await quizService.startQuiz(studentId, quizId);
-      if (!res.success) throw res.error;
-      return res.data;
-    }
-  });
-
-  const submitAttempt = useMutation({
-    mutationFn: async ({ attemptId, answers, score, passed }: { attemptId: string, answers: QuizAnswerInsert[], score: number, passed: boolean }) => {
-      const res = await quizService.submitQuiz(attemptId, answers, score, passed);
+export function useQuizAttempts(enrollmentId: string | undefined, quizId: string | undefined) {
+  return useQuery({
+    queryKey: ["quiz-attempts", enrollmentId, quizId],
+    queryFn: async () => {
+      if (!enrollmentId || !quizId) return [];
+      const res = await quizService.getMyAttempts(enrollmentId, quizId);
       if (!res.success) throw res.error;
       return res.data;
     },
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ["quiz", lessonId] });
-    }
+    enabled: !!enrollmentId && !!quizId,
   });
+}
 
-  return {
-    quiz: quizQuery.data,
-    isLoading: quizQuery.isLoading,
-    error: quizQuery.error,
-    startAttempt,
-    submitAttempt
-  };
+export function useSubmitQuizAttempt(quizId: string | undefined, enrollmentId: string | undefined) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (selectedOptionIds: string[]) => {
+      if (!quizId || !enrollmentId) throw new Error("Missing quiz or enrollment context");
+      const res = await quizService.submitAttempt(quizId, enrollmentId, selectedOptionIds);
+      if (!res.success) throw res.error;
+      return res.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["quiz-attempts", enrollmentId, quizId] });
+    },
+  });
 }

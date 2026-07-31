@@ -4,7 +4,7 @@ import {
   demoBookingFormSchema,
   enquiryFormSchema,
 } from "@/lib/validation/forms";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
+import { supabase } from "@/lib/supabase/client";
 
 export type LeadType = "contact" | "enquiry" | "counselling" | "demo";
 
@@ -22,12 +22,6 @@ export async function submitLead(type: LeadType, payload: unknown): Promise<Subm
 
   if (!parsed.success) {
     throw new Error("Please check the form details and try again.");
-  }
-
-  const supabase = createSupabaseBrowserClient();
-
-  if (!supabase) {
-    return { id: `local-${Date.now()}` };
   }
 
   const response = await supabase.functions.invoke<{ ok: boolean; data?: SubmitLeadResult; error?: { message: string } }>("leads", {

@@ -1,5 +1,5 @@
-import { createClient } from "npm:@supabase/supabase-js@2.49.0";
-import { z } from "npm:zod@3.24.0";
+import { createClient } from "@supabase/supabase-js";
+import { z } from "zod";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -56,6 +56,35 @@ function json(body: unknown, status = 200) {
   });
 }
 
+// Builds the free-text `notes` blob for the `leads` table, since the live schema
+// has no per-form-type child tables (enquiries/counselling_bookings/demo_bookings
+// do not exist) and no JSON metadata column to preserve structured fields in.
+function buildNotes(type: LeadType, payload: Record<string, unknown>): string {
+  const lines: string[] = [`Form: ${type}`];
+  if (type === "contact") {
+    lines.push(`Subject: ${payload.subject as string}`, "", payload.message as string);
+  } else if (type === "enquiry") {
+    lines.push(`Course: ${payload.courseSlug as string}`);
+    if (payload.preferredMode) lines.push(`Preferred mode: ${payload.preferredMode as string}`);
+    if (payload.message) lines.push("", payload.message as string);
+  } else if (type === "counselling") {
+    lines.push(
+      `Career stage: ${payload.careerStage as string}`,
+      payload.currentRole ? `Current role: ${payload.currentRole as string}` : "",
+      `Preferred slot: ${payload.preferredDate as string} ${payload.preferredTime as string}`,
+      "",
+      `Goals: ${payload.goals as string}`
+    );
+  } else if (type === "demo") {
+    lines.push(
+      `Course: ${payload.courseSlug as string}`,
+      `Learning mode: ${payload.learningMode as string}`,
+      `Preferred slot: ${payload.preferredDate as string} ${payload.preferredTime as string}`
+    );
+  }
+  return lines.filter(Boolean).join("\n");
+}
+
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
@@ -90,22 +119,34 @@ Deno.serve(async (request) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const payload = parsed.data;
+    const payload = parsed.data as Record<string, unknown>;
+
+    // All web-form submissions share the "website" lead source; the specific
+    // form type is preserved via `tags` since there is no per-type source row.
+    const { data: source } = await supabase
+      .from("lead_sources")
+      .select("id")
+      .eq("slug", "website")
+      .maybeSingle();
+
+    let courseInterestId: string | null = null;
+    if ("courseSlug" in payload) {
+      const { data: course } = await supabase
+        .from("courses")
+        .select("id")
+        .eq("slug", payload.courseSlug as string)
+        .maybeSingle();
+      courseInterestId = (course as { id: string } | null)?.id ?? null;
+    }
+
     const leadInsert = {
-      full_name: payload.fullName,
-      email: payload.email.toLowerCase(),
-      phone: payload.phone,
-      source: type,
-      course_slug: "courseSlug" in payload ? payload.courseSlug : null,
-      message:
-        type === "contact"
-          ? `${payload.subject}\n\n${payload.message}`
-          : "message" in payload
-            ? payload.message ?? null
-            : "goals" in payload
-              ? payload.goals
-              : null,
-      metadata: {},
+      name: payload.fullName as string,
+      email: (payload.email as string).toLowerCase(),
+      phone: payload.phone as string,
+      source_id: (source as { id: string } | null)?.id ?? null,
+      course_interest_id: courseInterestId,
+      notes: buildNotes(type, payload),
+      tags: [`form:${type}`],
     };
 
     const { data: lead, error: leadError } = await supabase.from("leads").insert(leadInsert).select("id").single();
@@ -114,44 +155,11 @@ Deno.serve(async (request) => {
       throw leadError;
     }
 
-    if (type === "enquiry") {
-      const enquiry = payload as z.infer<typeof enquiryFormSchema>;
-      await supabase.from("enquiries").insert({
-        lead_id: lead.id,
-        course_slug: enquiry.courseSlug,
-        preferred_mode: enquiry.preferredMode ?? null,
-        message: enquiry.message ?? null,
-      });
-    }
-
-    if (type === "counselling") {
-      const counselling = payload as z.infer<typeof counsellingFormSchema>;
-      await supabase.from("counselling_bookings").insert({
-        lead_id: lead.id,
-        career_stage: counselling.careerStage,
-        current_role: counselling.currentRole ?? null,
-        goals: counselling.goals,
-        preferred_date: counselling.preferredDate,
-        preferred_time: counselling.preferredTime,
-      });
-    }
-
-    if (type === "demo") {
-      const demo = payload as z.infer<typeof demoBookingFormSchema>;
-      await supabase.from("demo_bookings").insert({
-        lead_id: lead.id,
-        course_slug: demo.courseSlug,
-        preferred_date: demo.preferredDate,
-        preferred_time: demo.preferredTime,
-        learning_mode: demo.learningMode,
-      });
-    }
-
     await supabase.from("audit_logs").insert({
       action: "lead.created",
       entity_type: "lead",
       entity_id: lead.id,
-      metadata: { source: type },
+      new_values: { source: type },
     });
 
     const webhookUrl = Deno.env.get("LEAD_NOTIFICATION_WEBHOOK_URL");

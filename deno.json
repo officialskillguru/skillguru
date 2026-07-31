@@ -1,0 +1,13 @@
+{
+  "workspace": [
+    "./supabase/functions"
+  ],
+  "nodeModulesDir": "none",
+  "imports": {
+    "@supabase/supabase-js": "npm:@supabase/supabase-js@^2.49.0",
+    "zod": "npm:zod@^3.24.0",
+    "cors": "npm:cors@^2.8.5",
+    "stripe": "npm:stripe@^14.10.0",
+    "razorpay": "npm:razorpay@^2.9.2"
+  }
+}

@@ -44,6 +44,25 @@
     </script>
 
   <title>SkillGuru</title>
+
+  <!-- Applies the persisted theme before first paint, avoiding a light-mode
+       flash on load for users who chose dark mode. Kept as a tiny inline
+       script (not a React effect) precisely because it must run before
+       anything renders - see src/hooks/useTheme.ts for the same logic used
+       after mount. -->
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem("theme");
+        var prefersDark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+        if (stored === "dark" || (!stored && prefersDark)) {
+          document.documentElement.classList.add("dark");
+        }
+      } catch (e) {
+        /* localStorage unavailable (private mode, etc.) - default to light */
+      }
+    })();
+  </script>
 </head>
 
 <body>

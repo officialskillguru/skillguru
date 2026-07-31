@@ -2,7 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from "react";
 
 import { routes } from "@/lib/routes";
 
-type Props = Readonly<{ children: ReactNode }>;
+type Props = Readonly<{ children: ReactNode; fallback?: ReactNode }>;
 type State = { hasError: boolean; error: Error | null };
 
 export class ErrorBoundary extends Component<Props, State> {
@@ -27,6 +27,10 @@ export class ErrorBoundary extends Component<Props, State> {
   override render() {
     if (!this.state.hasError) {
       return this.props.children;
+    }
+
+    if (this.props.fallback) {
+      return <>{this.props.fallback}</>;
     }
 
     return (

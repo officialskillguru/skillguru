@@ -8,7 +8,7 @@ export function useAuthContext() {
 }
 
 export function useAuth() {
-  const { state, login, signupStudent, logout, resetPassword } = useAuthContext();
+  const { state, login, signupStudent, logout, resetPassword, resendVerification } = useAuthContext();
 
   return {
     // State
@@ -22,11 +22,13 @@ export function useAuth() {
     isInitializing: state.status === "INITIALIZING",
     isAuthenticating: state.status === "AUTHENTICATING",
     isReady: state.status === "READY",
+    isWaitingConfirmation: state.status === "WAITING_EMAIL_CONFIRMATION",
     
     // Auth Methods
     login,
     signupStudent,
     logout,
-    resetPassword
+    resetPassword,
+    resendVerification,
   };
 }

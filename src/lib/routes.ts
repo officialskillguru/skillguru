@@ -12,6 +12,10 @@ export const routes = {
   contact: "/contact",
   login: "/login",
   signup: "/signup",
+  verifyEmail: "/verify-email",
+  forgotPassword: "/forgot-password",
+  resetPassword: "/reset-password",
+  forcePasswordChange: "/force-password-change",
   dashboard: "/dashboard",
   freeCounselling: "/contact?intent=counselling",
   demoBooking: "/contact?intent=demo",
@@ -21,6 +25,7 @@ export const routes = {
   refundPolicy: "/refund-policy",
   paymentSuccess: "/payment-success",
   paymentFailed: "/payment-failed",
+  verifyCertificate: "/verify-certificate",
   admin: {
     login: "/admin/login",
     dashboard: "/admin",
@@ -45,6 +50,14 @@ export function courseDetailRoute(slug: string) {
 
 export function placementStoryRoute(id: string) {
   return `/placements/${id}` as const;
+}
+
+export function certificateViewRoute(id: string) {
+  return `/dashboard/certificates/${id}` as const;
+}
+
+export function verifyCertificateRoute(code: string) {
+  return `/verify-certificate/${code}` as const;
 }
 
 export function mentorProfileRoute(slug: string) {

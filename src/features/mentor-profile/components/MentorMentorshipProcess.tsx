@@ -10,11 +10,11 @@ export function MentorMentorshipProcess({ mentor }: { mentor: Mentor }) {
         Mentorship Process
       </h2>
 
-      <div className="flex flex-col gap-4">
+      <ol className="flex flex-col gap-4">
         {mentor.mentorshipProcess.map((step, idx) => (
-          <div key={idx} className="relative">
+          <li key={idx} className="relative">
             <div className="flex gap-6 items-start p-6 rounded-2xl bg-muted border border-slate-100">
-              <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0 text-primary font-bold text-lg">
+              <div className="w-12 h-12 rounded-xl bg-white border border-slate-200 shadow-sm flex items-center justify-center shrink-0 text-primary font-bold text-lg" aria-hidden="true">
                 {step.step}
               </div>
               <div>
@@ -24,15 +24,15 @@ export function MentorMentorshipProcess({ mentor }: { mentor: Mentor }) {
                 </p>
               </div>
             </div>
-            
+
             {idx < mentor.mentorshipProcess.length - 1 && (
               <div className="absolute -bottom-4 left-12 w-6 h-6 -ml-3 flex items-center justify-center text-slate-300 z-10">
-                <ArrowDown className="w-5 h-5" />
+                <ArrowDown className="w-5 h-5" aria-hidden="true" />
               </div>
             )}
-          </div>
+          </li>
         ))}
-      </div>
+      </ol>
     </div>
   );
 }

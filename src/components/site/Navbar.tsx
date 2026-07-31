@@ -9,6 +9,7 @@ import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 import { useSearch } from "@/features/search";
 import { useAuth } from "@/hooks/useAuth";
+import { RouteResolver } from "@/routes/RouteResolver";
 
 const navItems = [
   {
@@ -29,11 +30,7 @@ export function Navbar() {
   const { openSearch } = useSearch();
   const auth = useAuth();
   
-  const dashboardPath = auth.authUser?.highestRole === "admin" 
-    ? routes.admin.dashboard 
-    : auth.authUser?.highestRole === "mentor" 
-      ? "/mentor/dashboard" 
-      : routes.dashboard;
+  const dashboardPath = RouteResolver.getDashboard(auth.authUser);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 12);

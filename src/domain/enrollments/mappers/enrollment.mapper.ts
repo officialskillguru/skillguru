@@ -1,5 +1,5 @@
 import type { Database } from "@/types/database.types";
-import type { Enrollment, EnrollmentSource, EnrollmentStatus } from "../models/Enrollment";
+import type { Enrollment, EnrollmentStatus } from "../models/Enrollment";
 
 type EnrollmentRow = Database["public"]["Tables"]["enrollments"]["Row"];
 

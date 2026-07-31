@@ -1,6 +1,6 @@
 
 import { type Result, ok, fail, AppError } from "@/utils/result";
-import { progressRepository, type LessonProgressRow } from "@/repositories/progress.repository";
+import { progressRepository, type LessonProgressRow, type CourseProgressRow } from "@/repositories/progress.repository";
 import { logger } from "@/config/logger";
 
 export class ProgressService {
@@ -28,7 +28,15 @@ export class ProgressService {
       video_position_seconds: seconds,
       status: "in_progress"
     });
-    return result; // Map return type properly 
+    return result; // Map return type properly
+  }
+
+  async getLessonProgress(enrollmentId: string): Promise<Result<LessonProgressRow[], AppError>> {
+    return progressRepository.getLessonProgressForEnrollment(enrollmentId);
+  }
+
+  async getCourseProgress(enrollmentId: string): Promise<Result<CourseProgressRow | null, AppError>> {
+    return progressRepository.getCourseProgress(enrollmentId);
   }
 }
 

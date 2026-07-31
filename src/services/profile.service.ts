@@ -1,7 +1,7 @@
-import { supabase } from "@/lib/supabase/client";
-import { type Result, fail, type AppError, DatabaseError, UnexpectedError } from "@/utils/result";
+import { type Result, fail, type AppError, UnexpectedError } from "@/utils/result";
 import { logger } from "@/config/logger";
 import { profilesRepository } from "@/repositories/profiles.repository";
+import { uploadFile } from "@/services/storage.service";
 import type { Profile } from "@/domain/auth/models/Profile";
 import type { UpdateProfileDto } from "@/domain/auth/dtos/UpdateProfileDto";
 
@@ -12,45 +12,18 @@ export class ProfileService {
 
   async uploadAvatar(userId: string, file: File): Promise<Result<Profile, AppError>> {
     try {
-      // 1. Upload to Supabase Storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${userId}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(filePath, file);
-
-      if (uploadError) return fail(new UnexpectedError("Failed to upload avatar", String(uploadError), undefined, uploadError));
-
-      // 2. Create entry in `files` table
-      const { data: fileData, error: dbFileError } = await supabase
-        .from("files")
-        .insert({
-          bucket: "avatars",
-          object_key: filePath,
-          storage_path: filePath,
-          mime_type: file.type,
-          size_bytes: file.size,
-          uploaded_by: userId,
-          original_name: file.name,
-          stored_name: fileName,
-        })
-        .select()
-        .single();
-
-      if (dbFileError || !fileData) return fail(new DatabaseError("Failed to create file record", String(dbFileError), undefined, dbFileError));
-
-      // 3. Update profiles.avatar_file_id
-      const updateResult = await profilesRepository.update(userId, { avatarFileId: fileData.id });
-      
-      return updateResult;
+      // Reuses the canonical upload pipeline (MIME validation, `files` table
+      // registration, rollback-on-failure) instead of a second, ad-hoc upload
+      // path - this previously uploaded to a bucket named "avatars" that
+      // doesn't exist in the project, so every real avatar upload failed.
+      const uploaded = await uploadFile("students", file, userId);
+      return profilesRepository.update(userId, { avatarFileId: uploaded.fileId });
     } catch (err: unknown) {
       logger.error("ProfileService uploadAvatar Error", err);
-      return fail(new UnexpectedError("An unexpected error occurred", String(err), undefined, err));
+      const message = err instanceof Error ? err.message : "An unexpected error occurred";
+      return fail(new UnexpectedError(message, String(err), undefined, err));
     }
   }
 }
 
 export const profileService = new ProfileService();
-

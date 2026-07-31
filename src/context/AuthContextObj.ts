@@ -12,6 +12,7 @@ export type AuthAction =
   | { type: "AUTH_SUCCESS"; payload: { session: Session; user: User } }
   | { type: "AUTH_FAIL" }
   | { type: "IDENTITY_LOADED"; payload: { authUser: AuthUser } }
+  | { type: "WAITING_EMAIL_CONFIRMATION"; payload: { email: string } }
   | { type: "SESSION_EXPIRED" }
   | { type: "LOGOUT" }
   | { type: "ERROR"; payload: AppError };
@@ -23,4 +24,5 @@ export const AuthContext = createContext<{
   signupStudent: (credentials: SignupFormData) => Promise<Result<void>>;
   logout: () => Promise<Result<void>>;
   resetPassword: (email: string) => Promise<Result<void>>;
+  resendVerification: (email: string) => Promise<Result<void>>;
 } | null>(null);

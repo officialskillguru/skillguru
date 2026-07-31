@@ -28,6 +28,7 @@ export function mapMentorRowToDomain(row: MentorRow): MentorProfile {
     expertise: row.expertise || [],
     yearsOfExperience: row.years_of_experience,
     isVerified: row.is_verified,
+    loginDisabled: row.login_disabled,
   };
 }
 

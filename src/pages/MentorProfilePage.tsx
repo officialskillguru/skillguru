@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { useMentor } from "@/features/mentor-profile/hooks/useMentor";
+import { siteConfig } from "@/config/site";
+import { mentorProfileRoute } from "@/lib/routes";
 
 import { MentorProfileLayout } from "@/features/mentor-profile/components/layout/MentorProfileLayout";
 import { MentorProfileHeader } from "@/features/mentor-profile/components/layout/MentorProfileHeader";
@@ -22,7 +24,6 @@ import { MentorCourses } from "@/features/mentor-profile/components/MentorCourse
 import { MentorCertifications } from "@/features/mentor-profile/components/MentorCertifications";
 import { MentorAchievements } from "@/features/mentor-profile/components/MentorAchievements";
 import { MentorMentorshipProcess } from "@/features/mentor-profile/components/MentorMentorshipProcess";
-import { MentorStudentOutcomes } from "@/features/mentor-profile/components/MentorStudentOutcomes";
 import { MentorReviews } from "@/features/mentor-profile/components/MentorReviews";
 import { MentorFAQ } from "@/features/mentor-profile/components/MentorFAQ";
 import { RelatedMentors } from "@/features/mentor-profile/components/RelatedMentors";
@@ -32,7 +33,7 @@ import { MentorBookingWidget } from "@/features/mentor-profile/components/Mentor
 export default function MentorProfilePage() {
   const { slug } = useParams<{ slug: string }>();
   const { hash } = useLocation();
-  const { mentor, loading, error } = useMentor(slug);
+  const { mentor, loading, notFound, error } = useMentor(slug);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
 
   // Deep linking for hash navigation
@@ -52,7 +53,26 @@ export default function MentorProfilePage() {
     return <MentorProfilePageSkeleton />;
   }
 
-  if (error || !mentor) {
+  if (error) {
+    return (
+      <MentorProfileLayout>
+        <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center">
+          <h1 className="text-2xl font-black text-slate-900 mb-3">Couldn&apos;t load this mentor</h1>
+          <p className="text-slate-600 max-w-md mb-6">
+            Something went wrong while loading this profile. Please try again.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="rounded-xl bg-primary px-6 py-3 font-bold text-white shadow-lg shadow-primary/20 hover:bg-blue-800"
+          >
+            Retry
+          </button>
+        </div>
+      </MentorProfileLayout>
+    );
+  }
+
+  if (notFound || !mentor) {
     return (
       <MentorProfileLayout>
         <MentorNotFound />
@@ -67,11 +87,24 @@ export default function MentorProfilePage() {
         <meta name="description" content={mentor.about.slice(0, 160)} />
         <meta property="og:title" content={`${mentor.name} - ${mentor.role} Mentor | Skill Guru`} />
         <meta property="og:description" content={mentor.about.slice(0, 160)} />
-        <meta property="og:image" content={mentor.avatar} />
+        <meta property="og:image" content={mentor.avatar || siteConfig.logoPath} />
+        <link rel="canonical" href={`${siteConfig.url}${mentorProfileRoute(mentor.slug)}`} />
+        <script type="application/ld+json">
+          {JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Person",
+            name: mentor.name,
+            jobTitle: mentor.role,
+            description: mentor.about,
+            image: mentor.avatar || undefined,
+            worksFor: mentor.company ? { "@type": "Organization", name: mentor.company } : undefined,
+            url: `${siteConfig.url}${mentorProfileRoute(mentor.slug)}`,
+          })}
+        </script>
       </Helmet>
 
-      <MentorProfileHeader mentor={mentor} />
-      
+      <MentorProfileHeader mentor={mentor} onBookClick={() => setIsBookingModalOpen(true)} />
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         <MentorProfileContent>
           <MentorAbout mentor={mentor} />
@@ -84,7 +117,6 @@ export default function MentorProfilePage() {
           <MentorCertifications mentor={mentor} />
           <MentorAchievements mentor={mentor} />
           <MentorMentorshipProcess mentor={mentor} />
-          <MentorStudentOutcomes mentor={mentor} />
           <MentorReviews mentor={mentor} />
           <MentorFAQ mentor={mentor} />
           <RelatedMentors currentMentor={mentor} />

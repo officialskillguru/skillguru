@@ -45,6 +45,20 @@ export class ProgressRepository extends BaseRepository<"lesson_progress"> {
       return fail(this.mapError(err, "getCourseProgress"));
     }
   }
+
+  async getLessonProgressForEnrollment(enrollmentId: string): Promise<Result<LessonProgressRow[]>> {
+    try {
+      const { data, error } = await this.client
+        .from("lesson_progress")
+        .select("*")
+        .eq("enrollment_id", enrollmentId);
+
+      if (error) return fail(this.mapError(error, "getLessonProgressForEnrollment"));
+      return ok(data || []);
+    } catch (err: unknown) {
+      return fail(this.mapError(err, "getLessonProgressForEnrollment"));
+    }
+  }
 }
 
 export const progressRepository = new ProgressRepository();

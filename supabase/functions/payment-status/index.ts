@@ -1,70 +1,61 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
+import { createClient } from "@supabase/supabase-js";
+import { createResponse, corsHeaders } from "./_provider.ts";
 
-Deno.serve(async (request) => {
-  if (request.method === "OPTIONS") {
-    return jsonResponse({}, 200);
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
+
+  const requestId = crypto.randomUUID();
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-
     if (!supabaseUrl || !serviceRoleKey || !anonKey) {
-      throw new Error("Edge function environment is not configured.");
+      throw new Error("Missing Supabase configuration");
     }
 
-    const authorization = request.headers.get("Authorization");
+    const authorization = req.headers.get("Authorization");
     if (!authorization) {
-      return jsonResponse({ error: "Missing authorization header." }, 401);
+      return createResponse(false, "Unauthorized", null, ["Missing authorization header"], 401, requestId);
     }
 
     const callerClient = createClient(supabaseUrl, anonKey, {
       global: { headers: { Authorization: authorization } },
     });
-    
-    const { data: { user }, error: authError } = await callerClient.auth.getUser();
-    if (authError || !user) {
-      return jsonResponse({ error: "Unauthorized." }, 401);
+    const { data: userResp, error: userError } = await callerClient.auth.getUser();
+    if (userError || !userResp.user) {
+      return createResponse(false, "Unauthorized", null, [userError?.message], 401, requestId);
     }
 
-    const url = new URL(request.url);
+    const url = new URL(req.url);
     const orderId = url.searchParams.get("order_id");
-
     if (!orderId) {
-      return jsonResponse({ error: "Missing order_id." }, 400);
+      return createResponse(false, "Validation failed", null, ["order_id is required"], 400, requestId);
     }
 
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
-    const { data: order, error } = await supabase.from("orders").select("id, status, user_id").eq("id", orderId).single();
+    const serviceClient = createClient(supabaseUrl, serviceRoleKey);
+    const { data: order, error } = await serviceClient
+      .from("orders")
+      .select("id, status, user_id")
+      .eq("id", orderId)
+      .maybeSingle();
 
     if (error || !order) {
-      return jsonResponse({ error: "Order not found." }, 404);
+      return createResponse(false, "Order not found", null, [error?.message], 404, requestId);
     }
 
-    // Only allow user to view their own order unless admin (for simplicity, only user)
-    if (order.user_id !== user.id) {
-      // Check if admin
-      const { data: roles } = await callerClient.rpc("current_user_roles");
-      if (!roles || (!roles.includes("super_admin") && !roles.includes("admin"))) {
-        return jsonResponse({ error: "Forbidden." }, 403);
+    if (order.user_id !== userResp.user.id) {
+      const { data: roles } = await callerClient.rpc("get_current_roles");
+      if (!roles || (!roles.includes("admin") && !roles.includes("super_admin"))) {
+        return createResponse(false, "Forbidden", null, [], 403, requestId);
       }
     }
 
-    return jsonResponse({ status: order.status }, 200);
-
-  } catch (error: any) {
-    return jsonResponse({ error: error.message || "Internal Server Error" }, 500);
+    return createResponse(true, "OK", { orderId: order.id, status: order.status }, [], 200, requestId);
+  } catch (error) {
+    console.error("Error in payment-status function:", error);
+    return createResponse(false, "Internal Server Error", null, [(error as Error).message], 500, requestId);
   }
 });
-
-function jsonResponse(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      "Content-Type": "application/json",
-    },
-  });
-}

@@ -4,75 +4,79 @@ import { Receipt, Download } from "lucide-react";
 import { format } from "date-fns";
 import { Link } from "react-router-dom";
 import { routes } from "@/lib/routes";
+import { Badge } from "@/components/ui/badge";
+
+type PaymentRow = {
+  id: string;
+  order_id: string;
+  created_at: string;
+  amount: number;
+  status: string;
+};
+
+const STATUS_VARIANTS: Record<string, "success" | "warning" | "destructive"> = {
+  completed: "success",
+  pending: "warning",
+  created: "warning",
+};
 
 export default function PaymentHistoryPage() {
   const { data: orders, isLoading } = useOrders();
+  const payments = (orders?.data ?? []) as unknown as PaymentRow[];
 
   if (isLoading) return <PageLoader />;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-black text-primary">Payment History</h1>
+        <h1 className="text-2xl font-black text-foreground">Payment History</h1>
         <p className="text-sm text-muted-foreground">View your orders, invoices, and transaction history.</p>
       </div>
 
-      {!orders || (orders as any).length === 0 ? (
+      {payments.length === 0 ? (
         <div className="rounded-xl border border-border bg-card p-12 text-center shadow-sm">
-          <Receipt className="mx-auto h-12 w-12 text-muted-foreground/50" />
-          <h3 className="mt-4 text-lg font-bold text-primary">No Payments Found</h3>
+          <Receipt className="mx-auto h-12 w-12 text-muted-foreground/50" aria-hidden="true" />
+          <h3 className="mt-4 text-lg font-bold text-foreground">No Payments Found</h3>
           <p className="mt-2 text-sm text-muted-foreground">You haven't made any purchases yet.</p>
           <Link
             to={routes.courses}
-            className="mt-6 inline-block rounded-lg bg-primary px-6 py-2 font-bold text-primary-foreground transition-colors hover:bg-opacity-90"
+            className="mt-6 inline-block rounded-lg bg-primary px-6 py-2 font-bold text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
             Browse Courses
           </Link>
         </div>
       ) : (
-        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-muted">
                 <tr>
-                  <th className="p-4 font-bold text-primary">Date</th>
-                  <th className="p-4 font-bold text-primary">Order ID</th>
-                  <th className="p-4 font-bold text-primary">Amount</th>
-                  <th className="p-4 font-bold text-primary">Status</th>
-                  <th className="p-4 font-bold text-primary text-right">Invoice</th>
+                  <th className="p-4 font-bold text-foreground">Date</th>
+                  <th className="p-4 font-bold text-foreground">Order ID</th>
+                  <th className="p-4 font-bold text-foreground">Amount</th>
+                  <th className="p-4 font-bold text-foreground">Status</th>
+                  <th className="p-4 text-right font-bold text-foreground">Invoice</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
-                {(orders as { id: string, created_at: string, total_amount: number, status: string }[]).map((order) => (
-                  <tr key={order.id} className="transition-colors hover:bg-muted/50">
-                    <td className="p-4 text-muted-foreground">
-                      {format(new Date(order.created_at), "MMM d, yyyy")}
-                    </td>
-                    <td className="p-4 font-medium text-foreground">
-                      {order.id.split('-')[0]}...
-                    </td>
-                    <td className="p-4 font-bold text-foreground">
-                      ₹{order.total_amount}
-                    </td>
+                {payments.map((payment) => (
+                  <tr key={payment.id} className="transition-colors hover:bg-muted/50">
+                    <td className="p-4 text-muted-foreground">{format(new Date(payment.created_at), "MMM d, yyyy")}</td>
+                    <td className="p-4 font-medium text-foreground">{payment.order_id.split("-")[0]}...</td>
+                    <td className="p-4 font-bold text-foreground">₹{payment.amount}</td>
                     <td className="p-4">
-                      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-bold ${
-                        order.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        order.status === 'pending' || order.status === 'created' ? 'bg-yellow-100 text-yellow-700' :
-                        'bg-red-100 text-red-700'
-                      }`}>
-                        {order.status.toUpperCase()}
-                      </span>
+                      <Badge variant={STATUS_VARIANTS[payment.status] ?? "destructive"} className="uppercase">
+                        {payment.status}
+                      </Badge>
                     </td>
                     <td className="p-4 text-right">
-                      {order.status === 'completed' ? (
-                        <button 
-                          className="inline-flex items-center gap-1.5 text-secondary hover:underline"
-                          onClick={() => {
-                            // Ideally fetch invoice ID for this order, or just show order receipt.
-                            alert('Downloading invoice for order: ' + order.id);
-                          }}
+                      {payment.status === "completed" ? (
+                        <button
+                          disabled
+                          title="Invoice PDF download is not available yet"
+                          className="inline-flex cursor-not-allowed items-center gap-1.5 text-muted-foreground opacity-60"
                         >
-                          <Download className="h-4 w-4" />
+                          <Download className="h-4 w-4" aria-hidden="true" />
                           <span>Download</span>
                         </button>
                       ) : (

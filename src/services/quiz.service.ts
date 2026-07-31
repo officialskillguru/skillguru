@@ -1,29 +1,28 @@
-
 import { type Result } from "@/utils/result";
-import { quizRepository } from "@/repositories/quiz.repository";
+import { quizRepository, type SubmitQuizAttemptResult } from "@/repositories/quiz.repository";
 import type { Database } from "@/types/database.types";
 import { type AppError } from "@/utils/result";
 
 type QuizRow = Database["public"]["Tables"]["quizzes"]["Row"];
+type QuizQuestionRow = Database["public"]["Tables"]["quiz_questions"]["Row"];
+type QuizOptionRow = Pick<Database["public"]["Tables"]["quiz_options"]["Row"], "id" | "question_id" | "option_text" | "sort_order">;
 type QuizAttemptRow = Database["public"]["Tables"]["quiz_attempts"]["Row"];
-type QuizAnswerInsert = Database["public"]["Tables"]["quiz_answers"]["Insert"];
+
+export type QuizWithQuestions = QuizRow & { quiz_questions: (QuizQuestionRow & { quiz_options: QuizOptionRow[] })[] };
 
 export class QuizService {
-  async getQuizForLesson(lessonId: string): Promise<Result<QuizRow | null, AppError>> {
-    return quizRepository.getQuizByLessonId(lessonId);
+  async getQuizForLesson(lessonId: string): Promise<Result<QuizWithQuestions | null, AppError>> {
+    return quizRepository.getQuizByLessonId(lessonId) as Promise<Result<QuizWithQuestions | null, AppError>>;
   }
 
-  async startQuiz(enrollmentId: string, quizId: string): Promise<Result<QuizAttemptRow, AppError>> {
-    return quizRepository.startAttempt({ enrollment_id: enrollmentId, quiz_id: quizId });
+  /** Real, server-scored submission (submit_quiz_attempt RPC) - the answer key never round-trips through the client. */
+  async submitAttempt(quizId: string, enrollmentId: string, selectedOptionIds: string[]): Promise<Result<SubmitQuizAttemptResult, AppError>> {
+    return quizRepository.submitAttempt(quizId, enrollmentId, selectedOptionIds);
   }
 
-  async submitQuiz(attemptId: string, answers: QuizAnswerInsert[], score: number, passed: boolean): Promise<Result<void, AppError>> {
-    const submitResult = await quizRepository.submitAnswers(answers);
-    if (!submitResult.success) return submitResult;
-
-    return quizRepository.finishAttempt(attemptId, score, passed);
+  async getMyAttempts(enrollmentId: string, quizId: string): Promise<Result<QuizAttemptRow[], AppError>> {
+    return quizRepository.getMyAttempts(enrollmentId, quizId);
   }
 }
 
 export const quizService = new QuizService();
-

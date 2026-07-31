@@ -9,22 +9,14 @@ export function MentorSkills({ mentor }: { mentor: Mentor }) {
         Technical Skills
       </h2>
 
-      <div className="space-y-6">
+      <div className="flex flex-wrap gap-3">
         {mentor.skills.map((skill) => (
-          <div key={skill.id} className="group">
-            <div className="flex justify-between items-end mb-2">
-              <span className="font-bold text-slate-700">{skill.name}</span>
-              <span className="text-sm font-semibold text-accent">{skill.proficiency}%</span>
-            </div>
-            <div className="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-primary to-accent rounded-full relative transition-all duration-1000 ease-out origin-left"
-                style={{ width: `${skill.proficiency}%` }}
-              >
-                <div className="absolute inset-0 bg-white/20 w-full animate-[shimmer_2s_infinite]" />
-              </div>
-            </div>
-          </div>
+          <span
+            key={skill.id}
+            className="px-4 py-2.5 bg-slate-50 text-slate-700 font-medium rounded-xl border border-slate-200"
+          >
+            {skill.name}
+          </span>
         ))}
       </div>
     </div>

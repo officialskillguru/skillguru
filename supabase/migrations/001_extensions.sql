@@ -1,11 +1,3 @@
--- ==============================================================================
--- 001_extensions.sql
--- PostgreSQL Extensions Required by SkillGuru
--- ==============================================================================
--- 
--- WHY: These extensions provide core capabilities used throughout the schema.
--- SAFE: CREATE EXTENSION IF NOT EXISTS is idempotent.
--- ==============================================================================
 
 -- UUID generation for all primary keys
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";

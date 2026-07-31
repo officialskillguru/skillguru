@@ -11,7 +11,11 @@ export default defineConfig({
     coverage: {
       reporter: ["text", "html"],
     },
-    exclude: ["node_modules", ".next", "dist", "tests/e2e/**", "src/app/**", "supabase/functions/**"],
+    // supabase/functions/*/index.ts (the Deno entrypoints) are never named *.test.ts,
+    // so they were never picked up as tests regardless of this exclude list; narrowed
+    // so the new supabase/functions/_shared/*.test.ts unit tests (pure logic, no Deno
+    // globals) added in Phase 2.3 actually run under `npm run test`.
+    exclude: ["node_modules", ".next", "dist", "tests/e2e/**", "src/app/**"],
   },
   resolve: {
     alias: {

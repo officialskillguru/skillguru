@@ -14,6 +14,7 @@ const eslintConfig = [
       "public/**",
       "supabase/functions/**",
       "tmp/**",
+      "src/types/database.types.ts",
     ],
   },
   js.configs.recommended,
@@ -117,6 +118,13 @@ const eslintConfig = [
       ],
       "@typescript-eslint/no-explicit-any": "error",
       "@typescript-eslint/require-await": "warn"
+    },
+  },
+  {
+    files: ["**/*.test.{ts,tsx}", "**/__tests__/**/*.{ts,tsx}"],
+    rules: {
+      // vi.fn()-based mocks are intentionally passed around unbound in test assertions.
+      "@typescript-eslint/unbound-method": "off",
     },
   },
 ];

@@ -7,9 +7,10 @@ import {
   CheckCircle2,
   ChevronRight,
   Facebook,
+  Heart,
   Linkedin,
+  Loader2,
   MessageCircle,
-  Play,
   Share2,
   Star,
   Twitter,
@@ -26,13 +27,62 @@ import { courses, faqs, mentors, successStories } from "@/data/platform";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { routes } from "@/lib/routes";
 import { useCourseBySlug } from "@/hooks/student/useCourseBySlug";
+import { useCheckEnrollment } from "@/hooks/student/useCheckEnrollment";
 import { useQuery } from "@tanstack/react-query";
 import { learningService } from "@/services/learning.service";
+import { resolveFileUrl } from "@/services/storage.service";
 import { PageLoader } from "@/components/common/PageLoader";
 import { useAuth } from "@/hooks/useAuth";
-import { useCheckout } from "@/hooks/student/usePayment";
+import { useCheckout, useFreeEnroll } from "@/hooks/student/usePayment";
+import { useIsWishlisted, useToggleWishlist } from "@/hooks/student/useWishlist";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+
+function formatPrice(value: number | null) {
+  if (!value) return "Free";
+  return new Intl.NumberFormat("en-IN", {
+    maximumFractionDigits: 0,
+    style: "currency",
+    currency: "INR",
+  }).format(value);
+}
+
+async function handleNativeShare(title: string) {
+  const url = window.location.href;
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, url });
+    } catch {
+      // user cancelled the native share sheet - not an error
+    }
+    return;
+  }
+  await navigator.clipboard.writeText(url);
+  toast.success("Course link copied to clipboard");
+}
+
+const SHARE_TARGETS = [
+  { Icon: Facebook, label: "Share on Facebook", urlTemplate: (url: string) => `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}` },
+  { Icon: Twitter, label: "Share on Twitter", urlTemplate: (url: string) => `https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}` },
+  { Icon: Linkedin, label: "Share on LinkedIn", urlTemplate: (url: string) => `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(url)}` },
+] as const;
+
+function CourseThumbnailImage({ fileId }: { fileId: string | null }) {
+  const { data: url } = useQuery({
+    queryKey: ["file-url", fileId],
+    queryFn: () => resolveFileUrl(fileId ?? ""),
+    enabled: !!fileId,
+  });
+
+  return (
+    <img
+      src={url ?? "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"}
+      alt=""
+      className="aspect-video size-full object-cover opacity-90"
+      loading="eager"
+    />
+  );
+}
 
 export default function CourseDetailsPage() {
   const pageRef = useRef<HTMLElement>(null);
@@ -42,6 +92,11 @@ export default function CourseDetailsPage() {
   
   const { data: course, isLoading: isCourseLoading } = useCourseBySlug(slug);
   const { mutate: processCheckout, isPending: isCheckingOut } = useCheckout();
+  const { mutate: enrollFree, isPending: isEnrollingFree } = useFreeEnroll();
+  const { data: enrollmentData, isLoading: isCheckingEnrollment } = useCheckEnrollment(slug ?? "");
+  const isEnrolled = !!enrollmentData?.isEnrolled;
+  const { isWishlisted } = useIsWishlisted(course?.id);
+  const toggleWishlist = useToggleWishlist();
 
   const { data: curriculum = [] } = useQuery({
     queryKey: ["course-curriculum", course?.id],
@@ -74,18 +129,49 @@ export default function CourseDetailsPage() {
     }
     if (!course) return;
 
-    processCheckout({
-      courseId: course.id,
-      name: String(user.user_metadata?.full_name || user.email || "Student"),
-      email: user.email || "",
-      onSuccess: () => {
-        toast.success("Payment successful!");
-        void navigate(routes.dashboard);
+    if (!course.price) {
+      enrollFree(course.id, {
+        onSuccess: () => {
+          toast.success("Enrolled! Redirecting to your course...");
+          void navigate(`${routes.dashboard}/courses/${course.id}`);
+        },
+        onError: () => toast.error("Failed to enroll. Please try again."),
+      });
+      return;
+    }
+
+    processCheckout(
+      {
+        courseId: course.id,
+        userInfo: {
+          name: String(user.user_metadata?.full_name || user.email || "Student"),
+          email: user.email || "",
+        },
       },
-      onError: (_error: Error) => {
-        toast.error(_error.message || "Payment failed");
+      {
+        onSuccess: () => {
+          toast.success("Payment successful!");
+          void navigate(routes.dashboard);
+        },
+        onError: () => toast.error("Payment failed. Please try again."),
       }
-    });
+    );
+  };
+
+  const handleToggleWishlist = () => {
+    if (!user) {
+      toast.error("Please login to save courses to your wishlist.");
+      void navigate(routes.login + "?redirect=" + encodeURIComponent(window.location.pathname));
+      return;
+    }
+    if (!course) return;
+    toggleWishlist.mutate(
+      { courseId: course.id, isWishlisted },
+      {
+        onSuccess: () => toast.success(isWishlisted ? "Removed from wishlist." : "Added to wishlist."),
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to update wishlist."),
+      }
+    );
   };
 
   if (isCourseLoading) return <PageLoader />;
@@ -95,32 +181,19 @@ export default function CourseDetailsPage() {
     <main ref={pageRef} className="page-shell">
       <section className="bg-white px-4 pt-8 pb-8 sm:px-6 lg:px-8 lg:pb-10">
         <div className="mx-auto max-w-7xl">
-          <div className="premium-reveal mb-6 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-            <Link to={routes.home}>Home</Link>
-            <ChevronRight className="size-4" />
-            <Link to={routes.courses} className="text-secondary">
+          <nav aria-label="Breadcrumb" className="premium-reveal mb-6 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <Link to={routes.home} className="rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">Home</Link>
+            <ChevronRight className="size-4" aria-hidden="true" />
+            <Link to={routes.courses} className="rounded text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
               Courses
             </Link>
-            <ChevronRight className="size-4" />
-            <span>{course.title}</span>
-          </div>
+            <ChevronRight className="size-4" aria-hidden="true" />
+            <span aria-current="page">{course.title}</span>
+          </nav>
           <GsapReveal className="premium-card-motion rounded-[24px] border border-border bg-card p-5 shadow-[0_18px_60px_rgba(10,42,136,0.08)] sm:p-6">
             <div className="grid gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
               <div className="premium-parallax relative overflow-hidden rounded-[20px] bg-primary">
-                <img
-                  src={course.thumbnailFileId 
-                  ? `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/course-assets/${course.thumbnailFileId}` : "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80"}
-                  alt=""
-                  className="aspect-video size-full object-cover opacity-90"
-                  loading="eager"
-                />
-                <button
-                  type="button"
-                  className="premium-magnetic absolute top-1/2 left-1/2 grid size-16 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border-2 border-white/70 bg-white/20 text-white backdrop-blur"
-                  aria-label="Play course preview"
-                >
-                  <Play className="ml-1 size-7 fill-current" />
-                </button>
+                <CourseThumbnailImage fileId={course.thumbnailFileId ?? null} />
               </div>
               <div>
                 <span className="rounded-md bg-amber-100 px-3 py-1 text-xs font-black text-amber-700 uppercase">
@@ -154,7 +227,7 @@ export default function CourseDetailsPage() {
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div className="order-3 space-y-8 lg:order-1">
             <div className="premium-card-motion overflow-hidden rounded-[22px] border border-border bg-card shadow-[0_18px_60px_rgba(10,42,136,0.08)]">
-              <div className="hide-scrollbar flex overflow-x-auto border-b border-border">
+              <nav aria-label="Course sections" className="hide-scrollbar flex overflow-x-auto border-b border-border">
                 {[
                   "Overview",
                   "Curriculum",
@@ -168,12 +241,12 @@ export default function CourseDetailsPage() {
                   <a
                     key={tab}
                     href={`#course-${index}`}
-                    className="min-w-max border-b-2 border-transparent px-6 py-4 text-sm font-black text-muted-foreground first:border-secondary first:text-secondary"
+                    className="min-w-max border-b-2 border-transparent px-6 py-4 text-sm font-black text-muted-foreground first:border-secondary first:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
                   >
                     {tab}
                   </a>
                 ))}
-              </div>
+              </nav>
               <div className="p-7 sm:p-9">
                 <section id="course-0">
                   <h2 className="text-2xl font-black text-primary">About This Course</h2>
@@ -190,7 +263,7 @@ export default function CourseDetailsPage() {
                       const Icon = item.icon;
                       return (
                         <div key={item.title} className="border-r border-border last:border-r-0">
-                          <Icon className="size-9 rounded-md bg-secondary/10 p-2 text-secondary" />
+                          <Icon className="size-9 rounded-md bg-secondary/10 p-2 text-secondary" aria-hidden="true" />
                           <h3 className="mt-3 text-sm font-black text-primary">{item.title}</h3>
                         </div>
                       );
@@ -217,7 +290,7 @@ export default function CourseDetailsPage() {
                               key={lesson.id}
                               className="flex gap-2 text-sm font-semibold text-foreground/80"
                             >
-                              <CheckCircle2 className="size-4 shrink-0 text-secondary" />
+                              <CheckCircle2 className="size-4 shrink-0 text-secondary" aria-hidden="true" />
                               {lesson.title}
                             </p>
                           ))}
@@ -289,9 +362,9 @@ export default function CourseDetailsPage() {
                         key={story.name}
                         className="premium-card-motion rounded-2xl border border-border bg-card p-5"
                       >
-                        <p className="flex text-amber-400">
+                        <p className="flex text-amber-400" role="img" aria-label="5 out of 5 stars">
                           {Array.from({ length: 5 }, (_, index) => (
-                            <Star key={index} className="size-4 fill-current" />
+                            <Star key={index} className="size-4 fill-current" aria-hidden="true" />
                           ))}
                         </p>
                         <p className="mt-4 text-sm leading-7 text-muted-foreground">{story.quote}</p>
@@ -316,15 +389,42 @@ export default function CourseDetailsPage() {
               <div className="premium-card-motion order-1">
                 {/* Custom Pricing block instead of mocked PricingCard */}
                 <div className="rounded-[20px] border border-border bg-card p-6 shadow-[0_18px_55px_rgba(10,42,136,0.08)] text-center">
-                  <h2 className="text-3xl font-black text-primary">{"Free"}</h2>
-                  <button 
-                    onClick={handleEnroll}
-                    disabled={isCheckingOut}
-                    className="mt-4 w-full h-11 rounded-xl bg-secondary font-black text-white hover:bg-opacity-90 disabled:opacity-50"
+                  <h2 className="text-3xl font-black text-primary">{formatPrice(course.price)}</h2>
+                  {isCheckingEnrollment ? (
+                    <div className="mt-4 h-11 w-full animate-pulse rounded-xl bg-muted" />
+                  ) : isEnrolled ? (
+                    <Link
+                      to={`${routes.dashboard}/courses/${course.id}`}
+                      className="mt-4 flex h-11 w-full items-center justify-center rounded-xl bg-success font-black text-success-foreground hover:bg-success/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    >
+                      Continue Learning
+                    </Link>
+                  ) : (
+                    <button
+                      onClick={handleEnroll}
+                      disabled={isCheckingOut || isEnrollingFree}
+                      className="mt-4 w-full h-11 rounded-xl bg-secondary font-black text-white hover:bg-opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
+                    >
+                      {isCheckingOut || isEnrollingFree ? "Processing..." : course.price ? "Enroll Now" : "Enroll Free"}
+                    </button>
+                  )}
+                  <button
+                    onClick={handleToggleWishlist}
+                    disabled={toggleWishlist.isPending}
+                    aria-pressed={isWishlisted}
+                    className={`mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-xl border-2 font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-60 ${
+                      isWishlisted
+                        ? "border-destructive/30 bg-destructive/5 text-destructive-text hover:bg-destructive/10"
+                        : "border-border text-muted-foreground hover:bg-muted"
+                    }`}
                   >
-                    {isCheckingOut ? "Processing..." : "Enroll Now"}
+                    {toggleWishlist.isPending ? (
+                      <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                    ) : (
+                      <Heart className={`size-4 ${isWishlisted ? "fill-destructive-text text-destructive-text" : ""}`} aria-hidden="true" />
+                    )}
+                    {isWishlisted ? "Saved to Wishlist" : "Add to Wishlist"}
                   </button>
-                  <button className="mt-2 w-full h-11 rounded-xl border-2 border-slate-200 font-bold text-slate-500 hover:bg-slate-50">Add to Wishlist (Coming Soon)</button>
                 </div>
               </div>
               <div className="premium-card-motion order-2 rounded-[20px] border border-border bg-card p-6 shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
@@ -340,7 +440,7 @@ export default function CourseDetailsPage() {
               </div>
               <div className="premium-card-motion order-4 rounded-[20px] border border-border bg-card p-6 shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
                 <div className="flex items-center gap-3">
-                  <span className="grid size-11 place-items-center rounded-[14px] bg-secondary/10 text-secondary">
+                  <span className="grid size-11 place-items-center rounded-[14px] bg-secondary/10 text-secondary" aria-hidden="true">
                     <MessageCircle className="size-5" />
                   </span>
                   <div>
@@ -352,22 +452,34 @@ export default function CourseDetailsPage() {
                 </div>
                 <Link
                   to={routes.freeCounselling}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-secondary bg-card px-4 py-3 text-sm font-black text-secondary transition hover:bg-secondary/10"
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-[14px] border border-secondary bg-card px-4 py-3 text-sm font-black text-secondary transition hover:bg-secondary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   Have Questions?
-                  <ArrowRight className="size-4" />
+                  <ArrowRight className="size-4" aria-hidden="true" />
                 </Link>
               </div>
               <div className="premium-card-motion order-5 rounded-[20px] border border-border bg-card p-6 shadow-[0_18px_55px_rgba(10,42,136,0.08)]">
                 <h2 className="text-xl font-black text-primary">Share This Course</h2>
                 <div className="mt-5 flex gap-3">
-                  {[Share2, Facebook, Twitter, Linkedin].map((Icon, index) => (
-                    <span
-                      key={index}
-                      className="grid size-10 place-items-center rounded-full bg-secondary/10 text-secondary"
+                  <button
+                    type="button"
+                    onClick={() => void handleNativeShare(course.title)}
+                    aria-label="Share this course"
+                    className="grid size-10 place-items-center rounded-full bg-secondary/10 text-secondary hover:bg-secondary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  >
+                    <Share2 className="size-4" aria-hidden="true" />
+                  </button>
+                  {SHARE_TARGETS.map(({ Icon, label, urlTemplate }) => (
+                    <a
+                      key={label}
+                      href={urlTemplate(window.location.href)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`${label} (opens in a new tab)`}
+                      className="grid size-10 place-items-center rounded-full bg-secondary/10 text-secondary hover:bg-secondary/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                     >
-                      <Icon className="size-4" />
-                    </span>
+                      <Icon className="size-4" aria-hidden="true" />
+                    </a>
                   ))}
                 </div>
               </div>

@@ -1,5 +1,4 @@
 import { fail, ok, type Result, ValidationError } from "@/utils/result";
-import type { Course, Module, Lesson } from "../models/Course";
 import type { CreateCourseDto } from "../dtos/CourseDto";
 
 export class CourseValidator {

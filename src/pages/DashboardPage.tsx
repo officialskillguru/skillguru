@@ -1,85 +1,147 @@
-import { Bell, Bot, CheckCircle2, FileText, PlayCircle, Trophy } from "lucide-react";
-
-import { DashboardWidget } from "@/components/dashboard/DashboardWidget";
-import { useAuth } from "@/hooks/useAuth";
-import { dashboardMetrics } from "@/data/platform";
+import { useState } from "react";
 import { usePageMeta } from "@/hooks/usePageMeta";
+import { MissionControlHero } from "@/components/dashboard/sections/MissionControlHero";
+import { TodaysFocus } from "@/components/dashboard/sections/TodaysFocus";
+import { ContinueLearning } from "@/components/dashboard/sections/ContinueLearning";
+import { LearningAnalytics } from "@/components/dashboard/sections/LearningAnalytics";
+import { useAuth } from "@/hooks/useAuth";
+import { useStudentDashboard } from "@/hooks/student/useStudentDashboard";
+import { PageLoader } from "@/components/common/PageLoader";
+import { ErrorBoundary } from "@/components/common/ErrorBoundary";
+import { AlertCircle, RefreshCw } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
+function WidgetError({ message }: { message: string }) {
+  return (
+    <div className="flex h-full min-h-[200px] w-full flex-col items-center justify-center gap-3 rounded-3xl border border-destructive/20 bg-destructive/5 p-6 text-center">
+      <AlertCircle className="text-destructive" size={32} />
+      <div>
+        <p className="font-semibold text-destructive">{message}</p>
+        <p className="text-sm text-destructive/80">Please refresh to try again.</p>
+      </div>
+      <Button variant="outline" size="sm" onClick={() => window.location.reload()} className="mt-2 rounded-xl">
+        <RefreshCw className="mr-2" size={14} /> Refresh
+      </Button>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
-  usePageMeta("Learner Dashboard");
-  const auth = useAuth();
+  usePageMeta("Dashboard | SkillGuru");
+  const { user } = useAuth();
+  const [studyHoursRangeDays, setStudyHoursRangeDays] = useState<7 | 30>(7);
+
+  const {
+    stats, isLoadingStats, statsError,
+    continueLearning, isLoadingContinueLearning, continueLearningError,
+    weeklyStudyHours,
+  } = useStudentDashboard(studyHoursRangeDays);
+
+  // API Failure Strategy: Loading State
+  if (isLoadingStats || isLoadingContinueLearning) {
+    return <PageLoader />;
+  }
+
+  // Derived Analytics (if stats exist)
+  const completionRate = stats && stats.enrolledCourses > 0
+    ? Math.round((stats.completedCourses / stats.enrolledCourses) * 100)
+    : 0;
+
+  const activeCourses = stats ? Math.max(0, stats.enrolledCourses - stats.completedCourses) : 0;
+  const certificatesEarned = stats ? stats.certificates : 0;
+
+  const derivedAnalytics = {
+    activeCourses,
+    certificatesEarned,
+    completionRate,
+    weeklyData: weeklyStudyHours,
+    studyHoursRangeDays,
+    onStudyHoursRangeChange: setStudyHoursRangeDays,
+  };
 
   return (
-    <main className="min-h-svh bg-[#F8FAFC]">
-      <div className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <div>
-            <p className="text-sm text-[#64748B]">Welcome back</p>
-            <h1 className="text-2xl font-black text-[#0F172A]">{auth.user?.email ?? "Learner"}</h1>
-          </div>
-          <button type="button" onClick={() => void (auth as unknown as {signOut: () => void}).signOut()} className="rounded-xl border border-slate-200 px-4 py-2 text-sm font-black text-[#0F172A]">Sign out</button>
+    <div className="flex flex-col gap-8">
+      {/* Priority 1: Mission Control (Hero) */}
+      <section>
+        {continueLearningError ? (
+          <WidgetError message="Mission Control unavailable" />
+        ) : (
+        <ErrorBoundary fallback={<WidgetError message="Mission Control unavailable" />}>
+          <MissionControlHero
+            student={{ name: (user?.user_metadata?.full_name as string | undefined) || user?.email || "Learner" }}
+            course={continueLearning?.course ? {
+              id: continueLearning.course.id,
+              name: continueLearning.course.title,
+              progress: continueLearning.progress?.completion_percentage || 0,
+            } : null}
+            nextLesson={continueLearning?.nextLesson ? { title: continueLearning.nextLesson.title, duration: "30m" } : { title: "No upcoming lessons", duration: "0m" }}
+            nextAssignment={{ title: "No pending assignments", due: "N/A" }}
+            loading={isLoadingContinueLearning}
+          />
+        </ErrorBoundary>
+        )}
+      </section>
+
+      {/* Priority 2: Focus & Learning */}
+      <section className="grid grid-cols-1 gap-8 xl:grid-cols-3">
+        {/* Left Column (2/3 width on xl) */}
+        <div className="flex flex-col gap-8 xl:col-span-2">
+          {continueLearningError ? (
+            <WidgetError message="Continue Learning unavailable" />
+          ) : (
+            <ErrorBoundary fallback={<WidgetError message="Continue Learning unavailable" />}>
+              <ContinueLearning
+                course={continueLearning?.course ? {
+                  id: continueLearning.course.id,
+                  title: continueLearning.course.title,
+                  instructor: continueLearning.mentorName || "SkillGuru Faculty",
+                  progress: continueLearning.progress?.completion_percentage || 0,
+                  thumbnail: continueLearning.course.thumbnail_file_id || "/assets/placeholder-course.jpg",
+                  nextModule: continueLearning.module?.title || "Welcome",
+                  totalModules: continueLearning.totalModules,
+                  completedModules: continueLearning.completedModules,
+                } : undefined}
+              />
+            </ErrorBoundary>
+          )}
+
+          {statsError ? (
+            <WidgetError message="Analytics unavailable" />
+          ) : (
+            <ErrorBoundary fallback={<WidgetError message="Analytics unavailable" />}>
+              <LearningAnalytics {...derivedAnalytics} />
+            </ErrorBoundary>
+          )}
         </div>
-      </div>
-      <div className="mx-auto grid max-w-7xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[240px_1fr_320px] lg:px-8">
-        <aside className="h-max rounded-2xl bg-[#031B34] p-5 text-white">
-          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#4DE2FF]">Dashboard</p>
-          <nav className="mt-6 grid gap-2 text-sm font-bold text-white/70">
-            {["Overview", "My Courses", "Assignments", "Certificates", "Placement", "Settings"].map((item) => (
-              <span key={item} className="rounded-xl px-3 py-2 hover:bg-white/10">{item}</span>
-            ))}
-          </nav>
-        </aside>
-        <section className="space-y-6">
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            {dashboardMetrics.map((metric) => <DashboardWidget key={metric.label} metric={metric} />)}
+
+        {/* Right Column (1/3 width on xl) */}
+        <div className="flex flex-col gap-8">
+          {continueLearningError ? (
+            <WidgetError message="Learning Tasks unavailable" />
+          ) : (
+            <ErrorBoundary fallback={<WidgetError message="Learning Tasks unavailable" />}>
+              <TodaysFocus
+                items={continueLearning?.nextLesson && continueLearning.course ? [
+                  {
+                    id: continueLearning.nextLesson.id,
+                    type: "lesson",
+                    title: continueLearning.nextLesson.title,
+                    timeEstimate: "30m",
+                    isCompleted: false,
+                    href: `/dashboard/courses/${continueLearning.course.id}`,
+                  },
+                ] : []}
+              />
+            </ErrorBoundary>
+          )}
+          
+          {/* Upcoming Schedule / Mentor Workspace - DISABLED (Feature Matrix) */}
+          <div className="flex flex-col h-48 items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-muted/20 p-6 text-center text-muted-foreground opacity-60" title="Coming in a future release">
+            <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80">Future Release</span>
+            <p className="text-sm">Mentor Workspace & Calendar Integration</p>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-black">Current course progress</h2>
-              <PlayCircle className="size-6 text-[#007BFF]" />
-            </div>
-            <div className="mt-6 h-3 overflow-hidden rounded-full bg-slate-100">
-              <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-[#00C2FF] to-[#2563EB]" />
-            </div>
-            <div className="mt-6 grid gap-4 md:grid-cols-3">
-              {["React project review", "Data structures assignment", "Mock interview slot"].map((task) => (
-                <p key={task} className="flex gap-3 rounded-xl bg-[#EEF4FF] p-4 text-sm font-bold text-[#0F172A]">
-                  <CheckCircle2 className="size-5 text-[#007BFF]" />
-                  {task}
-                </p>
-              ))}
-            </div>
-          </div>
-          <div className="grid gap-6 lg:grid-cols-2">
-            <article className="rounded-2xl bg-[#031B34] p-6 text-white">
-              <Bot className="size-8 text-[#4DE2FF]" />
-              <h2 className="mt-5 text-2xl font-black">AI Mentor</h2>
-              <p className="mt-3 text-white/65">Recommended today: revise React hooks, complete one portfolio note, and practice two interview answers.</p>
-            </article>
-            <article className="rounded-2xl border border-slate-200 bg-white p-6">
-              <Trophy className="size-8 text-[#007BFF]" />
-              <h2 className="mt-5 text-2xl font-black">Certificates</h2>
-              <p className="mt-3 text-[#64748B]">Full Stack Foundation certificate is ready for mentor approval.</p>
-            </article>
-          </div>
-        </section>
-        <aside className="space-y-6">
-          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <Bell className="size-7 text-[#007BFF]" />
-            <h2 className="mt-5 text-xl font-black">Notifications</h2>
-            <div className="mt-5 space-y-3 text-sm text-[#64748B]">
-              <p>Mentor feedback added to assignment 4.</p>
-              <p>Placement workshop starts Friday.</p>
-              <p>Certificate verification pending.</p>
-            </div>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-            <FileText className="size-7 text-[#007BFF]" />
-            <h2 className="mt-5 text-xl font-black">Placement tracking</h2>
-            <p className="mt-3 text-sm text-[#64748B]">Resume: approved. Mock interview: scheduled. Recruiter list: in progress.</p>
-          </article>
-        </aside>
-      </div>
-    </main>
+        </div>
+      </section>
+    </div>
   );
 }

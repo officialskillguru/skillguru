@@ -1,12 +1,9 @@
 import type { PaginationOptions, PaginatedResponse } from "./base.repository";
-import { type Result, ok, fail, type AppError, DatabaseError } from "@/utils/result";
+import { type Result, ok, fail, type AppError } from "@/utils/result";
 import { CoursePersistence } from "@/persistence/course.persistence";
 import { mapCourseRowToDomain } from "@/domain/courses/mappers/course.mapper";
 import type { Course } from "@/domain/courses/models/Course";
 import type { Database } from "@/types/database.types";
-import { supabase } from "@/lib/supabase/client";
-
-type CourseRow = Database["public"]["Tables"]["courses"]["Row"];
 
 export interface CourseFilters {
   query?: string;

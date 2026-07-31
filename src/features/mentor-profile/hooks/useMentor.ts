@@ -5,6 +5,10 @@ import { mentorService } from "../services/mentor.service";
 export function useMentor(slug: string | undefined) {
   const [mentor, setMentor] = useState<Mentor | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  // notFound: the lookup succeeded and genuinely has no such mentor.
+  // error: the lookup itself failed (network/DB) - distinct so the page can
+  // offer a retry instead of misleadingly claiming the mentor doesn't exist.
+  const [notFound, setNotFound] = useState<boolean>(false);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -15,15 +19,16 @@ export function useMentor(slug: string | undefined) {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
         setError(null);
+        setNotFound(false);
         const data = await mentorService.getMentorBySlug(slug);
-        
+
         if (isMounted) {
           if (!data) {
-            setError(new Error("Mentor not found"));
+            setNotFound(true);
           } else {
             setMentor(data);
           }
@@ -45,5 +50,5 @@ export function useMentor(slug: string | undefined) {
     };
   }, [slug]);
 
-  return { mentor, loading, error };
+  return { mentor, loading, notFound, error };
 }

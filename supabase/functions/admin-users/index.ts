@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
+import { createClient } from "@supabase/supabase-js";
 
 const adminRoles = new Set(["super_admin", "admin", "editor", "mentor_manager", "course_manager", "crm_manager", "content_manager", "counsellor", "sales"]);
 

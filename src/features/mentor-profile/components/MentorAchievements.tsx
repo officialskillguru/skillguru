@@ -21,9 +21,8 @@ export function MentorAchievements({ mentor }: { mentor: Mentor }) {
 
       <div className="space-y-4">
         {mentor.achievements.map((ach) => {
-          const IconComponent = iconMap[ach.icon as keyof typeof iconMap];
-          if (!IconComponent) return null;
-          
+          const IconComponent = (ach.icon && iconMap[ach.icon]) || Award;
+
           return (
             <div key={ach.id} className="flex gap-4 p-5 rounded-2xl bg-linear-to-r from-amber-50 to-transparent border border-amber-100/50">
               <div className="w-12 h-12 rounded-full bg-amber-100 flex items-center justify-center shrink-0 text-amber-600">

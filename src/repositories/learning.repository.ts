@@ -64,36 +64,6 @@ export class LearningRepository extends BaseRepository<"modules"> {
     }
   }
 
-  async getStudentProgress(studentId: string, enrollmentId: string): Promise<Result<CourseProgressRow[], AppError>> {
-    try {
-      const { data, error } = await this.client
-        .from("course_progress")
-        .select("*")
-        .eq("enrollment_id", enrollmentId);
-        
-      if (error) return fail(this.mapError(error, "getStudentProgress"));
-      return ok(data || []);
-    } catch (err: unknown) {
-      return fail(this.mapError(err, "getStudentProgress"));
-    }
-  }
-
-  async upsertLessonProgress(progress: Database["public"]["Tables"]["course_progress"]["Insert"]): Promise<Result<CourseProgressRow, AppError>> {
-    try {
-      // Stubbing this to only update based on enrollment_id as lesson_id and student_id are gone
-      const { data, error } = await this.client
-        .from("course_progress")
-        .upsert(progress, { onConflict: "enrollment_id" })
-        .select()
-        .single();
-        
-      if (error) return fail(this.mapError(error, "upsertLessonProgress"));
-      return ok(data);
-    } catch (err: unknown) {
-      return fail(this.mapError(err, "upsertLessonProgress"));
-    }
-  }
-
   async search(
     query: string,
     options: { page: number; limit: number }

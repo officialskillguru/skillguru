@@ -1,13 +1,27 @@
-import { type Result, ok, fail, DatabaseError, UnexpectedError } from "@/utils/result";
+import { type Result, ok, fail, DatabaseError } from "@/utils/result";
+import { getSupabaseClientOrThrow } from "./_shared";
 
 export class CMSService {
   async getSetting<T>(key: string): Promise<Result<T | null>> {
-    // Stubbed since system_settings table is missing in new schema
-    return ok(null);
+    const supabase = getSupabaseClientOrThrow();
+    const { data, error } = await supabase.from("system_settings").select("value").eq("id", key).maybeSingle();
+    if (error) return fail(new DatabaseError(error.message, error.code));
+    return ok((data?.value as T) ?? null);
   }
 
   async setSetting(key: string, value: unknown): Promise<Result<void>> {
-    // Stubbed since system_settings table is missing in new schema
+    const supabase = getSupabaseClientOrThrow();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { error } = await supabase.from("system_settings").upsert({
+      id: key,
+      value: value as never,
+      updated_by: user?.id ?? null,
+      updated_at: new Date().toISOString(),
+    });
+    if (error) return fail(new DatabaseError(error.message, error.code));
     return ok(undefined);
   }
 }

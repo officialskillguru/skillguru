@@ -22,7 +22,7 @@ export function MentorExperience({ mentor }: { mentor: Mentor }) {
               )}
             </div>
 
-            <div className="flex flex-col md:row md:items-start justify-between gap-2 mb-4">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-2 mb-4">
               <div>
                 <h3 className="text-xl font-bold text-slate-900">{exp.role}</h3>
                 <div className="text-lg font-medium text-slate-600 mt-1">{exp.company}</div>

@@ -18,6 +18,19 @@ export function useCertificates(page: number = 1, limit: number = 10) {
   });
 }
 
+export function useCertificateDetails(id: string | undefined) {
+  return useQuery({
+    queryKey: ["certificate-details", id],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await certificateService.getCertificateWithDetails(id);
+      if (!res.success) throw res.error;
+      return res.data;
+    },
+    enabled: !!id,
+  });
+}
+
 export function useCertificateVerification(hash: string) {
   return useQuery({
     queryKey: ["certificate-verification", hash],

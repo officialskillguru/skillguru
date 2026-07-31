@@ -1,32 +1,23 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import {
   Mail,
   CreditCard,
   Save,
   Eye,
+  EyeOff,
   AlertCircle,
   Bell,
   Shield,
   Send,
   Loader2,
   Settings as SettingsIcon,
-  Search,
-  Filter,
+  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { GsapReveal } from "@/components/motion/gsap-reveal";
 import { useAdminCMSSetting, useSaveAdminCMSSetting } from "@/hooks/admin/useAdminCMS";
-import { useAuditLogs, useBroadcastNotification } from "@/hooks/admin/useAdminSystem";
-
-type StubAuditLog = {
-  id: string;
-  created_at: string;
-  action: string;
-  table_name: string;
-  record_id: string;
-  user_id: string;
-  ip: string;
-};
+import { useBroadcastNotification } from "@/hooks/admin/useAdminSystem";
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState<"platform" | "notifications" | "audit">("platform");
@@ -44,6 +35,7 @@ export default function AdminSettingsPage() {
   
   const [rzpKey, setRzpKey] = useState("rzp_test_Ym12aG9sMTI0NGt");
   const [rzpSecret, setRzpSecret] = useState("••••••••••••••••••••••••");
+  const [showRzpSecret, setShowRzpSecret] = useState(false);
 
   useEffect(() => {
     if (remoteSmtp) {
@@ -90,7 +82,7 @@ export default function AdminSettingsPage() {
     e.preventDefault();
     if (!notiTitle || !notiMessage) return toast.error("Please fill all fields");
     
-    broadcastMutation.mutate({ title: notiTitle, message: notiMessage, type: notiType }, {
+    broadcastMutation.mutate({ title: notiTitle, message: notiMessage }, {
       onSuccess: () => {
         toast.success("Broadcast message scheduled and sent.");
         setNotiTitle("");
@@ -101,11 +93,6 @@ export default function AdminSettingsPage() {
       }
     });
   };
-
-  // Audit Logs
-  const [auditPage, setAuditPage] = useState(1);
-  const [auditActionFilter, setAuditActionFilter] = useState("");
-  const { data: auditData, isLoading: loadingAudit } = useAuditLogs({ page: auditPage, pageSize: 20, action: auditActionFilter || undefined });
 
   return (
     <div className="space-y-6 pb-12">
@@ -252,13 +239,18 @@ export default function AdminSettingsPage() {
                   <label className="text-xs font-black text-slate-400">API Secret</label>
                   <div className="relative">
                     <input
-                      type="password"
+                      type={showRzpSecret ? "text" : "password"}
                       value={rzpSecret}
                       onChange={(e) => setRzpSecret(e.target.value)}
                       className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 pr-10 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                     />
-                    <button type="button" className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 opacity-60">
-                      <Eye className="size-4.5" />
+                    <button
+                      type="button"
+                      onClick={() => setShowRzpSecret((v) => !v)}
+                      aria-label={showRzpSecret ? "Hide API secret" : "Show API secret"}
+                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary"
+                    >
+                      {showRzpSecret ? <EyeOff className="size-4.5" aria-hidden="true" /> : <Eye className="size-4.5" aria-hidden="true" />}
                     </button>
                   </div>
                 </div>
@@ -366,90 +358,19 @@ export default function AdminSettingsPage() {
 
       {/* Audit Logs Tab */}
       {activeTab === "audit" && (
-        <GsapReveal direction="up" className="mt-6 space-y-4">
-          <div className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="relative flex-1">
-              <Search className="absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-primary dark:text-cyan-300" />
-              <input
-                value={auditActionFilter}
-                onChange={(e) => setAuditActionFilter(e.target.value)}
-                placeholder="Filter by action (e.g. UPDATE, DELETE)..."
-                className="h-11 w-full rounded-xl border border-slate-200 bg-muted pl-10 pr-4 text-sm font-semibold outline-none transition placeholder:text-slate-400 focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-border bg-slate-100/40 text-[10px] font-black uppercase tracking-wider text-muted-foreground dark:border-slate-850 dark:bg-slate-900/50">
-                    <th className="px-6 py-4">Timestamp</th>
-                    <th className="px-6 py-4">Action</th>
-                    <th className="px-6 py-4">Table</th>
-                    <th className="px-6 py-4">Record ID</th>
-                    <th className="px-6 py-4">User / IP</th>
-                    <th className="px-6 py-4 text-right">Details</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#DDE7F6] dark:divide-slate-850">
-                  {loadingAudit ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-sm font-semibold text-slate-400">
-                        <Loader2 className="size-6 animate-spin mx-auto" />
-                      </td>
-                    </tr>
-                  ) : ((auditData as unknown as { data: StubAuditLog[] })?.data || []).length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="py-12 text-center text-sm font-semibold text-slate-400">
-                        No audit logs matched the criteria.
-                      </td>
-                    </tr>
-                  ) : (
-                    ((auditData as unknown as { data: StubAuditLog[] })?.data || []).map((log: StubAuditLog) => (
-                      <tr key={log.id} className="text-xs hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                        <td className="px-6 py-4.5 font-bold text-slate-500 whitespace-nowrap">
-                          {new Date(log.created_at || "").toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4.5">
-                          <span className={`inline-flex rounded-md px-2 py-0.5 text-[9px] font-black uppercase ${
-                            log.action === "DELETE" ? "bg-rose-50 text-rose-600 dark:bg-rose-950/20" : 
-                            log.action === "UPDATE" ? "bg-amber-50 text-amber-600 dark:bg-amber-950/20" :
-                            "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20"
-                          }`}>
-                            {log.action}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4.5 font-bold text-primary dark:text-cyan-300">
-                          {log.table_name}
-                        </td>
-                        <td className="px-6 py-4.5 text-slate-500 font-mono text-[10px]">
-                          {log.record_id}
-                        </td>
-                        <td className="px-6 py-4.5 text-slate-450">
-                          {log.user_id ? log.user_id.split("-")[0] : "System"} <br/>
-                          <span className="text-[9px] text-slate-400">{log.ip || "Unknown IP"}</span>
-                        </td>
-                        <td className="px-6 py-4.5 text-right">
-                          <button className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800">
-                            <Filter className="size-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-            <div className="border-t border-border px-6 py-4 flex items-center justify-between dark:border-slate-800">
-              <p className="text-xs font-semibold text-slate-500">
-                Showing page {auditPage} of {(auditData as unknown as { totalPages: number })?.totalPages || 1}
-              </p>
-              <div className="flex gap-2">
-                <button disabled={auditPage === 1} onClick={() => setAuditPage(p => p - 1)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Prev</button>
-                <button disabled={auditPage >= (((auditData as unknown as { totalPages: number })?.totalPages) || 1)} onClick={() => setAuditPage(p => p + 1)} className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Next</button>
-              </div>
-            </div>
+        <GsapReveal direction="up" className="mt-6">
+          <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-card p-12 text-center shadow-sm">
+            <Shield className="size-10 text-muted-foreground" />
+            <h3 className="text-base font-black text-foreground">Security & Audit</h3>
+            <p className="max-w-sm text-xs font-bold text-muted-foreground">
+              The full, searchable audit trail — every create/update/delete action across the platform, with actor and timestamp — lives on its own dedicated page rather than duplicated here.
+            </p>
+            <Link
+              to="/admin/audit-logs"
+              className="mt-2 flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground hover:bg-primary/90"
+            >
+              Open Audit Logs <ArrowRight className="size-3.5" />
+            </Link>
           </div>
         </GsapReveal>
       )}

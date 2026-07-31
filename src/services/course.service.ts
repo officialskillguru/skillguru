@@ -1,7 +1,6 @@
 import { type Result } from "@/utils/result";
 import { coursesRepository, type CourseFilters, type CourseSortOptions } from "@/repositories/courses.repository";
 import { enrollmentsRepository } from "@/repositories/enrollments.repository";
-import type { Database } from "@/types/database.types";
 import type { PaginationOptions, PaginatedResponse } from "@/repositories/base.repository";
 import { type AppError } from "@/utils/result";
 import type { Course } from "@/domain/courses/models/Course";

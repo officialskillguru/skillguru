@@ -8,6 +8,7 @@ export interface Course {
   description: string | null;
   level: CourseLevel;
   status: CourseStatus;
+  price: number | null;
   mentorId: string;
   organizationId: string | null;
   thumbnailFileId: string | null;

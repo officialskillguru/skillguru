@@ -19,6 +19,7 @@ export type ErrorCode =
   | "VALIDATION_ERROR"
   | "NETWORK_ERROR"
   | "CONFLICT_ERROR"
+  | "RATE_LIMIT_ERROR"
   | "UNEXPECTED_ERROR";
 
 export class AppError extends Error {
@@ -97,5 +98,25 @@ export class UnexpectedError extends AppError {
   }
 }
 
+export class RateLimitError extends AppError {
+  public retryAfterMs: number;
+
+  constructor(message: string, developerMessage: string, retryAfterMs: number, recoveryAction?: string, originalError?: unknown) {
+    super(message, "RATE_LIMIT_ERROR", developerMessage, recoveryAction, originalError);
+    this.name = "RateLimitError";
+    this.retryAfterMs = retryAfterMs;
+  }
+}
+
 export const ok = <T>(data: T): Success<T> => ({ success: true, data });
 export const fail = <E>(error: E): Failure<E> => ({ success: false, error });
+
+/** Type guard: narrows a Result<T> to Success<T> */
+export function isSuccess<T, E = AppError>(result: Result<T, E>): result is Success<T> {
+  return result.success === true;
+}
+
+/** Type guard: narrows a Result<T> to Failure<E> */
+export function isFailure<T, E = AppError>(result: Result<T, E>): result is Failure<E> {
+  return result.success === false;
+}

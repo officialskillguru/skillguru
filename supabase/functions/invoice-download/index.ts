@@ -1,4 +1,4 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.0";
+import { createClient } from "@supabase/supabase-js";
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -67,8 +67,8 @@ Deno.serve(async (request) => {
       }
     }, 200);
 
-  } catch (error: any) {
-    return jsonResponse({ error: error.message || "Internal Server Error" }, 500);
+  } catch (error: unknown) {
+    return jsonResponse({ error: error instanceof Error ? error.message : "Internal Server Error" }, 500);
   }
 });
 

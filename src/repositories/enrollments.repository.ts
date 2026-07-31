@@ -1,4 +1,4 @@
-import { type Result, ok, fail, type AppError, DatabaseError } from "@/utils/result";
+import { type Result, ok, fail, type AppError } from "@/utils/result";
 import { EnrollmentPersistence } from "@/persistence/enrollment.persistence";
 import { CoursePersistence } from "@/persistence/course.persistence";
 import { mapEnrollmentRowToDomain } from "@/domain/enrollments/mappers/enrollment.mapper";

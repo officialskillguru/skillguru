@@ -5,9 +5,9 @@ export function MentorTools({ mentor }: { mentor: Mentor }) {
 
   return (
     <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-slate-100 mb-8 scroll-mt-24">
-      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">
+      <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">
         Tools & Technologies
-      </h3>
+      </h2>
       <div className="flex flex-wrap gap-3">
         {mentor.tools.map((tool, i) => (
           <div 

@@ -29,3 +29,14 @@ Thumbs.db
 
 # Docker
 .docker
+
+# Playwright MCP test artifacts (screenshots, traces from ad-hoc browser verification)
+.playwright-mcp/
+
+# Ad-hoc debug/lint/typecheck snapshots and one-off repair scripts
+# (keep reusable tooling under scripts/ instead)
+*_output*.txt
+*_errors*.txt
+lint*.txt
+typecheck*.txt
+repo-forensics-*.txt

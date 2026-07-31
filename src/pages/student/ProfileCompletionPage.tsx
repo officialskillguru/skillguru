@@ -3,8 +3,11 @@ import { useNavigate } from "react-router-dom";
 import { routes } from "@/lib/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { studentService } from "@/services/student.service";
+import { updateResumeEducation } from "@/services/resume.service";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function ProfileCompletionPage() {
   const navigate = useNavigate();
@@ -23,31 +26,36 @@ export default function ProfileCompletionPage() {
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     if (!user) return;
-    
-    setIsLoading(true);
-    
-    const skillsArray = formData.skills.split(",").map(s => s.trim()).filter(Boolean);
-    const educationArray = formData.education.split(",").map(e => e.trim()).filter(Boolean);
-    
-    const updates = {
-      full_name: formData.fullName,
-      phone: formData.phone,
-      city: formData.city,
-      state: formData.state,
-      metadata: {
-        education: educationArray,
-        skills: skillsArray,
-      }
-    };
 
-    const res = await studentService.updateProfile(user.id, updates);
+    setIsLoading(true);
+
+    // Contact fields go on `profiles`; education/skills go through the
+    // upsert_my_student_profile RPC onto `student_profiles` (the table the
+    // Resume Builder and AI Career Guidance actually read from) - a prior
+    // version of this form wrote education/skills into `profiles.metadata`,
+    // a location nothing in the app ever reads back from.
+    const skillsArray = formData.skills.split(",").map((s) => s.trim()).filter(Boolean);
+
+    const [profileRes] = await Promise.all([
+      studentService.updateProfile(user.id, {
+        full_name: formData.fullName,
+        phone: formData.phone,
+        city: formData.city,
+        state: formData.state,
+      }),
+      updateResumeEducation(user.id, {
+        education: formData.education || null,
+        skills: skillsArray,
+      }),
+    ]);
+
     setIsLoading(false);
 
-    if (res.success) {
+    if (profileRes.success) {
       toast.success("Profile updated successfully!");
       void navigate(routes.dashboard);
     } else {
-      toast.error(res.error.message || "Failed to update profile");
+      toast.error(profileRes.error.message || "Failed to update profile");
     }
   };
 
@@ -60,85 +68,92 @@ export default function ProfileCompletionPage() {
             Welcome to SkillGuru! Tell us a bit about yourself so we can personalize your experience.
           </p>
         </div>
-        
+
         <form onSubmit={(e) => void handleSubmit(e)} className="space-y-6">
           <div className="grid gap-6 md:grid-cols-2">
             <div className="space-y-2">
-              <label htmlFor="fullName" className="text-sm font-bold text-slate-700">Full Name</label>
-              <input
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
                 id="fullName"
                 required
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="h-11 rounded-xl"
                 placeholder="John Doe"
                 value={formData.fullName}
-                onChange={e => setFormData({ ...formData, fullName: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-bold text-slate-700">Phone Number</label>
-              <input
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
                 id="phone"
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                type="tel"
+                autoComplete="tel"
+                className="h-11 rounded-xl"
                 placeholder="+1 234 567 8900"
                 value={formData.phone}
-                onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <label htmlFor="city" className="text-sm font-bold text-slate-700">City</label>
-              <input
+              <Label htmlFor="city">City</Label>
+              <Input
                 id="city"
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                autoComplete="address-level2"
+                className="h-11 rounded-xl"
                 placeholder="San Francisco"
                 value={formData.city}
-                onChange={e => setFormData({ ...formData, city: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, city: e.target.value })}
               />
             </div>
-            
+
             <div className="space-y-2">
-              <label htmlFor="state" className="text-sm font-bold text-slate-700">State / Province</label>
-              <input
+              <Label htmlFor="state">State / Province</Label>
+              <Input
                 id="state"
-                className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                autoComplete="address-level1"
+                className="h-11 rounded-xl"
                 placeholder="California"
                 value={formData.state}
-                onChange={e => setFormData({ ...formData, state: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value })}
               />
             </div>
           </div>
-          
+
           <div className="space-y-2">
-            <label htmlFor="education" className="text-sm font-bold text-slate-700">Education (comma separated)</label>
-            <input
+            <Label htmlFor="education">Education</Label>
+            <Input
               id="education"
-              className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 rounded-xl"
               placeholder="B.Sc Computer Science, MIT"
               value={formData.education}
-              onChange={e => setFormData({ ...formData, education: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, education: e.target.value })}
             />
           </div>
-          
+
           <div className="space-y-2">
-            <label htmlFor="skills" className="text-sm font-bold text-slate-700">Skills (comma separated)</label>
-            <input
+            <Label htmlFor="skills">Skills (comma separated)</Label>
+            <Input
               id="skills"
-              className="flex h-10 w-full rounded-xl border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              className="h-11 rounded-xl"
               placeholder="React, TypeScript, Node.js"
               value={formData.skills}
-              onChange={e => setFormData({ ...formData, skills: e.target.value })}
+              onChange={(e) => setFormData({ ...formData, skills: e.target.value })}
             />
           </div>
-          
-          <div className="pt-4 border-t border-border">
-            <button 
+
+          <div className="border-t border-border pt-4">
+            <button
               type="submit"
               disabled={isLoading}
-              className="w-full inline-flex items-center justify-center rounded-xl bg-primary py-3 font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 font-bold text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isLoading ? (
-                <Loader2 className="mr-2 size-5 animate-spin" />
+                <>
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                  Saving…
+                </>
               ) : (
                 "Save & Continue to Dashboard"
               )}

@@ -12,7 +12,17 @@ function upsertMeta(property: string, content: string, attr: "name" | "property"
   meta.content = content;
 }
 
-export function usePageMeta(title: string, description = siteConfig.description) {
+function upsertCanonical(href: string) {
+  let link = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  if (!link) {
+    link = document.createElement("link");
+    link.rel = "canonical";
+    document.head.append(link);
+  }
+  link.href = href;
+}
+
+export function usePageMeta(title: string, description = siteConfig.description, canonicalPath?: string) {
   useEffect(() => {
     document.title = title === siteConfig.name ? title : `${title} | ${siteConfig.shortName}`;
 
@@ -22,5 +32,9 @@ export function usePageMeta(title: string, description = siteConfig.description)
     upsertMeta("og:site_name", siteConfig.name);
     upsertMeta("twitter:title", document.title);
     upsertMeta("twitter:description", description);
-  }, [description, title]);
+
+    if (canonicalPath) {
+      upsertCanonical(`${siteConfig.url}${canonicalPath}`);
+    }
+  }, [description, title, canonicalPath]);
 }

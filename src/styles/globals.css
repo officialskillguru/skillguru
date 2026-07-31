@@ -15,6 +15,15 @@
 
   --color-destructive: hsl(var(--destructive));
   --color-destructive-foreground: hsl(var(--destructive-foreground));
+  /* Small destructive TEXT (labels/messages) should use this, not --destructive
+     directly - see the --destructive-text definitions below for why. */
+  --color-destructive-text: hsl(var(--destructive-text));
+
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
 
   --color-muted: hsl(var(--muted));
   --color-muted-foreground: hsl(var(--muted-foreground));
@@ -28,53 +37,169 @@
   --color-popover: hsl(var(--popover));
   --color-popover-foreground: hsl(var(--popover-foreground));
 
+  /* Enterprise shell — the admin/mentor/student dashboard chrome (sidebar, topbar)
+     intentionally stays dark in both themes, like Linear/Vercel's app shell. */
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-muted: hsl(var(--sidebar-muted));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+
   --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-sm: calc(var(--radius) - 4px);
-  
-  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Poppins", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --radius-md: calc(var(--radius) - 8px);
+  --radius-sm: calc(var(--radius) - 16px);
+
+  --font-sans: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
   /* unified shadows for consistency */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-premium: 0 16px 55px rgba(10, 42, 136, 0.08);
+  --shadow-premium: 0 20px 40px -10px rgba(37, 99, 235, 0.1);
+
+  /* Motion — the only durations/easings any component should reference.
+     Fast for micro-interactions (hover/press), base for enter/exit
+     transitions, slow for larger layout shifts (drawers/sheets). */
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-emphasized: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Chart categorical palette — fixed slot order, never cycled (a filtered-out
+     series never causes the remaining ones to repaint). Validated with
+     scripts/validate_palette.js from the dataviz skill against this app's
+     real card surfaces (#FFFFFF light / #10192B dark) — see DESIGN_SYSTEM.md
+     § Charts for the full validation report before changing any of these. */
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+  --color-chart-6: hsl(var(--chart-6));
+  --color-chart-7: hsl(var(--chart-7));
+  --color-chart-8: hsl(var(--chart-8));
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @layer base {
   :root {
-    --background: 223 100% 98%;      /* #f8faff */
-    --foreground: 222 47% 11%;       /* #0f172a */
+    --background: 210 40% 98%;      /* #F8FAFC */
+    --foreground: 222 47% 11%;      /* #0F172A */
 
-    --card: 0 0% 100%;               /* #ffffff */
+    --card: 0 0% 100%;              /* #FFFFFF */
     --card-foreground: 222 47% 11%;
 
     --popover: 0 0% 100%;
     --popover-foreground: 222 47% 11%;
 
-    --primary: 232 75% 27%;          /* #111e79 */
+    --primary: 221 83% 53%;         /* #2563EB */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 252 89% 58%;        /* #5b35f2 */
+    --secondary: 189 94% 43%;       /* #06B6D4 */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 224 100% 97%;           /* #f1f5ff */
-    --muted-foreground: 215 16% 47%; /* #64748b */
+    --muted: 210 40% 96.1%;         /* #F1F5F9 */
+    --muted-foreground: 215.4 16.3% 46.9%; /* #64748B */
 
-    --accent: 180 78% 44%;           /* #19c7c8 */
-    --accent-foreground: 232 75% 27%;/* #111e79 */
+    --accent: 189 94% 43%;          /* #06B6D4 */
+    --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 84.2% 60.2%;   /* #EF4444 - fine for icons/borders/fills (3:1 UI-component threshold) */
     --destructive-foreground: 0 0% 100%;
+    --destructive-text: 0 74% 42%;  /* #B91C1C - darker step for small destructive TEXT specifically; #EF4444 on white is ~3.76:1, fails 4.5:1 for body/label-sized text */
 
-    --border: 220 49% 93%;           /* #e5eaf5 */
-    --input: 220 49% 93%;            /* rgba(15,23,42,0.12) eq */
-    --ring: 180 78% 44%;             /* #19c7c8 */
+    --success: 160 84% 39%;         /* #10B981 */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 38 92% 50%;          /* #F59E0B */
+    --warning-foreground: 0 0% 100%;
 
-    --radius: 0.75rem; /* 12px base radius */
+    --border: 214.3 31.8% 91.4%;    /* #E2E8F0 */
+    --input: 214.3 31.8% 91.4%;
+    --ring: 221 83% 53%;            /* #2563EB */
+
+    --radius: 1.5rem; /* 24px base radius */
+
+    /* Enterprise shell tokens — same dark navy in both light and dark theme,
+       since the app chrome (sidebar/topbar) is deliberately theme-independent. */
+    --sidebar: 222 47% 8%;                  /* #0B1220 */
+    --sidebar-foreground: 210 20% 88%;      /* #D6DEE8 */
+    --sidebar-muted: 215 20% 55%;           /* #7C8AA0 */
+    --sidebar-border: 217 33% 17%;          /* #1E293B-ish */
+    --sidebar-accent: 221 83% 53%;          /* primary blue */
+    --sidebar-accent-foreground: 0 0% 100%;
+
+    /* Chart categorical palette — fixed slot order, never cycled. Validated
+       with scripts/validate_palette.js from the dataviz skill against this
+       app's real light card surface (#FFFFFF) — see DESIGN_SYSTEM.md § Charts. */
+    --chart-1: 213 68% 50%;   /* blue */
+    --chart-2: 17 82% 56%;    /* orange */
+    --chart-3: 159 73% 40%;   /* aqua/green */
+    --chart-4: 41 100% 46%;   /* yellow */
+    --chart-5: 337 70% 70%;   /* magenta */
+    --chart-6: 120 100% 26%;  /* deep green */
+    --chart-7: 249 48% 44%;   /* violet */
+    --chart-8: 0 73% 59%;     /* red */
+  }
+
+  .dark {
+    --background: 222 47% 7%;       /* #0A0F1C */
+    --foreground: 210 40% 96%;      /* #EEF2F8 */
+
+    --card: 222 42% 10%;            /* #10192B */
+    --card-foreground: 210 40% 96%;
+
+    --popover: 222 42% 10%;
+    --popover-foreground: 210 40% 96%;
+
+    --primary: 217 91% 60%;         /* #3B82F6 — brighter for dark bg contrast */
+    --primary-foreground: 222 47% 8%;
+
+    --secondary: 189 90% 48%;       /* #08B7D6 */
+    --secondary-foreground: 222 47% 8%;
+
+    --muted: 217 33% 15%;           /* #182236 */
+    --muted-foreground: 215 20% 65%; /* #94A3B8 */
+
+    --accent: 189 90% 48%;
+    --accent-foreground: 222 47% 8%;
+
+    --destructive: 0 72% 55%;       /* #E14545 */
+    --destructive-foreground: 0 0% 100%;
+    --destructive-text: 0 72% 55%;  /* same as --destructive - already bright enough against the dark card surface */
+
+    --success: 160 70% 45%;         /* #17B87A */
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 90% 55%;          /* #F2A310 */
+    --warning-foreground: 222 47% 8%;
+
+    --border: 217 33% 18%;          /* #1B2536 */
+    --input: 217 33% 18%;
+    --ring: 217 91% 60%;
+
+    --sidebar: 222 47% 5%;          /* #070B14 — slightly darker than page bg */
+    --sidebar-foreground: 210 20% 88%;
+    --sidebar-muted: 215 20% 55%;
+    --sidebar-border: 217 33% 14%;
+    --sidebar-accent: 217 91% 60%;
+    --sidebar-accent-foreground: 0 0% 100%;
+
+    /* Chart categorical palette (dark) — same eight hues, stepped for the
+       dark card surface (#10192B). Re-validate with validate_palette.js
+       against that exact surface before changing any of these. */
+    --chart-1: 213 77% 56%;
+    --chart-2: 17 70% 50%;
+    --chart-3: 159 73% 36%;
+    --chart-4: 40 100% 39%;
+    --chart-5: 338 61% 58%;
+    --chart-6: 120 100% 26%;
+    --chart-7: 247 69% 72%;
+    --chart-8: 0 72% 65%;
   }
 }
 
@@ -776,5 +901,25 @@ html:has(.hero-section) header:not([data-scrolled]) [aria-label="Open menu"] {
   .hero-media video,
   .hero-video-mobile video {
     animation: none;
+  }
+}
+
+/* Resume Builder PDF export: window.print() should output only the resume
+   preview, not the dashboard chrome (sidebar/header/nav) around it. */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  #resume-preview,
+  #resume-preview * {
+    visibility: visible;
+  }
+
+  #resume-preview {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
   }
 }

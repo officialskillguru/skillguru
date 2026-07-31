@@ -47,14 +47,16 @@ export function MentorProjects({ mentor }: { mentor: Mentor }) {
               <div className="flex items-center gap-3 pt-4 border-t border-slate-100 mt-auto">
                 {project.githubUrl && (
                   <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-primary transition-colors">
-                    <Github className="w-4 h-4" />
+                    <Github className="w-4 h-4" aria-hidden="true" />
                     Source
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 )}
                 {project.liveUrl && (
                   <a href={project.liveUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-sm font-semibold text-accent hover:text-accent/80 transition-colors ml-auto">
                     Live Demo
-                    <ExternalLink className="w-4 h-4" />
+                    <ExternalLink className="w-4 h-4" aria-hidden="true" />
+                    <span className="sr-only"> (opens in a new tab)</span>
                   </a>
                 )}
               </div>

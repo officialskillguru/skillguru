@@ -21,12 +21,12 @@ export function useCheckEnrollment(courseSlug: string) {
       if (courseError || !courseData) {
         return { isEnrolled: false, courseId: null };
       }
-      
-            const { data, error } = await supabase
+
+      const { data, error } = await supabase
         .from("enrollments")
         .select("id")
-        .eq("user_id" as "id", studentId)
-        .eq("id", courseData.id)
+        .eq("student_id", studentId)
+        .eq("course_id", courseData.id)
         .maybeSingle();
 
       if (error) {

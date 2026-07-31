@@ -7,6 +7,7 @@ export type AuthState =
   | "LOADING_PROFILE"
   | "READY"
   | "UNAUTHENTICATED"
+  | "WAITING_EMAIL_CONFIRMATION"
   | "LOGOUT"
   | "SESSION_EXPIRED"
   | "ERROR";

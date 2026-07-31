@@ -1,6 +1,7 @@
-import type { Database as GenDatabase } from "./database.types";
+import type { Database as GenDatabase, Json as GenJson } from "./database.types";
 
 export type Database = GenDatabase;
+export type Json = GenJson;
 
 export type AppRole = "admin" | "counsellor" | "sales" | "content_manager";
 export type AccountStatus = "active" | "inactive" | "suspended" | "pending";

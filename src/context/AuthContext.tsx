@@ -32,6 +32,8 @@ function authReducerBase(state: ExtendedAuthContextState, action: AuthAction): E
       };
     case "AUTH_FAIL":
       return { ...state, status: "UNAUTHENTICATED", session: null, user: null, authUser: null };
+    case "WAITING_EMAIL_CONFIRMATION":
+      return { ...state, status: "WAITING_EMAIL_CONFIRMATION", error: null };
     case "IDENTITY_LOADED":
       return {
         ...state,
@@ -51,7 +53,7 @@ function authReducerBase(state: ExtendedAuthContextState, action: AuthAction): E
 
 function authReducer(state: ExtendedAuthContextState, action: AuthAction): ExtendedAuthContextState {
   const nextState = authReducerBase(state, action);
-  console.log(new Date().toISOString(), "Auth Transition:", { previousState: state, action, nextState });
+  logger.debug(`[Auth] Transition: ${state.status} → ${nextState.status}`, { action: action.type });
   return nextState;
 }
 
@@ -69,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Listen to Supabase Auth events
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log(new Date().toISOString(), `Auth event: ${event}`);
+      logger.debug(`[Auth] Supabase event: ${event}`);
       if (event === "SIGNED_OUT") {
         dispatch({ type: "LOGOUT" });
         return;
@@ -105,7 +107,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     void fetchIdentity();
   }, [state.status, state.user]);
 
-  // Public Context Methods
+  // ── Public Context Methods ──────────────────────────────────────────────
+  // Context delegates to AuthService. Context never navigates.
+
   const login = useCallback(async (credentials: LoginFormData): Promise<Result<void>> => {
     dispatch({ type: "START_AUTH" });
     const result = await authService.login(credentials);
@@ -113,6 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "AUTH_FAIL" });
       return result;
     }
+    // Supabase onAuthStateChange will fire SIGNED_IN and drive the state machine
     return ok(undefined);
   }, []);
 
@@ -123,6 +128,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "AUTH_FAIL" });
       return result;
     }
+    // Dispatch WAITING_EMAIL_CONFIRMATION — UI decides whether to navigate.
+    // If Supabase has email confirmation disabled, onAuthStateChange will fire
+    // SIGNED_IN and override this state. That's correct and expected.
+    dispatch({ type: "WAITING_EMAIL_CONFIRMATION", payload: { email: credentials.email } });
     return ok(undefined);
   }, []);
 
@@ -135,8 +144,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return await authService.resetPassword(email);
   }, []);
 
+  const resendVerification = useCallback(async (email: string): Promise<Result<void>> => {
+    return await authService.resendVerificationEmail(email);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ state, dispatch, login, signupStudent, logout, resetPassword }}>
+    <AuthContext.Provider value={{ state, dispatch, login, signupStudent, logout, resetPassword, resendVerification }}>
       {children}
     </AuthContext.Provider>
   );

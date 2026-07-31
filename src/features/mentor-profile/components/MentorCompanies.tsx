@@ -5,9 +5,9 @@ export function MentorCompanies({ mentor }: { mentor: Mentor }) {
 
   return (
     <div className="bg-white rounded-3xl p-8 md:p-10 shadow-sm border border-slate-100 mb-8 scroll-mt-24">
-      <h3 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">
+      <h2 className="text-sm font-bold text-slate-400 uppercase tracking-wider mb-6">
         Companies Worked With
-      </h3>
+      </h2>
       <div className="flex flex-wrap items-center gap-8 md:gap-12">
         {mentor.companiesWorkedWith.map((company, i) => (
           <div key={i} className="flex items-center gap-3 grayscale opacity-60 hover:grayscale-0 hover:opacity-100 transition-all duration-300">

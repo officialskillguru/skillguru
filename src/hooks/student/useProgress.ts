@@ -9,7 +9,7 @@ export function useProgress() {
   const studentId = user?.id;
 
   const markComplete = useMutation({
-    mutationFn: async ({ enrollmentId, lessonId, courseId }: { enrollmentId: string, lessonId: string, courseId: string }) => {
+    mutationFn: async ({ enrollmentId, lessonId, courseId: _courseId }: { enrollmentId: string, lessonId: string, courseId: string }) => {
       if (!studentId) throw new Error("Not authenticated");
       const res = await progressService.markLessonComplete(enrollmentId, lessonId);
       if (!res.success) throw res.error;

@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase/client";
 import { type Result, ok, fail, type AppError, DatabaseError, UnexpectedError } from "@/utils/result";
 import { logger } from "@/config/logger";
+import { learningRepository } from "@/repositories/learning.repository";
 import type { Database } from "@/types/database.types";
 
 type CourseRow = Database["public"]["Tables"]["courses"]["Row"];
@@ -10,10 +11,15 @@ type ProgressRow = Database["public"]["Tables"]["course_progress"]["Row"];
 
 export interface ContinueLearningData {
   course: CourseRow;
+  mentorName: string | null;
   module: ModuleRow | null;
   lesson: LessonRow | null;
   nextLesson: LessonRow | null;
   progress: ProgressRow | null;
+  totalModules: number;
+  completedModules: number;
+  totalLessons: number;
+  completedLessons: number;
 }
 
 export class ContinueLearningService {
@@ -38,11 +44,54 @@ export class ContinueLearningService {
         .select("*")
         .eq("id", enrollmentData.course_id)
         .single();
-      
+
       if (courseError || !courseData) return fail(new DatabaseError("Failed to fetch course", String(courseError), undefined, courseError));
       const course = courseData;
 
-      // 2. Get progress
+      const { data: mentorProfile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", course.mentor_id)
+        .maybeSingle();
+
+      // 2. Real curriculum + per-lesson progress - determines the actual
+      // lesson the student left off at (previously hardcoded to always the
+      // course's first lesson, regardless of real progress).
+      const curriculumResult = await learningRepository.getCourseModulesWithLessons(course.id);
+      if (!curriculumResult.success) return fail(curriculumResult.error);
+      const modules = [...curriculumResult.data].sort((a, b) => a.sort_order - b.sort_order);
+
+      const flatLessons: { lesson: LessonRow; module: ModuleRow }[] = [];
+      for (const mod of modules) {
+        const sortedLessons = [...mod.lessons].sort((a, b) => a.sort_order - b.sort_order);
+        for (const lesson of sortedLessons) {
+          flatLessons.push({ lesson, module: mod });
+        }
+      }
+
+      const { data: lessonProgressRows, error: lessonProgressError } = await supabase
+        .from("lesson_progress")
+        .select("lesson_id, status")
+        .eq("enrollment_id", enrollmentData.id);
+      if (lessonProgressError) return fail(new DatabaseError("Failed to fetch lesson progress", String(lessonProgressError), undefined, lessonProgressError));
+
+      const completedLessonIds = new Set(
+        (lessonProgressRows ?? []).filter((p) => p.status === "completed").map((p) => p.lesson_id)
+      );
+
+      const completedModules = modules.filter(
+        (mod) => mod.lessons.length > 0 && mod.lessons.every((lesson) => completedLessonIds.has(lesson.id))
+      ).length;
+
+      // Resume at the first not-yet-completed lesson; if every lesson is
+      // complete, stay on the last one (nextLesson will correctly be null).
+      let currentIndex = flatLessons.findIndex(({ lesson }) => !completedLessonIds.has(lesson.id));
+      if (currentIndex === -1) currentIndex = flatLessons.length - 1;
+
+      const current = flatLessons[currentIndex] ?? null;
+      const next = currentIndex >= 0 ? flatLessons[currentIndex + 1] ?? null : null;
+
+      // 3. Aggregate course-level progress (unchanged - separate rollup table)
       const { data: progressList, error: progressError } = await supabase
         .from("course_progress")
         .select("*")
@@ -51,90 +100,19 @@ export class ContinueLearningService {
         .limit(1);
 
       if (progressError) return fail(new DatabaseError("Failed to fetch progress", String(progressError), undefined, progressError));
-      
-      let currentLesson: LessonRow | null = null;
-      let currentModule: ModuleRow | null = null;
-      let currentProgress: ProgressRow | null = null;
-
-      if (progressList && progressList.length > 0) {
-        currentProgress = progressList[0] || null;
-      }
-
-      // Progress doesn't track lesson_id in the new schema, so just return the first lesson always for now as a stub
-      // If no progress found, we need to find the very first lesson of the course
-      if (!currentLesson) {
-        const { data: firstModuleData } = await supabase
-          .from("modules")
-          .select("*")
-          .eq("course_id", course.id)
-          .order("sort_order", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (firstModuleData) {
-          currentModule = firstModuleData;
-          const { data: firstLessonData } = await supabase
-            .from("lessons")
-            .select("*")
-            .eq("module_id", firstModuleData.id)
-            .order("sort_order", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-            
-          if (firstLessonData) {
-            currentLesson = firstLessonData;
-          }
-        }
-      }
-
-      // 3. Find next lesson (if current is complete or we just want to know the next)
-      let nextLesson: LessonRow | null = null;
-      if (currentLesson && currentModule) {
-        // Find next lesson in the same module
-        const { data: nextInModule } = await supabase
-          .from("lessons")
-          .select("*")
-          .eq("module_id", currentModule.id)
-          .gt("sort_order", currentLesson.sort_order)
-          .order("sort_order", { ascending: true })
-          .limit(1)
-          .maybeSingle();
-
-        if (nextInModule) {
-          nextLesson = nextInModule;
-        } else {
-          // Find next module's first lesson
-          const { data: nextModule } = await supabase
-            .from("modules")
-            .select("*")
-            .eq("course_id", course.id)
-            .gt("sort_order", currentModule.sort_order)
-            .order("sort_order", { ascending: true })
-            .limit(1)
-            .maybeSingle();
-            
-          if (nextModule) {
-            const { data: nextModuleFirstLesson } = await supabase
-              .from("lessons")
-              .select("*")
-              .eq("module_id", nextModule.id)
-              .order("sort_order", { ascending: true })
-              .limit(1)
-              .maybeSingle();
-              
-            if (nextModuleFirstLesson) {
-              nextLesson = nextModuleFirstLesson;
-            }
-          }
-        }
-      }
+      const currentProgress = progressList && progressList.length > 0 ? progressList[0] ?? null : null;
 
       return ok({
         course,
-        module: currentModule,
-        lesson: currentLesson,
-        nextLesson,
-        progress: currentProgress
+        mentorName: mentorProfile?.full_name ?? null,
+        module: current?.module ?? null,
+        lesson: current?.lesson ?? null,
+        nextLesson: next?.lesson ?? null,
+        progress: currentProgress,
+        totalModules: modules.length,
+        completedModules,
+        totalLessons: flatLessons.length,
+        completedLessons: completedLessonIds.size,
       });
     } catch (err: unknown) {
       logger.error("ContinueLearningService Error", err);

@@ -1,6 +1,4 @@
 /* eslint-disable */
- 
-/* eslint-env node */
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
 import assert from "assert";

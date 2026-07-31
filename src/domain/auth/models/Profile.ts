@@ -20,6 +20,7 @@ export interface MentorProfile {
   expertise: string[];
   yearsOfExperience: number | null;
   isVerified: boolean;
+  loginDisabled: boolean;
 }
 
 export interface StudentProfile {
@@ -38,4 +39,5 @@ export interface AuthUser {
   mentorProfile?: MentorProfile | null;
   studentProfile?: StudentProfile | null;
   highestRole: string;
+  passwordResetRequired: boolean;
 }

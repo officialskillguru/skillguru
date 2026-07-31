@@ -13,6 +13,7 @@ export function mapCourseRowToDomain(row: CourseRow): Course {
     description: row.description,
     level: row.level as CourseLevel,
     status: row.status as CourseStatus,
+    price: row.price,
     mentorId: row.mentor_id,
     organizationId: row.organization_id,
     thumbnailFileId: row.thumbnail_file_id,
