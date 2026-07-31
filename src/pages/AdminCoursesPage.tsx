@@ -14,6 +14,7 @@ import {
   X,
   Video,
   Loader2,
+  Lock,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -466,29 +467,40 @@ export default function AdminCoursesPage() {
 
               <div role="tablist" aria-label="Course editor sections" className="flex border-b border-border overflow-x-auto hide-scrollbar px-6">
                 {[
-                  { id: "basic", label: "Basic Info" },
-                  { id: "curriculum", label: "Curriculum" },
-                  { id: "pricing", label: "Pricing" },
-                  { id: "seo", label: "SEO Settings" },
-                  { id: "mentors", label: "Mentors" },
-                  { id: "media", label: "Media Assets" },
+                  { id: "basic", label: "Basic Info", locked: false },
+                  { id: "curriculum", label: "Curriculum", locked: !selectedCourse.id },
+                  { id: "pricing", label: "Pricing", locked: false },
+                  { id: "seo", label: "SEO Settings", locked: false },
+                  { id: "mentors", label: "Mentors", locked: false },
+                  { id: "media", label: "Media Assets", locked: !selectedCourse.id },
                 ].map((tb) => (
                   <button
                     key={tb.id}
                     role="tab"
                     aria-selected={editorTab === tb.id}
-                    onClick={() => setEditorTab(tb.id as typeof editorTab)}
+                    aria-disabled={tb.locked}
+                    aria-describedby={tb.locked ? "course-editor-locked-hint" : undefined}
+                    onClick={() => { if (!tb.locked) setEditorTab(tb.id as typeof editorTab); }}
                     className={[
-                      "shrink-0 py-3.5 px-3.5 text-xs font-black transition-all border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
-                      editorTab === tb.id
-                        ? "border-primary text-primary"
-                        : "border-transparent text-muted-foreground hover:text-foreground",
+                      "flex shrink-0 items-center gap-1.5 py-3.5 px-3.5 text-xs font-black transition-all border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                      tb.locked
+                        ? "cursor-not-allowed border-transparent text-muted-foreground/40"
+                        : editorTab === tb.id
+                          ? "border-primary text-primary"
+                          : "border-transparent text-muted-foreground hover:text-foreground",
                     ].join(" ")}
                   >
                     {tb.label}
+                    {tb.locked && <Lock className="size-3" aria-hidden="true" />}
                   </button>
                 ))}
               </div>
+              {!selectedCourse.id && (
+                <p id="course-editor-locked-hint" className="border-b border-border bg-muted/30 px-6 py-2 text-[11px] font-semibold text-muted-foreground">
+                  <Lock className="mr-1 inline size-3" aria-hidden="true" />
+                  Curriculum and Media Assets unlock after you save this course for the first time.
+                </p>
+              )}
 
               <form onSubmit={saveCourse} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {editorTab === "basic" && (

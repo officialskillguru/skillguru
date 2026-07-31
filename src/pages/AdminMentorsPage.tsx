@@ -38,6 +38,8 @@ import { MentorCRMPanel, MentorCoursesPanel, MentorPerformancePanel, MentorDocum
 import { listCourses } from "@/services/courses.service";
 import { getNextTabIndex } from "@/lib/a11y-tabs";
 
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 type MentorFormState = Partial<Mentor> & {
   designation?: string;
   phone?: string;
@@ -106,6 +108,8 @@ export default function AdminMentorsPage() {
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState<MentorFormState | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("Personal");
   const editorTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [createdCredentials, setCreatedCredentials] = useState<CreateMentorResult | null>(null);
@@ -245,12 +249,16 @@ export default function AdminMentorsPage() {
   const handleRowClick = (mentor: Mentor) => {
     setSelectedMentor(mentor);
     setActiveTab("Personal");
+    setNameError(null);
+    setEmailError(null);
     setEditorOpen(true);
   };
 
   const handleCreate = () => {
     setSelectedMentor({ name: "", designation: "Engineering Lead", bio: "" });
     setActiveTab("Personal");
+    setNameError(null);
+    setEmailError(null);
     setEditorOpen(true);
   };
 
@@ -385,8 +393,23 @@ export default function AdminMentorsPage() {
     e.preventDefault();
     if (!selectedMentor) return;
 
-    if (!selectedMentor.name || !selectedMentor.email) {
-      toast.error("Full Name and Email Address are required.");
+    const trimmedName = selectedMentor.name?.trim() ?? "";
+    const trimmedEmail = selectedMentor.email?.trim() ?? "";
+    let hasError = false;
+    if (!trimmedName) {
+      setNameError("Full name is required.");
+      hasError = true;
+    } else {
+      setNameError(null);
+    }
+    if (!trimmedEmail || !EMAIL_PATTERN.test(trimmedEmail)) {
+      setEmailError("Enter a valid email address.");
+      hasError = true;
+    } else {
+      setEmailError(null);
+    }
+    if (hasError) {
+      setActiveTab("Personal");
       return;
     }
 
@@ -722,25 +745,43 @@ export default function AdminMentorsPage() {
               <form id="mentor-form" role="tabpanel" aria-labelledby={`mentor-editor-tab-${activeTab}`} onSubmit={saveMentor} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {activeTab === "Personal" && (
                   <div className="space-y-5">
+                    {(nameError || emailError) && (
+                      <p role="alert" className="rounded-lg bg-destructive-text/10 px-3.5 py-2.5 text-xs font-semibold text-destructive-text">
+                        {[nameError, emailError].filter(Boolean).length > 1 ? "2 errors: " : ""}
+                        {[nameError, emailError].filter(Boolean).join(" ")}
+                      </p>
+                    )}
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-foreground">Full Name</label>
+                      <label htmlFor="mentor-name-input" className="text-xs font-black text-foreground">Full Name</label>
                       <input
+                        id="mentor-name-input"
                         value={selectedMentor.name || ""}
-                        onChange={(e) => setSelectedMentor({ ...selectedMentor, name: e.target.value })}
+                        onChange={(e) => { setSelectedMentor({ ...selectedMentor, name: e.target.value }); if (nameError) setNameError(null); }}
+                        aria-invalid={!!nameError}
+                        aria-describedby={nameError ? "mentor-name-error" : undefined}
                         className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus:border-primary"
                         placeholder="Jane Doe"
                       />
+                      {nameError && (
+                        <p id="mentor-name-error" className="text-xs font-semibold text-destructive-text">{nameError}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-foreground">Email Address</label>
+                      <label htmlFor="mentor-email-input" className="text-xs font-black text-foreground">Email Address</label>
                       <input
+                        id="mentor-email-input"
                         type="email"
                         value={selectedMentor.email || ""}
-                        onChange={(e) => setSelectedMentor({ ...selectedMentor, email: e.target.value })}
+                        onChange={(e) => { setSelectedMentor({ ...selectedMentor, email: e.target.value }); if (emailError) setEmailError(null); }}
                         disabled={!!selectedMentor.id}
+                        aria-invalid={!!emailError}
+                        aria-describedby={emailError ? "mentor-email-error" : undefined}
                         className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus:border-primary disabled:opacity-60"
                         placeholder="jane@example.com"
                       />
+                      {emailError && (
+                        <p id="mentor-email-error" className="text-xs font-semibold text-destructive-text">{emailError}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-black text-foreground">Phone Number</label>
