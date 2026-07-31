@@ -29,7 +29,7 @@ export async function listCourses(params: CourseListParams = {}): Promise<Pagina
   const sortBy = params.sortBy ?? "updated_at";
   const ascending = params.sortDirection === "asc";
 
-  let query = supabase.from("courses").select("*, course_categories!inner(category_id)", { count: "exact" });
+  let query = supabase.from("courses").select("*, course_categories(category_id)", { count: "exact" });
 
   if (search) {
     query = query.or(`title.ilike.%${search}%,slug.ilike.%${search}%,short_description.ilike.%${search}%`);
@@ -70,6 +70,13 @@ export async function listCourseCategories() {
 export async function getCourseBySlug(slug: string) {
   const supabase = getSupabaseClientOrThrow();
   const { data, error } = await supabase.from("courses").select("*").eq("slug", slug).single();
+  assertServiceResponse(error);
+  return data;
+}
+
+export async function getCourseById(id: string) {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("courses").select("*").eq("id", id).single();
   assertServiceResponse(error);
   return data;
 }
