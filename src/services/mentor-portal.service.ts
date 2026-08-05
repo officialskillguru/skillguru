@@ -114,11 +114,36 @@ export async function getMentorCoursesList(mentorId: string) {
 
   const { data: courses, error } = await supabase
     .from("courses")
-    .select("*")
-    .eq("mentor_id", mentorId);
+    .select("*, course_categories(categories(id, name))")
+    .eq("mentor_id", mentorId)
+    .order("updated_at", { ascending: false });
   assertServiceResponse(error);
 
-  return courses || [];
+  const rows = courses ?? [];
+  const courseIds = rows.map((c) => c.id);
+
+  const enrollmentCounts = new Map<string, number>();
+  if (courseIds.length > 0) {
+    const { data: enrollmentRows, error: enrollError } = await supabase
+      .from("enrollments")
+      .select("course_id")
+      .in("course_id", courseIds);
+    assertServiceResponse(enrollError);
+    for (const row of enrollmentRows ?? []) {
+      enrollmentCounts.set(row.course_id, (enrollmentCounts.get(row.course_id) ?? 0) + 1);
+    }
+  }
+
+  return rows.map((course) => {
+    const { course_categories, ...rest } = course;
+    return {
+      ...rest,
+      categoryNames: (course_categories ?? [])
+        .map((cc) => cc.categories?.name)
+        .filter((name): name is string => !!name),
+      enrollmentCount: enrollmentCounts.get(course.id) ?? 0,
+    };
+  });
 }
 
 export async function getMentorStudentsList(mentorId: string) {

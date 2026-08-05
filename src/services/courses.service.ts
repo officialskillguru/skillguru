@@ -10,6 +10,7 @@ import {
   type ListParams,
   type PaginatedResult,
 } from "./_shared";
+import { getCourseCurriculum } from "./curriculum.service";
 
 export type Course = Tables<"courses">;
 export type CourseCategory = Tables<"course_categories">;
@@ -81,6 +82,21 @@ export async function getCourseById(id: string) {
   return data;
 }
 
+/** Postgres 23505 (unique_violation) on courses.slug reads as raw SQL to a mentor - translate it. */
+function assertNotDuplicateSlug(error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "23505" &&
+    "message" in error &&
+    typeof (error as { message?: string }).message === "string" &&
+    (error as { message: string }).message.includes("courses_slug_unique")
+  ) {
+    throw new Error("A course with this title already exists. Try a different title.");
+  }
+}
+
 export async function createCourse(input: CourseInput) {
   const supabase = getSupabaseClientOrThrow();
   const slug = input.slug ? createSlug(input.slug) : createSlug(input.title || "");
@@ -90,6 +106,7 @@ export async function createCourse(input: CourseInput) {
     slug,
   };
   const { data, error } = await supabase.from("courses").insert(payload).select("*").single();
+  assertNotDuplicateSlug(error);
   assertServiceResponse(error);
   
   if (data && selectedCategoryIds && selectedCategoryIds.length > 0) {
@@ -111,6 +128,7 @@ export async function updateCourse(id: string, input: Updates<"courses"> & { sel
     ...(rest.slug ? { slug: createSlug(rest.slug) } : {}),
   };
   const { data, error } = await supabase.from("courses").update(nextInput).eq("id", id).select("*").single();
+  assertNotDuplicateSlug(error);
   assertServiceResponse(error);
   
   if (data && selectedCategoryIds) {
@@ -136,4 +154,137 @@ export async function deleteCourse(id: string) {
   const supabase = getSupabaseClientOrThrow();
   const { error } = await supabase.from("courses").delete().eq("id", id);
   assertServiceResponse(error);
+}
+
+// ─── Completeness & mentor status transitions ──────────────────────────────
+// Deliberately purpose-specific rather than exposing raw updateCourseStatus
+// to the mentor UI: each function validates the transition it represents and
+// is the single controlled entry point for that action, so a future
+// approval-workflow migration has one place to extend rather than every call
+// site needing to be found and updated.
+
+export type CourseCompletenessCheck = {
+  key: "title" | "description" | "category" | "pricing" | "thumbnail" | "curriculum";
+  label: string;
+  met: boolean;
+};
+
+export type CourseCompleteness = {
+  checks: CourseCompletenessCheck[];
+  percent: number;
+  isComplete: boolean;
+};
+
+export async function getCourseCompleteness(courseId: string): Promise<CourseCompleteness> {
+  const supabase = getSupabaseClientOrThrow();
+
+  const [course, { data: categoryRows, error: categoryError }, modules] = await Promise.all([
+    getCourseById(courseId),
+    supabase.from("course_categories").select("category_id").eq("course_id", courseId),
+    getCourseCurriculum(courseId),
+  ]);
+  assertServiceResponse(categoryError);
+
+  const hasLesson = modules
+    .filter((m) => !m.deleted_at)
+    .some((m) => (m.lessons ?? []).some((l) => !l.deleted_at));
+
+  const priceValid =
+    course != null &&
+    course.price != null &&
+    course.price >= 0 &&
+    (course.discount_price == null || (course.discount_price >= 0 && course.discount_price < course.price));
+
+  const checks: CourseCompletenessCheck[] = [
+    { key: "title", label: "Course title", met: !!course?.title?.trim() },
+    { key: "description", label: "Course description", met: !!course?.description?.trim() },
+    { key: "category", label: "At least one category selected", met: (categoryRows?.length ?? 0) > 0 },
+    { key: "pricing", label: "Valid pricing", met: priceValid },
+    { key: "thumbnail", label: "Thumbnail image", met: !!course?.thumbnail_file_id },
+    { key: "curriculum", label: "At least one module with a lesson", met: hasLesson },
+  ];
+
+  const metCount = checks.filter((c) => c.met).length;
+  return {
+    checks,
+    percent: Math.round((metCount / checks.length) * 100),
+    isComplete: metCount === checks.length,
+  };
+}
+
+export class CourseNotCompleteError extends Error {
+  completeness: CourseCompleteness;
+  constructor(completeness: CourseCompleteness) {
+    super("This course is missing required information and can't be submitted for review yet.");
+    this.name = "CourseNotCompleteError";
+    this.completeness = completeness;
+  }
+}
+
+async function assertOwnedDraftOrThrow(courseId: string, expectedStatus: ContentStatus) {
+  const supabase = getSupabaseClientOrThrow();
+  const course = await getCourseById(courseId);
+  if (!course) throw new Error("Course not found.");
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  // RLS is the actual authority on ownership - this is only a friendly,
+  // fast-failing check so the UI can show a clear message instead of a
+  // silent RLS-denied no-op.
+  if (!user || course.mentor_id !== user.id) {
+    throw new Error("You don't have permission to modify this course.");
+  }
+  if (course.status !== expectedStatus) {
+    throw new Error(`This action requires the course to be "${expectedStatus}" (current status: "${course.status}").`);
+  }
+  return course;
+}
+
+/** The only path that moves a mentor's course from draft to under_review. */
+export async function submitCourseForReview(courseId: string): Promise<{ course: Course; completeness: CourseCompleteness }> {
+  const supabase = getSupabaseClientOrThrow();
+  await assertOwnedDraftOrThrow(courseId, "draft");
+
+  const completeness = await getCourseCompleteness(courseId);
+  if (!completeness.isComplete) {
+    throw new CourseNotCompleteError(completeness);
+  }
+
+  const course = await updateCourseStatus(courseId, "under_review");
+
+  const { error: notifyError } = await supabase.rpc("notify_admins_course_submitted", { p_course_id: courseId });
+  if (notifyError) {
+    // Non-fatal: the course is already submitted; admins just won't get a
+    // notification this time. Surfacing this as a hard failure would be
+    // worse than a missed notification.
+    console.error("Failed to notify admins of course submission", notifyError);
+  }
+
+  return { course, completeness };
+}
+
+/** Lets a mentor pull a course back out of the review queue. */
+export async function withdrawCourseSubmission(courseId: string): Promise<Course> {
+  await assertOwnedDraftOrThrow(courseId, "under_review");
+  return updateCourseStatus(courseId, "draft");
+}
+
+/**
+ * Mentor-safe archive. Publishing is deliberately not exposed here - it
+ * stays an admin-governed transition until the approval workflow ships.
+ */
+export async function archiveMentorCourse(courseId: string): Promise<Course> {
+  const supabase = getSupabaseClientOrThrow();
+  const course = await getCourseById(courseId);
+  if (!course) throw new Error("Course not found.");
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user || course.mentor_id !== user.id) {
+    throw new Error("You don't have permission to modify this course.");
+  }
+  if (course.status === "archived") return course;
+  return updateCourseStatus(courseId, "archived");
 }

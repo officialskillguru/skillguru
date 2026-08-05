@@ -12,7 +12,21 @@ import type { Module, Lesson, LessonInput } from "@/services/curriculum.service"
  * Mentor Dashboard's Course Builder and the Admin course editor - one real
  * implementation, not a parallel per-surface reimplementation.
  */
-export function CourseCurriculumEditor({ courseId, courseTitle, courseStatus }: { courseId: string; courseTitle: string; courseStatus: string }) {
+export function CourseCurriculumEditor({
+  courseId,
+  courseTitle,
+  courseStatus,
+  hideStatusControls = false,
+  hideMediaSection = false,
+}: {
+  courseId: string;
+  courseTitle: string;
+  courseStatus: string;
+  /** Mentor Course Builder passes true: publish/archive stay admin-governed there (handled elsewhere in the builder/workspace), so this shared editor shouldn't offer them inline. Admin's editor is unaffected (defaults to false). */
+  hideStatusControls?: boolean;
+  /** Mentor Course Builder passes true: it has its own dedicated Media step, so this shared editor's inline uploader would be a second, redundant path to the same fields. Admin's editor is unaffected (defaults to false). */
+  hideMediaSection?: boolean;
+}) {
   const { data: modules, isLoading } = useCourseCurriculum(courseId);
   const mutations = useCurriculumMutations(courseId);
   const queryClient = useQueryClient();
@@ -64,49 +78,51 @@ export function CourseCurriculumEditor({ courseId, courseTitle, courseStatus }: 
     <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
       <div className="flex items-center justify-between border-b border-border pb-4">
         <h3 className="text-lg font-black text-foreground">{courseTitle} - Curriculum</h3>
-        <div className="flex items-center gap-2">
-          <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${courseStatus === "published" ? "bg-emerald-100 text-emerald-800" : courseStatus === "archived" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
-            {courseStatus}
-          </span>
-          {courseStatus === "published" ? (
-            <button
-              onClick={() => publishMutation.mutate("draft")}
-              disabled={publishMutation.isPending}
-              className="flex items-center gap-1.5 rounded-md bg-secondary/20 px-3 py-1.5 text-xs font-bold text-secondary-foreground transition hover:bg-secondary/30 disabled:opacity-50"
-            >
-              <Settings aria-hidden="true" className="size-3.5" /> Unpublish
-            </button>
-          ) : (
-            <button
-              onClick={() => publishMutation.mutate("published")}
-              disabled={publishMutation.isPending || sortedModules.length === 0}
-              className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
-              title={sortedModules.length === 0 ? "Add at least one module before publishing" : undefined}
-            >
-              <CheckCircle aria-hidden="true" className="size-3.5" /> Publish
-            </button>
-          )}
-          {courseStatus === "archived" ? (
-            <button
-              onClick={() => publishMutation.mutate("draft")}
-              disabled={publishMutation.isPending}
-              className="flex items-center gap-1.5 rounded-md bg-secondary/20 px-3 py-1.5 text-xs font-bold text-secondary-foreground transition hover:bg-secondary/30 disabled:opacity-50"
-            >
-              <Settings aria-hidden="true" className="size-3.5" /> Unarchive
-            </button>
-          ) : (
-            <button
-              onClick={() => publishMutation.mutate("archived")}
-              disabled={publishMutation.isPending}
-              className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground transition hover:bg-muted disabled:opacity-50"
-            >
-              <Archive aria-hidden="true" className="size-3.5" /> Archive
-            </button>
-          )}
-        </div>
+        {!hideStatusControls && (
+          <div className="flex items-center gap-2">
+            <span className={`rounded-full px-2.5 py-1 text-xs font-bold ${courseStatus === "published" ? "bg-emerald-100 text-emerald-800" : courseStatus === "archived" ? "bg-slate-200 text-slate-700" : "bg-amber-100 text-amber-800"}`}>
+              {courseStatus}
+            </span>
+            {courseStatus === "published" ? (
+              <button
+                onClick={() => publishMutation.mutate("draft")}
+                disabled={publishMutation.isPending}
+                className="flex items-center gap-1.5 rounded-md bg-secondary/20 px-3 py-1.5 text-xs font-bold text-secondary-foreground transition hover:bg-secondary/30 disabled:opacity-50"
+              >
+                <Settings aria-hidden="true" className="size-3.5" /> Unpublish
+              </button>
+            ) : (
+              <button
+                onClick={() => publishMutation.mutate("published")}
+                disabled={publishMutation.isPending || sortedModules.length === 0}
+                className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
+                title={sortedModules.length === 0 ? "Add at least one module before publishing" : undefined}
+              >
+                <CheckCircle aria-hidden="true" className="size-3.5" /> Publish
+              </button>
+            )}
+            {courseStatus === "archived" ? (
+              <button
+                onClick={() => publishMutation.mutate("draft")}
+                disabled={publishMutation.isPending}
+                className="flex items-center gap-1.5 rounded-md bg-secondary/20 px-3 py-1.5 text-xs font-bold text-secondary-foreground transition hover:bg-secondary/30 disabled:opacity-50"
+              >
+                <Settings aria-hidden="true" className="size-3.5" /> Unarchive
+              </button>
+            ) : (
+              <button
+                onClick={() => publishMutation.mutate("archived")}
+                disabled={publishMutation.isPending}
+                className="flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-bold text-foreground transition hover:bg-muted disabled:opacity-50"
+              >
+                <Archive aria-hidden="true" className="size-3.5" /> Archive
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
-      <CourseMediaSection courseId={courseId} />
+      {!hideMediaSection && <CourseMediaSection courseId={courseId} />}
 
       <div className="mt-6 space-y-4">
         {sortedModules.length === 0 && (

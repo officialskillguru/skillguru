@@ -9,7 +9,23 @@ import {
   getMentorProfile,
   updateMentorProfile,
 } from "@/services/mentor-portal.service";
-import { createCourse, type CourseInput } from "@/services/courses.service";
+import {
+  createCourse,
+  getCourseById,
+  updateCourse,
+  listCourseCategories,
+  getCourseCompleteness,
+  submitCourseForReview,
+  withdrawCourseSubmission,
+  archiveMentorCourse,
+  type CourseInput,
+} from "@/services/courses.service";
+import {
+  replaceCourseMediaFile,
+  removeCourseMediaFile,
+  resolveCourseMediaUrl,
+  type CourseMediaField,
+} from "@/services/course-media.service";
 import {
   getCourseCurriculum,
   createModule,
@@ -80,6 +96,9 @@ export const mentorQueryKeys = {
   students: (mentorId: string) => ["mentor", "students", mentorId] as const,
   analytics: (mentorId: string) => ["mentor", "analytics", mentorId] as const,
   curriculum: (courseId: string) => ["mentor", "curriculum", courseId] as const,
+  course: (courseId: string) => ["mentor", "course", courseId] as const,
+  courseCompleteness: (courseId: string) => ["mentor", "course-completeness", courseId] as const,
+  categories: () => ["categories", "list"] as const,
   experience: (mentorId: string) => ["mentor", "experience", mentorId] as const,
   projects: (mentorId: string) => ["mentor", "projects", mentorId] as const,
   certifications: (mentorId: string) => ["mentor", "certifications", mentorId] as const,
@@ -161,6 +180,114 @@ export function useCreateMentorCourse() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courses(mentorId || "") });
     },
+  });
+}
+
+/** A single course, for the edit route. RLS is the authority on ownership - this just fetches by id, `getCourseById` throws if the row is unreachable under RLS. */
+export function useMentorCourse(courseId: string | undefined) {
+  return useQuery({
+    queryKey: mentorQueryKeys.course(courseId || ""),
+    queryFn: () => getCourseById(courseId || ""),
+    enabled: !!courseId,
+    retry: false,
+  });
+}
+
+export function useCourseCategories() {
+  return useQuery({
+    queryKey: mentorQueryKeys.categories(),
+    queryFn: () => listCourseCategories(),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCourseCompleteness(courseId: string | undefined) {
+  return useQuery({
+    queryKey: mentorQueryKeys.courseCompleteness(courseId || ""),
+    queryFn: () => getCourseCompleteness(courseId || ""),
+    enabled: !!courseId,
+  });
+}
+
+/** Mentor-facing basic info / pricing / outcomes edits - status transitions go through the dedicated hooks below instead. */
+export function useUpdateMentorCourse(courseId: string | undefined) {
+  const { data: mentorId } = useMentorProfileId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Updates<"courses"> & { selectedCategoryIds?: string[] }) => updateCourse(courseId || "", input),
+    onSuccess: () => {
+      if (courseId) {
+        void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.course(courseId) });
+        void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courseCompleteness(courseId) });
+      }
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courses(mentorId || "") });
+    },
+  });
+}
+
+export function useSubmitCourseForReview(courseId: string | undefined) {
+  const { data: mentorId } = useMentorProfileId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => submitCourseForReview(courseId || ""),
+    onSuccess: () => {
+      if (courseId) void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.course(courseId) });
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courses(mentorId || "") });
+    },
+  });
+}
+
+export function useWithdrawCourseSubmission(courseId: string | undefined) {
+  const { data: mentorId } = useMentorProfileId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => withdrawCourseSubmission(courseId || ""),
+    onSuccess: () => {
+      if (courseId) void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.course(courseId) });
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courses(mentorId || "") });
+    },
+  });
+}
+
+export function useArchiveMentorCourse() {
+  const { data: mentorId } = useMentorProfileId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId: string) => archiveMentorCourse(courseId),
+    onSuccess: (_data, courseId) => {
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.course(courseId) });
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courses(mentorId || "") });
+    },
+  });
+}
+
+export function useCourseMediaMutations(courseId: string | undefined) {
+  const queryClient = useQueryClient();
+  const invalidate = () => {
+    if (courseId) {
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.course(courseId) });
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courseCompleteness(courseId) });
+    }
+  };
+
+  return {
+    replace: useMutation({
+      mutationFn: ({ field, file }: { field: CourseMediaField; file: File }) => replaceCourseMediaFile(courseId || "", field, file),
+      onSuccess: invalidate,
+    }),
+    remove: useMutation({
+      mutationFn: (field: CourseMediaField) => removeCourseMediaFile(courseId || "", field),
+      onSuccess: invalidate,
+    }),
+  };
+}
+
+export function useCourseMediaUrl(fileId: string | null | undefined) {
+  return useQuery({
+    queryKey: ["mentor", "course-media-url", fileId || ""],
+    queryFn: () => resolveCourseMediaUrl(fileId || null),
+    enabled: !!fileId,
+    staleTime: 55 * 60_000, // signed URLs are valid ~1h; avoid refetching mid-session
   });
 }
 

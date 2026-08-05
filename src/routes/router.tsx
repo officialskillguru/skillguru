@@ -161,6 +161,7 @@ export const router = createBrowserRouter([
           { path: "overview",  element: withSuspense(<MentorOverviewPage />) },
           { path: "courses",   element: withSuspense(<MentorCoursesPage />) },
           { path: "courses/new", element: withSuspense(<MentorCourseBuilderPage />) },
+          { path: "courses/:courseId/edit", element: withSuspense(<MentorCourseBuilderPage />) },
           { path: "students",  element: withSuspense(<MentorStudentsPage />) },
           { path: "tasks",     element: withSuspense(<MentorTasksPage />) },
           { path: "reviews",   element: withSuspense(<MentorReviewsPage />) },

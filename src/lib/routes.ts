@@ -57,6 +57,14 @@ export function courseDetailRoute(slug: string) {
   return `/courses/${slug}` as const;
 }
 
+export function mentorCourseEditRoute(courseId: string) {
+  return `/mentor/courses/${courseId}/edit` as const;
+}
+
+export function mentorCourseCurriculumRoute(courseId: string) {
+  return `/mentor/courses/${courseId}/edit?step=curriculum` as const;
+}
+
 export function placementStoryRoute(id: string) {
   return `/placements/${id}` as const;
 }

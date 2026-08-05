@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -1574,6 +1574,92 @@ export type Database = {
           },
         ]
       }
+      course_faqs: {
+        Row: {
+          answer: string
+          course_id: string
+          created_at: string
+          id: string
+          question: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          answer: string
+          course_id: string
+          created_at?: string
+          id?: string
+          question: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          answer?: string
+          course_id?: string
+          created_at?: string
+          id?: string
+          question?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_faqs_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_media: {
+        Row: {
+          caption: string | null
+          course_id: string
+          created_at: string
+          created_by: string | null
+          file_id: string
+          id: string
+          media_type: string
+          sort_order: number
+        }
+        Insert: {
+          caption?: string | null
+          course_id: string
+          created_at?: string
+          created_by?: string | null
+          file_id: string
+          id?: string
+          media_type: string
+          sort_order?: number
+        }
+        Update: {
+          caption?: string | null
+          course_id?: string
+          created_at?: string
+          created_by?: string | null
+          file_id?: string
+          id?: string
+          media_type?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_media_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_media_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       course_progress: {
         Row: {
           completed_lessons: number
@@ -1648,69 +1734,87 @@ export type Database = {
       courses: {
         Row: {
           banner_file_id: string | null
+          course_type: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
+          discount_price: number | null
           duration: string | null
           id: string
+          language: string
           level: Database["public"]["Enums"]["course_level"]
           mentor_id: string
           organization_id: string | null
           price: number | null
           promo_video_file_id: string | null
+          requirements: string[]
           search_vector: unknown
+          short_description: string | null
           slug: string
           status: Database["public"]["Enums"]["course_status"]
           thumbnail_file_id: string | null
           title: string
           updated_at: string
           updated_by: string | null
+          what_you_will_learn: string[]
         }
         Insert: {
           banner_file_id?: string | null
+          course_type?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          discount_price?: number | null
           duration?: string | null
           id?: string
+          language?: string
           level?: Database["public"]["Enums"]["course_level"]
           mentor_id: string
           organization_id?: string | null
           price?: number | null
           promo_video_file_id?: string | null
+          requirements?: string[]
           search_vector?: unknown
+          short_description?: string | null
           slug: string
           status?: Database["public"]["Enums"]["course_status"]
           thumbnail_file_id?: string | null
           title: string
           updated_at?: string
           updated_by?: string | null
+          what_you_will_learn?: string[]
         }
         Update: {
           banner_file_id?: string | null
+          course_type?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          discount_price?: number | null
           duration?: string | null
           id?: string
+          language?: string
           level?: Database["public"]["Enums"]["course_level"]
           mentor_id?: string
           organization_id?: string | null
           price?: number | null
           promo_video_file_id?: string | null
+          requirements?: string[]
           search_vector?: unknown
+          short_description?: string | null
           slug?: string
           status?: Database["public"]["Enums"]["course_status"]
           thumbnail_file_id?: string | null
           title?: string
           updated_at?: string
           updated_by?: string | null
+          what_you_will_learn?: string[]
         }
         Relationships: [
           {
@@ -5319,6 +5423,7 @@ export type Database = {
       success_stories: {
         Row: {
           company_name: string | null
+          course_id: string | null
           created_at: string
           featured: boolean
           full_story: string | null
@@ -5331,6 +5436,7 @@ export type Database = {
         }
         Insert: {
           company_name?: string | null
+          course_id?: string | null
           created_at?: string
           featured?: boolean
           full_story?: string | null
@@ -5343,6 +5449,7 @@ export type Database = {
         }
         Update: {
           company_name?: string | null
+          course_id?: string | null
           created_at?: string
           featured?: boolean
           full_story?: string | null
@@ -5353,7 +5460,15 @@ export type Database = {
           published?: boolean
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "success_stories_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       support_tickets: {
         Row: {
@@ -6058,6 +6173,22 @@ export type Database = {
       }
     }
     Views: {
+      course_rating_summary: {
+        Row: {
+          avg_rating: number | null
+          course_id: string | null
+          review_count: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "testimonials_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           currency: string | null
@@ -6230,6 +6361,10 @@ export type Database = {
           document_title: string
           similarity: number
         }[]
+      }
+      notify_admins_course_submitted: {
+        Args: { p_course_id: string }
+        Returns: undefined
       }
       record_interview_feedback: {
         Args: {
