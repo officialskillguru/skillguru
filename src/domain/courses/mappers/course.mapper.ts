@@ -1,5 +1,5 @@
 import type { Database } from "@/types/database.types";
-import type { Course, CourseLevel, CourseStatus, Module, Lesson, ContentType } from "../models/Course";
+import type { Course, Module, Lesson, ContentType } from "../models/Course";
 
 type CourseRow = Database["public"]["Tables"]["courses"]["Row"];
 type ModuleRow = Database["public"]["Tables"]["modules"]["Row"];
@@ -11,12 +11,20 @@ export function mapCourseRowToDomain(row: CourseRow): Course {
     title: row.title,
     slug: row.slug,
     description: row.description,
-    level: row.level as CourseLevel,
-    status: row.status as CourseStatus,
+    shortDescription: row.short_description,
+    level: row.level,
+    status: row.status,
     price: row.price,
+    discountPrice: row.discount_price,
+    duration: row.duration,
+    language: row.language,
+    courseType: row.course_type,
+    whatYouWillLearn: row.what_you_will_learn ?? [],
+    requirements: row.requirements ?? [],
     mentorId: row.mentor_id,
     organizationId: row.organization_id,
     thumbnailFileId: row.thumbnail_file_id,
+    bannerFileId: row.banner_file_id,
     promoVideoFileId: row.promo_video_file_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,

@@ -3,11 +3,13 @@ import { Edit3 } from "lucide-react";
 import { useMentorCourses } from "@/hooks/useMentorPortal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CourseCurriculumEditor } from "@/components/shared/CourseCurriculumEditor";
+import { CourseDetailsEditor } from "@/components/shared/CourseDetailsEditor";
 import { CreateCourseDialog } from "@/components/mentor/dashboard/CreateCourseDialog";
 
 export function CourseBuilderTab() {
   const { data: courses, isLoading } = useMentorCourses();
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [editorSection, setEditorSection] = useState<"details" | "curriculum">("curriculum");
   const viewRef = useRef<HTMLDivElement>(null);
 
   // Move focus into the newly-shown view on every course-list <-> editor
@@ -70,8 +72,28 @@ export function CourseBuilderTab() {
           ))}
         </div>
       ) : activeCourse ? (
-        <div ref={viewRef} tabIndex={-1} role="region" aria-label={`Curriculum editor for ${activeCourse.title}`} className="outline-none">
-          <CourseCurriculumEditor courseId={activeCourse.id} courseTitle={activeCourse.title} courseStatus={activeCourse.status} />
+        <div ref={viewRef} tabIndex={-1} role="region" aria-label={`Editor for ${activeCourse.title}`} className="outline-none">
+          <div role="tablist" aria-label="Course editor sections" className="mb-4 flex gap-2 border-b border-border">
+            {(["details", "curriculum"] as const).map((section) => (
+              <button
+                key={section}
+                type="button"
+                role="tab"
+                aria-selected={editorSection === section}
+                onClick={() => setEditorSection(section)}
+                className={`px-4 py-2.5 text-sm font-black capitalize transition border-b-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${
+                  editorSection === section ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {section === "details" ? "Course Details" : "Curriculum"}
+              </button>
+            ))}
+          </div>
+          {editorSection === "details" ? (
+            <CourseDetailsEditor courseId={activeCourse.id} viewerRole="mentor" />
+          ) : (
+            <CourseCurriculumEditor courseId={activeCourse.id} courseTitle={activeCourse.title} courseStatus={activeCourse.status} />
+          )}
         </div>
       ) : null}
     </div>

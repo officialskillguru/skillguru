@@ -215,7 +215,8 @@ export const notificationsService = {
     title: string,
     body: string,
     targetRole?: string, // undefined = all users
-    category: Notification["category"] = "general"
+    category: Notification["category"] = "general",
+    actionUrl?: string
   ): Promise<Result<{ sent: number }>> {
     try {
       const supabase = getExtendedSupabaseClient();
@@ -249,7 +250,7 @@ export const notificationsService = {
         message: body,
         type: "broadcast",
         is_read: false,
-        metadata: { category },
+        metadata: { category, action_url: actionUrl ?? null },
       }));
 
       // Insert in batches of 100

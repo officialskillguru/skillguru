@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabase/client";
 import type { Database } from "@/types/database.types";
+import type { ContentStatus } from "@/types/database";
 import { fail, ok, type Result, DatabaseError } from "@/utils/result";
 
 type CourseRow = Database["public"]["Tables"]["courses"]["Row"];
@@ -69,7 +70,7 @@ export class CoursePersistence {
     if (filters.query) {
       q = q.ilike("title", `%${filters.query}%`);
         if (filters.level) q = q.eq("level", filters.level as NonNullable<"beginner" | "intermediate" | "advanced" | "all_levels">);
-        if (filters.status) q = q.eq("status", filters.status as NonNullable<"draft" | "under_review" | "published" | "archived">);
+        if (filters.status) q = q.eq("status", filters.status as ContentStatus);
     } else {
       q = q.eq("status", "published");
     }

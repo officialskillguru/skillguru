@@ -19,21 +19,7 @@ import { AdminSidebar } from "@/components/admin/layout/AdminSidebar";
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { useFocusTrapDrawer } from "@/hooks/useFocusTrapDrawer";
-
-function initials(name: string | null | undefined, fallback: string) {
-  const source = name?.trim();
-  if (!source) return fallback;
-  const parts = source.split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || fallback;
-}
-
-function formatRole(highestRole: string | undefined) {
-  if (!highestRole) return "Admin";
-  return highestRole
-    .split("_")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
+import { initials, formatRole } from "@/lib/adminUi";
 
 function AdminMobileDrawer({ open, onClose }: Readonly<{ open: boolean; onClose: () => void }>) {
   const panelRef = useRef<HTMLElement | null>(null);

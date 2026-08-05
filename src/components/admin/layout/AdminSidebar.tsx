@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { AnimatePresence, motion, MotionConfig } from "framer-motion";
 import {
   Activity,
@@ -29,6 +29,7 @@ import {
 import { Logo } from "@/components/common/Logo";
 import { isActiveRoute } from "@/lib/routes";
 import { useAuth } from "@/hooks/useAuth";
+import { initials, formatRole } from "@/lib/adminUi";
 
 type NavIcon = typeof LayoutDashboard;
 type NavLink = { label: string; to: string; icon: NavIcon };
@@ -76,7 +77,7 @@ const NAV: NavEntry[] = [
   {
     kind: "group",
     id: "content",
-    label: "Content & Calendar",
+    label: "Content",
     items: [
       { label: "Calendar", to: "/admin/calendar", icon: Calendar },
       { label: "Success Stories", to: "/admin/success-stories", icon: Star },
@@ -87,8 +88,8 @@ const NAV: NavEntry[] = [
   { kind: "link", label: "Analytics", to: "/admin/analytics", icon: Gauge },
   {
     kind: "group",
-    id: "system",
-    label: "System",
+    id: "settings",
+    label: "Settings",
     items: [
       { label: "Invitations", to: "/admin/users/invitations", icon: UserPlus },
       { label: "Audit Logs", to: "/admin/audit-logs", icon: ShieldCheck },
@@ -111,13 +112,6 @@ function groupContainingPath(pathname: string): string | null {
   return null;
 }
 
-function initials(name: string | null | undefined, fallback: string) {
-  const source = name?.trim();
-  if (!source) return fallback;
-  const parts = source.split(/\s+/);
-  return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || fallback;
-}
-
 interface AdminSidebarProps {
   collapsed?: boolean;
   onNavigate?: () => void;
@@ -125,8 +119,14 @@ interface AdminSidebarProps {
 
 export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarProps>) {
   const location = useLocation();
+  const navigate = useNavigate();
   const auth = useAuth();
   const name = auth.authUser?.profile?.fullName;
+
+  const goToProfile = () => {
+    void navigate("/admin/profile");
+    onNavigate?.();
+  };
 
   const [expandedGroup, setExpandedGroup] = useState<string | null>(() => {
     try {
@@ -169,12 +169,18 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
   }, []);
 
   // Auto-scroll the active item into view (visual only — never steals focus).
-  useEffect(() => {
+  const scrollActiveIntoView = () => {
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     activeLinkRef.current?.scrollIntoView({
       block: "nearest",
       behavior: reducedMotion ? "auto" : "smooth",
     });
+  };
+
+  // Handles the case where the active item is already inside a group that's
+  // open (no expand animation runs, so onAnimationComplete never fires).
+  useEffect(() => {
+    scrollActiveIntoView();
   }, [location.pathname, displayExpandedGroup]);
 
   const handleNavScroll = () => {
@@ -273,7 +279,7 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
                       aria-expanded={isOpen}
                       aria-controls={panelId}
                       onClick={() => toggleGroup(entry.id)}
-                      className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-sidebar-muted transition hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-[10px] font-bold uppercase tracking-wider text-sidebar-muted transition hover:bg-white/5 hover:text-sidebar-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <span>{entry.label}</span>
                       <ChevronDown
@@ -293,6 +299,7 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
                         animate={collapsed ? undefined : { height: "auto", opacity: 1 }}
                         exit={collapsed ? undefined : { height: 0, opacity: 0 }}
                         transition={{ duration: 0.18, ease: "easeInOut" }}
+                        onAnimationComplete={scrollActiveIntoView}
                         className="overflow-hidden"
                       >
                         <div className="grid gap-0.5 pt-0.5">
@@ -308,18 +315,24 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
         </nav>
 
         <div className="mt-auto p-4">
-          <div className={`flex items-center gap-3 rounded-lg bg-white/5 p-3 ${collapsed ? "justify-center" : ""}`}>
-            <div className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-bold text-sidebar-accent-foreground shadow-inner">
+          <button
+            type="button"
+            onClick={goToProfile}
+            title={collapsed ? "My Profile" : undefined}
+            aria-label={`My Profile — ${name ?? "Admin User"}, ${formatRole(auth.authUser?.highestRole)}`}
+            className={`flex w-full items-center gap-3 rounded-lg bg-white/5 p-3 text-left transition hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${collapsed ? "justify-center" : ""}`}
+          >
+            <div aria-hidden="true" className="relative flex size-10 shrink-0 items-center justify-center rounded-full bg-sidebar-accent text-sm font-bold text-sidebar-accent-foreground shadow-inner">
               {initials(name, "A")}
               <span className="absolute bottom-0 right-0 size-2.5 rounded-full border-2 border-sidebar bg-emerald-500" />
             </div>
             {!collapsed && (
-              <div className="min-w-0 flex-1">
+              <div aria-hidden="true" className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold text-white">{name ?? "Admin User"}</p>
                 <p className="truncate text-[11px] text-sidebar-muted">{auth.authUser?.profile?.email ?? ""}</p>
               </div>
             )}
-          </div>
+          </button>
         </div>
       </div>
     </MotionConfig>

@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { listCourses, updateCourseStatus, deleteCourse, type CourseListParams } from "@/services/courses.service";
+import { listCourses, updateCourseStatus, getCourseById, deleteCourse, type CourseListParams } from "@/services/courses.service";
 import type { ContentStatus } from "@/types/database";
+import { notificationsService } from "@/services/notifications.service";
 
 export function useAdminCourses(params: CourseListParams) {
   return useQuery({
@@ -19,6 +20,48 @@ export function useBulkUpdateCourseStatus() {
     mutationFn: async ({ courseIds, status }: { courseIds: string[]; status: ContentStatus }) => {
       await Promise.all(courseIds.map(id => updateCourseStatus(id, status)));
       return true;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin_courses"] });
+    },
+  });
+}
+
+export function useApproveCourse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (courseId: string) => {
+      const course = await getCourseById(courseId);
+      await updateCourseStatus(courseId, "published");
+      await notificationsService.sendNotification(
+        course.mentor_id,
+        "Course published",
+        `"${course.title}" has been approved and is now live.`,
+        { category: "course", actionUrl: "/mentor/dashboard" }
+      );
+      return course;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin_courses"] });
+    },
+  });
+}
+
+export function useRejectCourse() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ courseId, reason }: { courseId: string; reason: string }) => {
+      const course = await getCourseById(courseId);
+      await updateCourseStatus(courseId, "draft");
+      await notificationsService.sendNotification(
+        course.mentor_id,
+        "Course needs changes",
+        `"${course.title}" was sent back for changes: ${reason}`,
+        { category: "course", actionUrl: "/mentor/dashboard" }
+      );
+      return course;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["admin_courses"] });

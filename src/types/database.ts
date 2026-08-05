@@ -5,7 +5,7 @@ export type Json = GenJson;
 
 export type AppRole = "admin" | "counsellor" | "sales" | "content_manager";
 export type AccountStatus = "active" | "inactive" | "suspended" | "pending";
-export type ContentStatus = "draft" | "published" | "archived";
+export type ContentStatus = "draft" | "under_review" | "published" | "archived";
 export type CrmLeadStatus = "new" | "contacted" | "qualified" | "converted" | "closed";
 
 type PublicSchema = Database[Extract<keyof Database, "public">];

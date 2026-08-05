@@ -12,9 +12,9 @@ import {
   Archive,
   Trash2,
   X,
-  Video,
-  Loader2,
   Lock,
+  ShieldCheck,
+  XCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,13 +22,14 @@ import * as DialogPrimitive from "@radix-ui/react-dialog";
 import type { ContentStatus } from "@/types/database";
 import type { CourseInput, CourseWithCategories } from "@/services/courses.service";
 import { useCourseCategories, useCourseMutations, useMentors } from "@/hooks/useAdminData";
-import { useAdminCourses, useBulkUpdateCourseStatus, useBulkDeleteCourses } from "@/hooks/admin/useAdminCourses";
+import { useAdminCourses, useBulkUpdateCourseStatus, useBulkDeleteCourses, useApproveCourse, useRejectCourse } from "@/hooks/admin/useAdminCourses";
 import { getExtendedSupabaseClient } from "@/services/_shared";
-import { uploadFile } from "@/services/storage.service";
 import { CourseCurriculumEditor } from "@/components/shared/CourseCurriculumEditor";
+import { CourseDetailsEditor } from "@/components/shared/CourseDetailsEditor";
 import { DataTable } from "@/components/common/DataTable";
 import { Badge } from "@/components/ui/badge";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 async function fetchCourseEnrollmentCounts(courseIds: string[]): Promise<Map<string, number>> {
   const counts = new Map<string, number>();
@@ -48,13 +49,14 @@ export default function AdminCoursesPage() {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [categoryFilter, setCategoryFilter] = useState("All Categories");
-  const [statusFilter, setStatusFilter] = useState("All");
+  const [statusFilter, setStatusFilter] = useState(() => searchParams.get("status") ?? "All");
   const [page, setPage] = useState(1);
 
   const [selectedCourse, setSelectedCourse] = useState<Partial<CourseWithCategories> | null>(null);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [editorTab, setEditorTab] = useState<"basic" | "curriculum" | "pricing" | "seo" | "mentors" | "placement" | "certificate" | "media">("basic");
-  const [thumbnailUploading, setThumbnailUploading] = useState(false);
+  const [editorTab, setEditorTab] = useState<"basic" | "details" | "curriculum" | "seo" | "mentors">("basic");
+  const [rejectingCourse, setRejectingCourse] = useState<CourseWithCategories | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data: coursesData, isLoading } = useAdminCourses({
     search: search || undefined,
@@ -80,6 +82,30 @@ export default function AdminCoursesPage() {
   const mutations = useCourseMutations();
   const bulkUpdateStatusMutation = useBulkUpdateCourseStatus();
   const bulkDeleteMutation = useBulkDeleteCourses();
+  const approveCourseMutation = useApproveCourse();
+  const rejectCourseMutation = useRejectCourse();
+
+  const handleApprove = (course: CourseWithCategories) => {
+    approveCourseMutation.mutate(course.id, {
+      onSuccess: () => toast.success(`"${course.title}" approved and published.`),
+      onError: () => toast.error("Failed to approve course."),
+    });
+  };
+
+  const handleRejectSubmit = () => {
+    if (!rejectingCourse || !rejectReason.trim()) return;
+    rejectCourseMutation.mutate(
+      { courseId: rejectingCourse.id, reason: rejectReason.trim() },
+      {
+        onSuccess: () => {
+          toast.success(`"${rejectingCourse.title}" sent back to the mentor.`);
+          setRejectingCourse(null);
+          setRejectReason("");
+        },
+        onError: () => toast.error("Failed to reject course."),
+      }
+    );
+  };
 
   const dbCategoryMap = new Map(dbCategories.map(c => [c.id, c.name]));
   
@@ -106,7 +132,7 @@ export default function AdminCoursesPage() {
 
   const handleEdit = (course: CourseWithCategories) => {
     setSelectedCourse(course);
-    setEditorTab("basic");
+    setEditorTab("details");
     setEditorOpen(true);
   };
 
@@ -152,29 +178,6 @@ export default function AdminCoursesPage() {
         toast.success(`Course status updated to ${newStatus}.`);
       }
     });
-  };
-
-  const handleThumbnailUpload = async (file: File | null) => {
-    if (!file || !selectedCourse?.id) return;
-    const courseId = selectedCourse.id;
-    setThumbnailUploading(true);
-    try {
-      const uploaded = await uploadFile("courses", file, courseId);
-      mutations.update.mutate(
-        { id: courseId, input: { thumbnail_file_id: uploaded.fileId } },
-        {
-          onSuccess: () => {
-            setSelectedCourse({ ...selectedCourse, thumbnail_file_id: uploaded.fileId });
-            toast.success("Thumbnail uploaded.");
-          },
-          onError: () => toast.error("Failed to save thumbnail."),
-        }
-      );
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Thumbnail upload failed.");
-    } finally {
-      setThumbnailUploading(false);
-    }
   };
 
   const saveCourse = (e: React.FormEvent) => {
@@ -266,9 +269,11 @@ export default function AdminCoursesPage() {
       header: "Status",
       cell: ({ row }) => {
         const status = row.original.status;
+        const label = status === "under_review" ? "Under Review" : status;
+        const variant = status === "published" ? "success" : status === "under_review" ? "info" : status === "draft" ? "warning" : "muted";
         return (
-          <Badge variant={status === "published" ? "success" : status === "draft" ? "warning" : "muted"} className="capitalize">
-            {status}
+          <Badge variant={variant} className="capitalize">
+            {label}
           </Badge>
         );
       },
@@ -297,9 +302,20 @@ export default function AdminCoursesPage() {
                   <Copy className="size-3.5 text-muted-foreground" aria-hidden="true" /> Duplicate
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => handleStatusChange(c.id, "published")} className="gap-2 text-xs font-bold text-success">
-                  <Globe className="size-3.5" aria-hidden="true" /> Publish
-                </DropdownMenuItem>
+                {c.status === "under_review" ? (
+                  <>
+                    <DropdownMenuItem onClick={() => handleApprove(c)} className="gap-2 text-xs font-bold text-success">
+                      <ShieldCheck className="size-3.5" aria-hidden="true" /> Approve &amp; Publish
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setRejectingCourse(c)} className="gap-2 text-xs font-bold text-destructive-text">
+                      <XCircle className="size-3.5" aria-hidden="true" /> Reject
+                    </DropdownMenuItem>
+                  </>
+                ) : (
+                  <DropdownMenuItem onClick={() => handleStatusChange(c.id, "published")} className="gap-2 text-xs font-bold text-success">
+                    <Globe className="size-3.5" aria-hidden="true" /> Publish
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onClick={() => handleStatusChange(c.id, "archived")} className="gap-2 text-xs font-bold text-warning">
                   <Archive className="size-3.5" aria-hidden="true" /> Archive
                 </DropdownMenuItem>
@@ -337,17 +353,30 @@ export default function AdminCoursesPage() {
       </div>
 
       {/* Stats Counter Row */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
         {[
           { label: "Active Courses", count: courses.filter(c => c.status === "published").length, color: "text-success" },
+          { label: "Pending Review", count: courses.filter(c => c.status === "under_review").length, color: "text-primary", onClick: () => { setStatusFilter("under_review"); setPage(1); } },
           { label: "Draft Programs", count: courses.filter(c => c.status === "draft").length, color: "text-warning" },
           { label: "Archived Tracks", count: courses.filter(c => c.status === "archived").length, color: "text-muted-foreground" },
           { label: "Total Programs", count: coursesData?.count || 0, color: "text-primary" }
         ].map(st => (
-          <div key={st.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-            <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{st.label}</p>
-            <p className={`mt-1.5 text-2xl font-black ${st.color}`}>{st.count}</p>
-          </div>
+          st.onClick ? (
+            <button
+              key={st.label}
+              type="button"
+              onClick={st.onClick}
+              className="rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition hover:border-primary hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{st.label}</p>
+              <p className={`mt-1.5 text-2xl font-black ${st.color}`}>{st.count}</p>
+            </button>
+          ) : (
+            <div key={st.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{st.label}</p>
+              <p className={`mt-1.5 text-2xl font-black ${st.color}`}>{st.count}</p>
+            </div>
+          )
         ))}
       </div>
 
@@ -390,6 +419,7 @@ export default function AdminCoursesPage() {
           >
             <option value="All">All Status</option>
             <option value="published">Published</option>
+            <option value="under_review">Under Review</option>
             <option value="draft">Draft</option>
             <option value="archived">Archived</option>
           </select>
@@ -467,12 +497,12 @@ export default function AdminCoursesPage() {
 
               <div role="tablist" aria-label="Course editor sections" className="flex border-b border-border overflow-x-auto hide-scrollbar px-6">
                 {[
-                  { id: "basic", label: "Basic Info", locked: false },
+                  ...(selectedCourse.id
+                    ? [{ id: "details", label: "Course Details", locked: false }]
+                    : [{ id: "basic", label: "Basic Info", locked: false }]),
                   { id: "curriculum", label: "Curriculum", locked: !selectedCourse.id },
-                  { id: "pricing", label: "Pricing", locked: false },
                   { id: "seo", label: "SEO Settings", locked: false },
                   { id: "mentors", label: "Mentors", locked: false },
-                  { id: "media", label: "Media Assets", locked: !selectedCourse.id },
                 ].map((tb) => (
                   <button
                     key={tb.id}
@@ -498,7 +528,7 @@ export default function AdminCoursesPage() {
               {!selectedCourse.id && (
                 <p id="course-editor-locked-hint" className="border-b border-border bg-muted/30 px-6 py-2 text-[11px] font-semibold text-muted-foreground">
                   <Lock className="mr-1 inline size-3" aria-hidden="true" />
-                  Curriculum and Media Assets unlock after you save this course for the first time.
+                  Curriculum and full Course Details (media, outcomes, FAQ) unlock after you save this course for the first time.
                 </p>
               )}
 
@@ -577,6 +607,10 @@ export default function AdminCoursesPage() {
                   </div>
                 )}
 
+                {editorTab === "details" && selectedCourse.id && (
+                  <CourseDetailsEditor courseId={selectedCourse.id} viewerRole="admin" />
+                )}
+
                 {editorTab === "curriculum" && (
                   selectedCourse.id ? (
                     <CourseCurriculumEditor
@@ -589,38 +623,6 @@ export default function AdminCoursesPage() {
                       Save this course first to start adding modules and lessons.
                     </p>
                   )
-                )}
-
-                {editorTab === "pricing" && (
-                  <div className="space-y-4">
-                    <div className="grid gap-4 sm:grid-cols-2">
-                      <div className="space-y-1">
-                        <label htmlFor="course-price" className="text-xs font-black text-muted-foreground">Course Base Price (INR)</label>
-                        <div className="relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-muted-foreground" aria-hidden="true">₹</span>
-                          <input
-                            id="course-price"
-                            type="number"
-                            required
-                            min={0}
-                            value={selectedCourse.price ?? 0}
-                            onChange={(e) => setSelectedCourse({ ...selectedCourse, price: Number(e.target.value) })}
-                            className="w-full h-11 rounded-xl border border-border bg-muted pl-8 pr-3.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <label htmlFor="course-discount-subtitle" className="text-xs font-black text-muted-foreground">Discount Subtitle</label>
-                        <input
-                          id="course-discount-subtitle"
-                          disabled
-                          value=""
-                          className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm text-foreground outline-none opacity-50 cursor-not-allowed"
-                          placeholder="Not supported by schema"
-                        />
-                      </div>
-                    </div>
-                  </div>
                 )}
 
                 {editorTab === "seo" && (
@@ -673,31 +675,6 @@ export default function AdminCoursesPage() {
                   </div>
                 )}
 
-                {editorTab === "media" && (
-                  <div className="space-y-4">
-                    <div className="rounded-2xl border-2 border-dashed border-border p-8 text-center bg-muted">
-                      <Video className="size-8 mx-auto text-muted-foreground" aria-hidden="true" />
-                      <p className="mt-3 text-xs font-black text-foreground/80">Course Thumbnail</p>
-                      <p className="mt-1 text-[10px] font-bold text-muted-foreground leading-normal">
-                        {selectedCourse.thumbnail_file_id ? "A thumbnail is already attached to this course." : "Upload a jpg, png, or webp thumbnail for the course card."}
-                      </p>
-                      <label className="mt-4 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 text-xs font-black text-foreground/80 hover:bg-muted has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
-                        {thumbnailUploading ? <Loader2 className="size-3.5 animate-spin" aria-hidden="true" /> : null}
-                        {thumbnailUploading ? "Uploading..." : "Choose File"}
-                        <input
-                          type="file"
-                          accept="image/jpeg,image/png,image/webp"
-                          className="sr-only"
-                          disabled={thumbnailUploading || !selectedCourse.id}
-                          onChange={(e) => void handleThumbnailUpload(e.target.files?.[0] ?? null)}
-                        />
-                      </label>
-                      {!selectedCourse.id && (
-                        <p className="mt-2 text-[10px] font-bold text-warning">Save the course first to upload a thumbnail.</p>
-                      )}
-                    </div>
-                  </div>
-                )}
               </form>
 
               <div className="flex items-center justify-end gap-3 border-t border-border px-6 py-4">
@@ -708,12 +685,14 @@ export default function AdminCoursesPage() {
                 >
                   Close
                 </button>
-                <button
-                  onClick={saveCourse}
-                  className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  Save Course Record
-                </button>
+                {editorTab !== "details" && editorTab !== "curriculum" && (
+                  <button
+                    onClick={saveCourse}
+                    className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    Save Course Record
+                  </button>
+                )}
               </div>
                 </motion.div>
               </DialogPrimitive.Content>
@@ -721,6 +700,49 @@ export default function AdminCoursesPage() {
           )}
         </AnimatePresence>
       </DialogPrimitive.Root>
+
+      {/* Reject-with-reason dialog */}
+      <Dialog open={!!rejectingCourse} onOpenChange={(open) => { if (!open) { setRejectingCourse(null); setRejectReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject &ldquo;{rejectingCourse?.title}&rdquo;</DialogTitle>
+            <DialogDescription>
+              The mentor will be notified with this reason and the course will move back to draft.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1">
+            <label htmlFor="reject-course-reason" className="text-xs font-black text-muted-foreground">
+              Reason for the mentor
+            </label>
+            <textarea
+              id="reject-course-reason"
+              autoFocus
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="Explain what needs to change before this can be approved..."
+              rows={4}
+              className="w-full rounded-xl border border-border bg-muted px-3.5 py-2.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => { setRejectingCourse(null); setRejectReason(""); }}
+              className="h-10 rounded-xl px-4 text-xs font-black text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleRejectSubmit}
+              disabled={rejectCourseMutation.isPending || !rejectReason.trim()}
+              className="h-10 rounded-xl bg-destructive px-4 text-xs font-black text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {rejectCourseMutation.isPending ? "Sending..." : "Send Back to Mentor"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
