@@ -7,6 +7,8 @@ interface EmptyStateProps extends React.HTMLAttributes<HTMLDivElement> {
   description: string;
   primaryAction?: React.ReactNode;
   secondaryAction?: React.ReactNode;
+  /** Heading level for the title, so callers can keep a valid heading outline in whatever context this renders. Defaults to h3. */
+  headingLevel?: 2 | 3 | 4;
 }
 
 export function EmptyState({
@@ -16,8 +18,10 @@ export function EmptyState({
   primaryAction,
   secondaryAction,
   className,
+  headingLevel = 3,
   ...props
 }: EmptyStateProps) {
+  const Heading = `h${headingLevel}` as const;
   return (
     <div
       className={cn(
@@ -31,8 +35,8 @@ export function EmptyState({
           {icon}
         </div>
       )}
-      
-      <h3 className="mb-2 text-xl font-bold text-foreground">{title}</h3>
+
+      <Heading className="mb-2 text-xl font-bold text-foreground">{title}</Heading>
       <p className="mb-6 max-w-sm text-sm text-muted-foreground">{description}</p>
       
       {(primaryAction || secondaryAction) && (

@@ -4,7 +4,9 @@ import { profilesService } from "@/services/profiles.service";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import type { UpdateProfileDto } from "@/domain/auth/dtos/UpdateProfileDto";
+import type { StorageBucketKey } from "@/services/storage.service";
 
+/** Role-agnostic — reads/writes the shared `profiles` table, so this is reused as-is by admin/mentor/student profile pages. */
 export function useProfile() {
   const { user } = useAuth();
   const userId = user?.id;
@@ -38,9 +40,9 @@ export function useProfile() {
   });
 
   const uploadAvatar = useMutation({
-    mutationFn: async (file: File) => {
+    mutationFn: async ({ file, bucket }: { file: File; bucket?: StorageBucketKey }) => {
       if (!userId) throw new Error("Not authenticated");
-      const res = await profileService.uploadAvatar(userId, file);
+      const res = await profileService.uploadAvatar(userId, file, bucket);
       if (!res.success) throw res.error;
       return res.data;
     },

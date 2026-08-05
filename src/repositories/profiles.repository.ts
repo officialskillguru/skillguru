@@ -40,6 +40,8 @@ export class ProfilesRepository {
       city: dto.city,
       state: dto.state,
       phone: dto.phone,
+      username: dto.username,
+      bio: dto.bio,
       metadata: dto.metadata as unknown as string, // Persistence boundary cast
       updated_at: new Date().toISOString(),
     };

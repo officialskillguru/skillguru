@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, NavLink } from "react-router-dom";
-import { ChevronDown, Menu, Search, UserRound } from "lucide-react";
+import { Menu, Search, UserRound } from "lucide-react";
 
 import { Drawer } from "@/components/common/Drawer";
 import { Logo } from "@/components/common/Logo";
@@ -10,13 +10,9 @@ import { cn } from "@/lib/utils";
 import { useSearch } from "@/features/search";
 import { useAuth } from "@/hooks/useAuth";
 import { RouteResolver } from "@/routes/RouteResolver";
+import { CoursesMegaMenu, CoursesMegaMenuMobile } from "@/components/site/CoursesMegaMenu";
 
 const navItems = [
-  {
-    label: "Courses",
-    to: routes.courses,
-    dropdown: ["Development", "Data Science & AI", "Cloud Computing", "UI/UX Design", "Cyber Security"],
-  },
   { label: "Placements", to: routes.placements },
   { label: "Mentors", to: routes.mentors },
   { label: "AI Guidance", to: routes.guidance },
@@ -91,32 +87,20 @@ export function Navbar() {
             imageClassName="h-10 md:h-12"
           />
           <nav className="hidden items-center gap-5 xl:gap-7 lg:flex">
+            <CoursesMegaMenu />
             {navItems.map((item) => (
-              <div key={`${item.label}-${item.to}`} className="group relative">
-                <NavLink
-                  to={item.to}
-                  className={({ isActive }) =>
-                    cn(
-                      "nav-link-premium inline-flex h-10 items-center gap-1 whitespace-nowrap text-sm font-bold text-primary transition hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm px-2",
-                      isActive && "text-secondary",
-                    )
-                  }
-                >
-                  {item.label}
-                  {item.dropdown ? <ChevronDown className="size-3.5" /> : null}
-                </NavLink>
-                {item.dropdown ? (
-                  <div className="invisible absolute left-1/2 top-full z-30 min-w-60 -translate-x-1/2 pt-3 opacity-0 transition duration-200 group-hover:visible group-hover:opacity-100">
-                    <div className="rounded-xl border border-border bg-card p-2 shadow-lg">
-                      {item.dropdown.map((label) => (
-                        <Link key={label} to={item.to} className="block rounded-md px-4 py-2.5 text-sm font-semibold text-muted-foreground transition hover:bg-muted hover:text-secondary focus-visible:outline-none focus-visible:bg-muted focus-visible:text-secondary">
-                          {label}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
+              <NavLink
+                key={`${item.label}-${item.to}`}
+                to={item.to}
+                className={({ isActive }) =>
+                  cn(
+                    "nav-link-premium inline-flex h-10 items-center gap-1 whitespace-nowrap text-sm font-bold text-primary transition hover:text-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm px-2",
+                    isActive && "text-secondary",
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
             ))}
           </nav>
           <div className="hidden items-center gap-3 lg:flex">
@@ -164,10 +148,10 @@ export function Navbar() {
       <Drawer open={open} onClose={() => setOpen(false)}>
         <Logo className="mt-3" src={assetUrl("/assets/logo/official-skill-guru-navbar.png")} imageClassName="h-9" />
         <nav className="mt-8 flex flex-col gap-1">
+          <CoursesMegaMenuMobile onNavigate={() => setOpen(false)} />
           {navItems.map((item) => (
             <Link key={`${item.label}-${item.to}`} to={item.to} onClick={() => setOpen(false)} className="flex items-center justify-between rounded-md px-4 py-3 text-base font-bold text-primary hover:bg-muted focus-visible:outline-none focus-visible:bg-muted">
               {item.label}
-              {item.dropdown ? <ChevronDown className="size-4" /> : null}
             </Link>
           ))}
           {auth.isReady ? (

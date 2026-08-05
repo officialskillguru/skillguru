@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { type ColumnDef } from "@tanstack/react-table";
 import { Award, X, Eye, ExternalLink, KeyRound, LogOut } from "lucide-react";
@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { DataTable } from "@/components/common/DataTable";
 import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { CreateStudentDialog } from "@/components/admin/students/CreateStudentDialog";
 import { useStudents, useStudentMutations } from "@/hooks/useAdminData";
 import { getExtendedSupabaseClient } from "@/services/_shared";
 import { certificateViewRoute } from "@/lib/routes";
@@ -294,7 +294,8 @@ function StudentDrawer({ student, summary, onClose }: Readonly<{ student: Studen
 }
 
 export default function AdminStudentsPage() {
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [page, setPage] = useState(1);
   const [activeStudent, setActiveStudent] = useState<Student | null>(null);
 
@@ -394,11 +395,14 @@ export default function AdminStudentsPage() {
 
   return (
     <div className="space-y-6 pb-12">
-      <div>
-        <h1 className="text-3xl font-black tracking-tight text-foreground">Students</h1>
-        <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Real enrollment, progress, and certificate data for every student on the platform.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">Students</h1>
+          <p className="mt-1 text-sm font-semibold text-muted-foreground">
+            Real enrollment, progress, and certificate data for every student on the platform.
+          </p>
+        </div>
+        <CreateStudentDialog />
       </div>
 
       <input
@@ -408,15 +412,7 @@ export default function AdminStudentsPage() {
         className="h-10 w-full max-w-sm rounded-xl border border-border bg-card px-3.5 text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
       />
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-14 w-full rounded-xl" />
-          ))}
-        </div>
-      ) : (
-        <DataTable columns={columns} data={students} exportFilename="students_export" />
-      )}
+      <DataTable columns={columns} data={students} exportFilename="students_export" isLoading={isLoading} />
 
       <div className="flex items-center justify-between">
         <p className="text-xs font-semibold text-muted-foreground">

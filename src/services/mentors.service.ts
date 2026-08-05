@@ -32,7 +32,20 @@ export async function listMentors(params: MentorListParams = {}): Promise<Pagina
   let query = supabase.from("mentor_profiles").select("*", { count: "exact" });
 
   if (search) {
-    query = query.or(`headline.ilike.%${search}%,bio.ilike.%${search}%`);
+    // mentor_profiles only has headline/bio text - name/email/username live on the
+    // linked profiles row, so also match against those and OR the two id sets together.
+    // normalizeSearchTerm() already wraps the term in %...% - don't wrap it again here.
+    const { data: matchedProfiles } = await supabase
+      .from("profiles")
+      .select("id")
+      .or(`full_name.ilike.${search},email.ilike.${search},username.ilike.${search}`);
+    const matchedIds = (matchedProfiles ?? []).map((p) => p.id);
+
+    const orParts = [`headline.ilike.${search}`, `bio.ilike.${search}`];
+    if (matchedIds.length > 0) {
+      orParts.push(`id.in.(${matchedIds.join(",")})`);
+    }
+    query = query.or(orParts.join(","));
   }
   if (params.status) {
     query = query.eq("status", params.status);

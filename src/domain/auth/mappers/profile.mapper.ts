@@ -14,6 +14,8 @@ export function mapProfileRowToDomain(row: ProfileRow): Profile {
     city: row.city,
     state: row.state,
     phone: row.phone,
+    username: row.username,
+    bio: row.bio,
     orgId: row.org_id,
     metadata: (row.metadata as Record<string, unknown>) || {},
     createdAt: row.created_at,

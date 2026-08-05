@@ -1,17 +1,25 @@
-export type CourseLevel = "beginner" | "intermediate" | "advanced";
-export type CourseStatus = "draft" | "published" | "archived";
+export type CourseLevel = "beginner" | "intermediate" | "advanced" | "all_levels";
+export type CourseStatus = "draft" | "under_review" | "published" | "archived";
 
 export interface Course {
   id: string;
   title: string;
   slug: string;
   description: string | null;
+  shortDescription: string | null;
   level: CourseLevel;
   status: CourseStatus;
   price: number | null;
+  discountPrice: number | null;
+  duration: string | null;
+  language: string;
+  courseType: string | null;
+  whatYouWillLearn: string[];
+  requirements: string[];
   mentorId: string;
   organizationId: string | null;
   thumbnailFileId: string | null;
+  bannerFileId: string | null;
   promoVideoFileId: string | null;
   createdAt: string;
   updatedAt: string;

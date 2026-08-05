@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   Users, TrendingUp, CheckCircle2, AlertCircle, Plus, Search,
   Phone, Mail, MessageSquare, Calendar, Eye,
@@ -552,8 +553,25 @@ function TasksTab() {
 }
 
 // ── Main CRM Page ─────────────────────────────────────────────────────────────
+const TAB_PATHS: Record<CRMTab, string> = {
+  dashboard: "/admin/crm",
+  leads: "/admin/crm/leads",
+  pipeline: "/admin/crm/pipeline",
+  tasks: "/admin/crm/tasks",
+  followups: "/admin/crm/followups",
+};
+
+function tabFromPathname(pathname: string): CRMTab {
+  const match = (Object.entries(TAB_PATHS) as [CRMTab, string][]).find(
+    ([, path]) => path !== "/admin/crm" && pathname.startsWith(path)
+  );
+  return match?.[0] ?? "dashboard";
+}
+
 export default function AdminCRMPage() {
-  const [activeTab, setActiveTab] = useState<CRMTab>("dashboard");
+  const location = useLocation();
+  const navigate = useNavigate();
+  const activeTab = useMemo(() => tabFromPathname(location.pathname), [location.pathname]);
 
   const tabs: { id: CRMTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { id: "dashboard", label: "Dashboard",  icon: BarChart3 },
@@ -562,6 +580,24 @@ export default function AdminCRMPage() {
     { id: "tasks",     label: "Tasks",      icon: ClipboardList },
     { id: "followups", label: "Follow-ups", icon: Calendar },
   ];
+
+  const reducedMotion = useMemo(
+    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+    []
+  );
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== "ArrowRight" && event.key !== "ArrowLeft") return;
+    event.preventDefault();
+    const currentIndex = tabs.findIndex((t) => t.id === activeTab);
+    const delta = event.key === "ArrowRight" ? 1 : -1;
+    const nextIndex = (currentIndex + delta + tabs.length) % tabs.length;
+    const nextTab = tabs[nextIndex]!;
+    void navigate(TAB_PATHS[nextTab.id]);
+    requestAnimationFrame(() => {
+      document.getElementById(`crm-tab-${nextTab.id}`)?.focus();
+    });
+  };
 
   return (
     <div className="space-y-6 pb-12">
@@ -582,21 +618,33 @@ export default function AdminCRMPage() {
       </GsapReveal>
 
       {/* Tab Navigation */}
-      <div className="flex gap-1 rounded-2xl border border-border bg-card p-1.5">
+      <div
+        role="tablist"
+        aria-label="CRM sections"
+        onKeyDown={handleTabKeyDown}
+        className="flex gap-1 rounded-2xl border border-border bg-card p-1.5"
+      >
         {tabs.map(tab => {
           const Icon = tab.icon;
+          const selected = activeTab === tab.id;
           return (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
+              id={`crm-tab-${tab.id}`}
+              role="tab"
+              type="button"
+              aria-selected={selected}
+              aria-controls={`crm-panel-${tab.id}`}
+              tabIndex={selected ? 0 : -1}
+              onClick={() => void navigate(TAB_PATHS[tab.id])}
               className={[
                 "flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-black transition-all",
-                activeTab === tab.id
+                selected
                   ? "bg-primary text-primary-foreground shadow-sm"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted",
               ].join(" ")}
             >
-              <Icon className="size-4" />
+              <Icon className="size-4" aria-hidden="true" />
               <span className="hidden sm:inline">{tab.label}</span>
             </button>
           );
@@ -604,30 +652,37 @@ export default function AdminCRMPage() {
       </div>
 
       {/* Tab Content */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15 }}
-        >
-          {activeTab === "dashboard" && <CRMDashboard />}
-          {activeTab === "leads"     && <LeadsTab />}
-          {activeTab === "pipeline"  && <PipelineTab />}
-          {activeTab === "tasks"     && <TasksTab />}
-          {activeTab === "followups" && (
-            <div className="rounded-2xl border border-border bg-card p-12 text-center">
-              <Calendar className="mx-auto mb-4 size-12 text-muted-foreground" />
-              <h3 className="text-lg font-black text-foreground">Follow-up Calendar</h3>
-              <p className="mt-2 text-sm text-muted-foreground">
-                Manage scheduled follow-up calls, emails, and demos for your leads.
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground">Navigate to the Calendar section for full scheduling.</p>
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+      <div
+        role="tabpanel"
+        id={`crm-panel-${activeTab}`}
+        aria-labelledby={`crm-tab-${activeTab}`}
+        tabIndex={0}
+      >
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={reducedMotion ? undefined : { opacity: 0, y: 8 }}
+            animate={reducedMotion ? undefined : { opacity: 1, y: 0 }}
+            exit={reducedMotion ? undefined : { opacity: 0, y: -8 }}
+            transition={{ duration: reducedMotion ? 0 : 0.15 }}
+          >
+            {activeTab === "dashboard" && <CRMDashboard />}
+            {activeTab === "leads"     && <LeadsTab />}
+            {activeTab === "pipeline"  && <PipelineTab />}
+            {activeTab === "tasks"     && <TasksTab />}
+            {activeTab === "followups" && (
+              <div className="rounded-2xl border border-border bg-card p-12 text-center">
+                <Calendar className="mx-auto mb-4 size-12 text-muted-foreground" aria-hidden="true" />
+                <h3 className="text-lg font-black text-foreground">Follow-up Calendar</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Manage scheduled follow-up calls, emails, and demos for your leads.
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground">Navigate to the Calendar section for full scheduling.</p>
+              </div>
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

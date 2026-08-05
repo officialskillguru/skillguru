@@ -15,6 +15,10 @@ export class MentorService {
   async getRelatedMentors(currentMentorId: string, expertise: string[], limit = 3): Promise<BaseMentor[]> {
     return mentorRepository.findRelated(currentMentorId, expertise, limit);
   }
+
+  async getMentorSummaryById(mentorId: string): Promise<BaseMentor | null> {
+    return mentorRepository.findSummaryById(mentorId);
+  }
 }
 
 export const mentorService = new MentorService();

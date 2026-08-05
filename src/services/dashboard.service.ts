@@ -11,6 +11,16 @@ export type DashboardMetrics = {
   totalOrders: number;
   totalRevenue: number;
   certificatesIssued: number;
+  /** Real counts of records created since the 1st of the current calendar month — used
+   *  for dashboard-card trend context. Never a fabricated percentage. */
+  newThisMonth: {
+    students: number;
+    mentors: number;
+    courses: number;
+    orders: number;
+    revenue: number;
+    certificates: number;
+  };
 };
 
 export type DashboardChartPoint = {
@@ -28,7 +38,14 @@ export interface IDashboardService {
 
 export async function getDashboardMetrics(): Promise<DashboardMetrics> {
   const supabase = getExtendedSupabaseClient();
-  
+  const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
+
+  const [mentorRoleId, studentRoleId, adminRoleId] = await Promise.all([
+    supabase.from('roles').select('id').eq('code', 'mentor').single(),
+    supabase.from('roles').select('id').eq('code', 'student').single(),
+    supabase.from('roles').select('id').eq('code', 'admin').single(),
+  ]);
+
   const [
     { count: coursesCount },
     { count: mentorsCount },
@@ -39,19 +56,32 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     { count: ordersCount },
     { count: certificatesCount },
     { data: payments },
+    { count: coursesThisMonth },
+    { count: mentorsThisMonth },
+    { count: studentsThisMonth },
+    { count: ordersThisMonth },
+    { count: certificatesThisMonth },
+    { data: paymentsThisMonth },
   ] = await Promise.all([
     supabase.from('courses').select('id', { count: 'exact', head: true }),
-    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', (await supabase.from('roles').select('id').eq('code', 'mentor').single()).data?.id || ''),
-    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', (await supabase.from('roles').select('id').eq('code', 'student').single()).data?.id || ''),
-    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', (await supabase.from('roles').select('id').eq('code', 'admin').single()).data?.id || ''),
+    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', mentorRoleId.data?.id || ''),
+    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', studentRoleId.data?.id || ''),
+    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', adminRoleId.data?.id || ''),
     supabase.from('success_stories').select('id', { count: 'exact', head: true }),
     supabase.from('leads').select('id', { count: 'exact', head: true }).is('deleted_at', null),
     supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'completed'),
     supabase.from('certificates').select('id', { count: 'exact', head: true }),
     supabase.from('payments').select('amount').eq('status', 'completed'),
+    supabase.from('courses').select('id', { count: 'exact', head: true }).gte('created_at', startOfMonth),
+    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', mentorRoleId.data?.id || '').gte('created_at', startOfMonth),
+    supabase.from('user_roles').select('user_id', { count: 'exact', head: true }).eq('role_id', studentRoleId.data?.id || '').gte('created_at', startOfMonth),
+    supabase.from('orders').select('id', { count: 'exact', head: true }).eq('status', 'completed').gte('created_at', startOfMonth),
+    supabase.from('certificates').select('id', { count: 'exact', head: true }).gte('created_at', startOfMonth),
+    supabase.from('payments').select('amount').eq('status', 'completed').gte('created_at', startOfMonth),
   ]);
 
   const totalRevenue = (payments ?? []).reduce((sum: number, p: { amount: number }) => sum + Number(p.amount), 0);
+  const revenueThisMonth = (paymentsThisMonth ?? []).reduce((sum: number, p: { amount: number }) => sum + Number(p.amount), 0);
 
   return {
     totalCourses: coursesCount ?? 0,
@@ -63,6 +93,14 @@ export async function getDashboardMetrics(): Promise<DashboardMetrics> {
     totalOrders: ordersCount ?? 0,
     totalRevenue,
     certificatesIssued: certificatesCount ?? 0,
+    newThisMonth: {
+      students: studentsThisMonth ?? 0,
+      mentors: mentorsThisMonth ?? 0,
+      courses: coursesThisMonth ?? 0,
+      orders: ordersThisMonth ?? 0,
+      revenue: revenueThisMonth,
+      certificates: certificatesThisMonth ?? 0,
+    },
   };
 }
 

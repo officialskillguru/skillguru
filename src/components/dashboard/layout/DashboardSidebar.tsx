@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   Award,
@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useStudentDashboard } from "@/hooks/student/useStudentDashboard";
+import { useFocusTrapDrawer } from "@/hooks/useFocusTrapDrawer";
 
 const NAV_GROUPS = [
   {
@@ -141,63 +142,10 @@ interface MobileSidebarDrawerProps {
   onClose: () => void;
 }
 
-const FOCUSABLE_SELECTOR =
-  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-
 /** Mobile/tablet fallback for DashboardSidebar, which is hidden below `lg`. */
 export function MobileSidebarDrawer({ open, onClose }: Readonly<MobileSidebarDrawerProps>) {
   const panelRef = useRef<HTMLElement | null>(null);
-  const previouslyFocusedRef = useRef<Element | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-
-    previouslyFocusedRef.current = document.activeElement;
-
-    const panel = panelRef.current;
-    const firstFocusable = panel?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
-    if (firstFocusable) {
-      firstFocusable.focus();
-    } else {
-      panel?.focus();
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        onClose();
-        return;
-      }
-
-      if (event.key !== "Tab") return;
-
-      const focusableElements = panel
-        ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR))
-        : [];
-      if (focusableElements.length === 0) return;
-
-      const first = focusableElements[0]!;
-      const last = focusableElements[focusableElements.length - 1]!;
-
-      if (event.shiftKey) {
-        if (document.activeElement === first || document.activeElement === panel) {
-          event.preventDefault();
-          last.focus();
-        }
-      } else if (document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("keydown", handleKeyDown);
-      const previouslyFocused = previouslyFocusedRef.current;
-      if (previouslyFocused instanceof HTMLElement) {
-        previouslyFocused.focus();
-      }
-    };
-  }, [open, onClose]);
+  useFocusTrapDrawer(open, onClose, panelRef);
 
   if (!open) return null;
 

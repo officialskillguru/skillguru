@@ -65,6 +65,7 @@ const AdminPage      = lazy(() => import("@/pages/AdminPage"));
 
 // ── Admin panel pages ─────────────────────────────────────────────────────────
 const AdminDashboardPage      = lazy(() => import("@/pages/AdminDashboardPage"));
+const AdminProfilePage        = lazy(() => import("@/pages/AdminProfilePage"));
 const AdminCoursesPage        = lazy(() => import("@/pages/AdminCoursesPage"));
 const AdminStudentsPage       = lazy(() => import("@/pages/AdminStudentsPage"));
 const AdminMentorsPage        = lazy(() => import("@/pages/AdminMentorsPage"));
@@ -178,6 +179,7 @@ export const router = createBrowserRouter([
         element: withSuspense(<AdminProtectedRoute><AdminPage /></AdminProtectedRoute>),
         children: [
           { index: true, element: withSuspense(<AdminDashboardPage />) },
+          { path: "profile", element: withSuspense(<AdminProfilePage />) },
 
           // User Management
           { path: "users",                element: withSuspense(<AdminStudentsPage />) },

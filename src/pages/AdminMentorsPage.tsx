@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
   X,
   Download,
@@ -36,6 +37,8 @@ import type { Mentor, CreateMentorResult } from "@/services/mentors.service";
 import { MentorCRMPanel, MentorCoursesPanel, MentorPerformancePanel, MentorDocumentsPanel } from "@/components/admin/mentors/MentorCRMPanel";
 import { listCourses } from "@/services/courses.service";
 import { getNextTabIndex } from "@/lib/a11y-tabs";
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 type MentorFormState = Partial<Mentor> & {
   designation?: string;
@@ -97,13 +100,16 @@ async function fetchMentorRatings(mentorIds: string[]): Promise<Map<string, Ment
 }
 
 export default function AdminMentorsPage() {
-  const [search, setSearch] = useState("");
+  const [searchParams] = useSearchParams();
+  const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "suspended">("all");
   const [showDeleted, setShowDeleted] = useState(false);
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [selectedMentor, setSelectedMentor] = useState<MentorFormState | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("Personal");
   const editorTabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const [createdCredentials, setCreatedCredentials] = useState<CreateMentorResult | null>(null);
@@ -243,12 +249,16 @@ export default function AdminMentorsPage() {
   const handleRowClick = (mentor: Mentor) => {
     setSelectedMentor(mentor);
     setActiveTab("Personal");
+    setNameError(null);
+    setEmailError(null);
     setEditorOpen(true);
   };
 
   const handleCreate = () => {
     setSelectedMentor({ name: "", designation: "Engineering Lead", bio: "" });
     setActiveTab("Personal");
+    setNameError(null);
+    setEmailError(null);
     setEditorOpen(true);
   };
 
@@ -383,8 +393,23 @@ export default function AdminMentorsPage() {
     e.preventDefault();
     if (!selectedMentor) return;
 
-    if (!selectedMentor.name || !selectedMentor.email) {
-      toast.error("Full Name and Email Address are required.");
+    const trimmedName = selectedMentor.name?.trim() ?? "";
+    const trimmedEmail = selectedMentor.email?.trim() ?? "";
+    let hasError = false;
+    if (!trimmedName) {
+      setNameError("Full name is required.");
+      hasError = true;
+    } else {
+      setNameError(null);
+    }
+    if (!trimmedEmail || !EMAIL_PATTERN.test(trimmedEmail)) {
+      setEmailError("Enter a valid email address.");
+      hasError = true;
+    } else {
+      setEmailError(null);
+    }
+    if (hasError) {
+      setActiveTab("Personal");
       return;
     }
 
@@ -581,12 +606,12 @@ export default function AdminMentorsPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <label htmlFor="admin-mentor-search" className="sr-only">Search mentors by headline or bio</label>
+        <label htmlFor="admin-mentor-search" className="sr-only">Search mentors by name, email, headline, or bio</label>
         <input
           id="admin-mentor-search"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search mentors by headline or bio..."
+          placeholder="Search mentors by name, email, headline, or bio..."
           className="h-10 w-full max-w-sm rounded-xl border border-border bg-card px-3.5 text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
         />
         <label htmlFor="admin-mentor-status-filter" className="sr-only">Filter by status</label>
@@ -607,38 +632,32 @@ export default function AdminMentorsPage() {
       </div>
 
       <div aria-live="polite" aria-atomic="true">
-        {isLoading ? (
-          <div className="space-y-3">
-            <p className="sr-only">Loading mentors...</p>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="h-14 w-full animate-pulse rounded-xl bg-muted" />
-            ))}
-          </div>
-        ) : (
-          <>
-            <DataTable
-              columns={columns}
-              data={mentors}
-              exportFilename="mentors_export"
-              bulkActions={[
-                { label: "Activate", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "active") },
-                { label: "Suspend", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "suspended") },
-                { label: "Restore", onClick: (rows) => handleBulkRestore(rows.map((r) => r.id)) },
-                { label: "Notify", onClick: (rows) => handleOpenBulkNotify(rows.map((r) => r.id)) },
-                { label: "Delete", onClick: (rows) => handleBulkDelete(rows.map((r) => r.id)), variant: "destructive" },
-              ]}
-            />
-            <div className="flex justify-end">
-              <button
-                type="button"
-                onClick={() => setBulkReassignOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-black text-foreground shadow-sm hover:bg-muted"
-              >
-                Assign / Remove Courses
-              </button>
-            </div>
-          </>
-        )}
+        <DataTable
+          columns={columns}
+          data={mentors}
+          exportFilename="mentors_export"
+          isLoading={isLoading}
+          emptyState={{
+            title: "No Mentors Found",
+            description: "Provision a mentor account to get started, or adjust your search and filters.",
+          }}
+          bulkActions={[
+            { label: "Activate", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "active") },
+            { label: "Suspend", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "suspended") },
+            { label: "Restore", onClick: (rows) => handleBulkRestore(rows.map((r) => r.id)) },
+            { label: "Notify", onClick: (rows) => handleOpenBulkNotify(rows.map((r) => r.id)) },
+            { label: "Delete", onClick: (rows) => handleBulkDelete(rows.map((r) => r.id)), variant: "destructive" },
+          ]}
+        />
+        <div className="flex justify-end">
+          <button
+            type="button"
+            onClick={() => setBulkReassignOpen(true)}
+            className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2 text-xs font-black text-foreground shadow-sm hover:bg-muted"
+          >
+            Assign / Remove Courses
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center justify-between">
@@ -726,25 +745,43 @@ export default function AdminMentorsPage() {
               <form id="mentor-form" role="tabpanel" aria-labelledby={`mentor-editor-tab-${activeTab}`} onSubmit={saveMentor} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {activeTab === "Personal" && (
                   <div className="space-y-5">
+                    {(nameError || emailError) && (
+                      <p role="alert" className="rounded-lg bg-destructive-text/10 px-3.5 py-2.5 text-xs font-semibold text-destructive-text">
+                        {[nameError, emailError].filter(Boolean).length > 1 ? "2 errors: " : ""}
+                        {[nameError, emailError].filter(Boolean).join(" ")}
+                      </p>
+                    )}
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-foreground">Full Name</label>
+                      <label htmlFor="mentor-name-input" className="text-xs font-black text-foreground">Full Name</label>
                       <input
+                        id="mentor-name-input"
                         value={selectedMentor.name || ""}
-                        onChange={(e) => setSelectedMentor({ ...selectedMentor, name: e.target.value })}
+                        onChange={(e) => { setSelectedMentor({ ...selectedMentor, name: e.target.value }); if (nameError) setNameError(null); }}
+                        aria-invalid={!!nameError}
+                        aria-describedby={nameError ? "mentor-name-error" : undefined}
                         className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus:border-primary"
                         placeholder="Jane Doe"
                       />
+                      {nameError && (
+                        <p id="mentor-name-error" className="text-xs font-semibold text-destructive-text">{nameError}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
-                      <label className="text-xs font-black text-foreground">Email Address</label>
+                      <label htmlFor="mentor-email-input" className="text-xs font-black text-foreground">Email Address</label>
                       <input
+                        id="mentor-email-input"
                         type="email"
                         value={selectedMentor.email || ""}
-                        onChange={(e) => setSelectedMentor({ ...selectedMentor, email: e.target.value })}
+                        onChange={(e) => { setSelectedMentor({ ...selectedMentor, email: e.target.value }); if (emailError) setEmailError(null); }}
                         disabled={!!selectedMentor.id}
+                        aria-invalid={!!emailError}
+                        aria-describedby={emailError ? "mentor-email-error" : undefined}
                         className="w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus:border-primary disabled:opacity-60"
                         placeholder="jane@example.com"
                       />
+                      {emailError && (
+                        <p id="mentor-email-error" className="text-xs font-semibold text-destructive-text">{emailError}</p>
+                      )}
                     </div>
                     <div className="space-y-1">
                       <label className="text-xs font-black text-foreground">Phone Number</label>

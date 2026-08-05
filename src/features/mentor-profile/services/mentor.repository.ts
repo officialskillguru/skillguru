@@ -503,6 +503,64 @@ export class MentorRepository {
       })
     );
   }
+
+  /**
+   * Lightweight single-mentor lookup by mentor_profiles.id (i.e. courses.mentor_id),
+   * for surfaces that already know the id (e.g. a course's Instructor section) and
+   * don't need the full findBySlug pipeline (experience/projects/certifications/
+   * availability/reviews) - just enough to render a real instructor card.
+   */
+  async findSummaryById(mentorId: string): Promise<BaseMentor | null> {
+    const supabase = getSupabaseClientOrThrow();
+
+    const { data: m, error } = await supabase
+      .from("mentor_profiles")
+      .select("id, headline, bio, expertise, company, experience_years, years_of_experience, skills, is_verified")
+      .eq("id", mentorId)
+      .is("deleted_at", null)
+      .eq("status", "active")
+      .maybeSingle();
+    if (error || !m) return null;
+
+    const { data: profiles } = await supabase.rpc("get_public_mentor_profiles", { p_mentor_ids: [mentorId] });
+    const profile = profiles?.[0];
+    if (!profile?.full_name) return null;
+
+    const [{ data: studentCounts }, { data: courses }] = await Promise.all([
+      supabase.rpc("get_public_mentor_student_counts", { p_mentor_ids: [mentorId] }),
+      supabase.from("courses").select("id").eq("mentor_id", mentorId).is("deleted_at", null),
+    ]);
+
+    let rating = 0;
+    const courseIds = (courses ?? []).map((c) => c.id);
+    if (courseIds.length > 0) {
+      const { data: testimonials } = await supabase.from("testimonials").select("rating").in("course_id", courseIds).eq("is_approved", true);
+      const rated = (testimonials ?? []).filter((t) => t.rating != null);
+      if (rated.length > 0) rating = Math.round((rated.reduce((sum, t) => sum + (t.rating ?? 0), 0) / rated.length) * 10) / 10;
+    }
+
+    const avatarUrl = await resolveFileUrlOrEmpty(profile.avatar_file_id);
+
+    return {
+      slug: createSlug(profile.full_name),
+      name: profile.full_name,
+      role: m.headline || "Mentor",
+      company: m.company || "",
+      companyLogo: m.company ? buildCompanyLogoUrl(m.company) : "",
+      avatar: avatarUrl,
+      category: m.expertise?.[0] || "Mentorship",
+      experience: `${m.experience_years ?? m.years_of_experience ?? 0} Years`,
+      experienceYears: m.experience_years ?? m.years_of_experience ?? 0,
+      studentsMentored: Number(studentCounts?.[0]?.student_count ?? 0),
+      rating,
+      location: [profile.city, profile.country].filter(Boolean).join(", "),
+      language: "English",
+      availability: "Available",
+      bio: m.bio || "",
+      expertise: (m.expertise?.length ? m.expertise : m.skills) ?? [],
+      workedWith: m.company ? [m.company] : [],
+    };
+  }
 }
 
 export const mentorRepository = new MentorRepository();

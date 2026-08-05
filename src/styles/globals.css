@@ -904,6 +904,37 @@ html:has(.hero-section) header:not([data-scrolled]) [aria-label="Open menu"] {
   }
 }
 
+/* Enterprise nav scrollbar — style-only (never replaces native scroll), so
+   wheel/touchpad/keyboard/touch scrolling and focus-ring behavior are untouched. */
+.enterprise-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--sidebar-muted) / 0.35) transparent;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.enterprise-scrollbar::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--sidebar-muted) / 0.35);
+  border-radius: 9999px;
+  transition: background-color 150ms ease;
+}
+
+.enterprise-scrollbar:hover::-webkit-scrollbar-thumb {
+  background-color: hsl(var(--sidebar-muted) / 0.6);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enterprise-scrollbar::-webkit-scrollbar-thumb {
+    transition: none;
+  }
+}
+
 /* Resume Builder PDF export: window.print() should output only the resume
    preview, not the dashboard chrome (sidebar/header/nav) around it. */
 @media print {

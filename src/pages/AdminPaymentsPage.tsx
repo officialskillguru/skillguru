@@ -282,30 +282,25 @@ export default function AdminPaymentsPage() {
       </div>
 
       {/* Table */}
-      {isLoading ? (
-        <div className="space-y-2 rounded-2xl border border-border bg-card p-4 shadow-sm">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <div key={i} className="h-8 animate-pulse rounded bg-muted" />
-          ))}
+      <DataTable
+        columns={columns}
+        data={payments}
+        exportFilename="payments_export"
+        hidePagination
+        isLoading={isLoading}
+        emptyState={{
+          title: "No Payments Yet",
+          description: "Payments will appear here once students start purchasing courses.",
+        }}
+      />
+      {count > 20 && (
+        <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
+          <p className="text-xs text-muted-foreground">Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, count)} of {count}</p>
+          <div className="flex gap-2">
+            <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40 hover:bg-muted">Prev</button>
+            <button disabled={page * 20 >= count} onClick={() => setPage(p => p + 1)} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40 hover:bg-muted">Next</button>
+          </div>
         </div>
-      ) : (
-        <>
-          <DataTable columns={columns} data={payments} exportFilename="payments_export" hidePagination />
-          {payments.length === 0 && (
-            <p className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">
-              No payments recorded yet. Payments will appear here once students start purchasing courses.
-            </p>
-          )}
-          {count > 20 && (
-            <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3">
-              <p className="text-xs text-muted-foreground">Showing {(page - 1) * 20 + 1}–{Math.min(page * 20, count)} of {count}</p>
-              <div className="flex gap-2">
-                <button disabled={page === 1} onClick={() => setPage(p => p - 1)} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40 hover:bg-muted">Prev</button>
-                <button disabled={page * 20 >= count} onClick={() => setPage(p => p + 1)} className="rounded-lg border px-3 py-1.5 text-xs font-semibold disabled:opacity-40 hover:bg-muted">Next</button>
-              </div>
-            </div>
-          )}
-        </>
       )}
 
       <AnimatePresence>

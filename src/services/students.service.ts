@@ -1,5 +1,5 @@
 
-import type { Inserts, Tables, Updates } from "@/types/database";
+import type { Tables, Updates } from "@/types/database";
 
 import {
   assertServiceResponse,
@@ -34,7 +34,8 @@ export async function listStudents(params: StudentListParams = {}): Promise<Pagi
   }
 
   if (search) {
-    query = query.or(`full_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,city.ilike.%${search}%`);
+    // normalizeSearchTerm() already wraps the term in %...% - don't wrap it again here.
+    query = query.or(`full_name.ilike.${search},email.ilike.${search},phone.ilike.${search},city.ilike.${search}`);
   }
 
   if (params.courseId) {
@@ -83,11 +84,50 @@ export async function getStudent(id: string) {
   return data;
 }
 
-export async function createStudent(input: Inserts<"profiles">) {
+export interface CreateStudentInput {
+  name: string;
+  email: string;
+  phone?: string;
+  password?: string;
+}
+
+export interface CreateStudentResult {
+  id: string;
+  email: string;
+  fullName: string;
+  onboardingMethod: "manual";
+  temporaryPassword: string;
+}
+
+interface CreateStudentResponse {
+  success: boolean;
+  message?: string;
+  data?: CreateStudentResult;
+}
+
+/** Provisions a real Supabase Auth user + profile via the create-student Edge Function — a bare `profiles` insert (the old implementation) leaves an unloginable, auth-less row. */
+export async function createStudent(input: CreateStudentInput): Promise<CreateStudentResult> {
   const supabase = getSupabaseClientOrThrow();
-  const { data, error } = await supabase.from("profiles").insert(input).select("*").single();
-  assertServiceResponse(error);
-  return data;
+
+  const payload = {
+    fullName: input.name,
+    email: input.email,
+    phone: input.phone,
+    password: input.password || undefined,
+    onboardingMethod: "manual" as const,
+  };
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- supabase-js's FunctionsError union resolves loosely here
+  const { data, error } = await supabase.functions.invoke<CreateStudentResponse>("create-student", {
+    body: payload,
+  });
+
+  if (error) throw error;
+  if (!data?.success || !data.data) {
+    throw new Error(data?.message || "Failed to create student");
+  }
+
+  return data.data;
 }
 
 export async function updateStudent(id: string, input: Updates<"profiles">) {
