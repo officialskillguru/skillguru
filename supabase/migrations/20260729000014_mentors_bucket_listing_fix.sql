@@ -8,4 +8,4 @@
 -- Dropping this policy removes the unnecessary enumeration surface with zero
 -- change to how mentor avatars/media are actually served.
 
-DROP POLICY "Public read mentor media" ON storage.objects;
+DROP POLICY IF EXISTS "Public read mentor media" ON storage.objects;
