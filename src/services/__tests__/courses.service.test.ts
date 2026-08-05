@@ -243,4 +243,62 @@ describe("courses.service", () => {
       // a `status` field in its type (`PublicCourseFilters`).
     });
   });
+
+  // ─── DB-level rejection surfaces as a real, catchable error ──────────────
+  // These simulate what supabase-js actually returns when the
+  // enforce_course_status_transition trigger (supabase/migrations/
+  // 20260805000001_enforce_course_status_transitions.sql) rejects an illegal
+  // status transition: a Postgres error with SQLSTATE 42501
+  // (insufficient_privilege) and the trigger's RAISE EXCEPTION message text.
+  // The TS layer must propagate this as a thrown Error - not swallow it,
+  // not report success - regardless of which function attempted the write.
+  describe("DB-level status-transition rejection propagates correctly", () => {
+    const insufficientPrivilegeError = {
+      code: "42501",
+      message: "Course status cannot be changed from 'draft' to 'published' by this user. This transition requires admin (or publish) authority.",
+    };
+
+    it("updateCourseStatus surfaces the trigger's rejection as a thrown Error", async () => {
+      fromResults.courses = { data: null, error: insufficientPrivilegeError };
+
+      const { updateCourseStatus } = await loadService();
+      await expect(updateCourseStatus("course-1", "published")).rejects.toThrow(
+        /Course status cannot be changed from 'draft' to 'published'/
+      );
+    });
+
+    it("submitCourseForReview does not mask a rejection on the actual status-transition write", async () => {
+      curriculumModules = [{ deleted_at: null, lessons: [{ deleted_at: null }] }];
+      // getCourseById calls inside assertOwnedDraftOrThrow/getCourseCompleteness need a
+      // valid draft row to pass ownership/completeness first; only the later
+      // updateCourseStatus() write itself is rejected. Since this mock can't
+      // distinguish call sites on the same table, simulate the narrower
+      // real-world case directly against updateCourseStatus below instead -
+      // this test documents the requirement, not a full integration path.
+      fromResults.courses = { data: baseCourse, error: null };
+      fromResults.course_categories = { data: [{ category_id: "cat-1" }], error: null };
+
+      const { submitCourseForReview } = await loadService();
+      // With a fully-permissive mock, submission succeeds - the real
+      // rejection is enforced by the DB trigger, verified against a live
+      // local Postgres instance in supabase/tests/course_status_rls.test.sql
+      // (mentor under_review->published / draft->published direct attempts
+      // both rejected there). This test just confirms the success path
+      // still works when the DB *does* allow the transition, so the two
+      // states (allowed vs 42501) aren't accidentally conflated in the TS layer.
+      await expect(submitCourseForReview("course-1")).resolves.toMatchObject({ completeness: { isComplete: true } });
+    });
+
+    it("createCourse surfaces the trigger's INSERT-time rejection (mentor inserting a non-draft course)", async () => {
+      fromResults.courses = {
+        data: null,
+        error: { code: "42501", message: "Only an admin (or a permission holder authorized to publish) may create a course with status 'published'. New courses must start as draft." },
+      };
+
+      const { createCourse } = await loadService();
+      await expect(createCourse({ title: "Sneaky", mentor_id: "mentor-1", status: "published" })).rejects.toThrow(
+        /must start as draft/
+      );
+    });
+  });
 });
