@@ -1,6 +1,6 @@
 // Real, data-driven CRUD editors for a mentor's own profile content
 // (Experience/Projects/Certifications/Achievements/Availability/Upcoming
-// Sessions). Surfaced as sub-sections inside MentorDashboardPage's Profile
+// Sessions). Surfaced as sub-sections inside the mentor portal's Profile
 // tab. Replaces the previously-fabricated public-profile content with data
 // mentors genuinely manage themselves.
 import { useId, useState } from "react";

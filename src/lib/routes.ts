@@ -41,6 +41,15 @@ export const routes = {
   },
   mentor: {
     dashboard: "/mentor/dashboard",
+    overview: "/mentor/overview",
+    courses: "/mentor/courses",
+    courseBuilder: "/mentor/courses/new",
+    students: "/mentor/students",
+    tasks: "/mentor/tasks",
+    reviews: "/mentor/reviews",
+    analytics: "/mentor/analytics",
+    notifications: "/mentor/notifications",
+    profile: "/mentor/profile",
   },
 } as const;
 

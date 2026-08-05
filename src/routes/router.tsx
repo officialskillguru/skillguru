@@ -47,8 +47,17 @@ const StudentChatPage        = lazy(() => import("@/pages/student/ChatPage").cat
 const StudentSupportPage     = lazy(() => import("@/pages/student/SupportPage").catch(() => ({ default: () => <></> })));
 const StudentAssignmentsPage = lazy(() => import("@/pages/student/AssignmentsPage").catch(() => ({ default: () => <></> })));
 
-// ── Mentor dashboard ──────────────────────────────────────────────────────────
-const MentorDashboardPage = lazy(() => import("@/pages/MentorDashboardPage"));
+// ── Mentor portal ────────────────────────────────────────────────────────────
+const MentorPortalShellPage  = lazy(() => import("@/components/mentor/layout/MentorPortalShell").then((m) => ({ default: m.MentorPortalShell })));
+const MentorOverviewPage     = lazy(() => import("@/pages/mentor/MentorOverviewPage"));
+const MentorCoursesPage      = lazy(() => import("@/pages/mentor/MentorCoursesPage"));
+const MentorCourseBuilderPage = lazy(() => import("@/pages/mentor/MentorCourseBuilderPage"));
+const MentorStudentsPage     = lazy(() => import("@/pages/mentor/MentorStudentsPage"));
+const MentorTasksPage        = lazy(() => import("@/pages/mentor/MentorTasksPage"));
+const MentorReviewsPage      = lazy(() => import("@/pages/mentor/MentorReviewsPage"));
+const MentorAnalyticsPage    = lazy(() => import("@/pages/mentor/MentorAnalyticsPage"));
+const MentorNotificationsPage = lazy(() => import("@/pages/mentor/MentorNotificationsPage"));
+const MentorPortalProfilePage = lazy(() => import("@/pages/mentor/MentorPortalProfilePage"));
 
 // ── Admin shell & auth ────────────────────────────────────────────────────────
 const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
@@ -142,10 +151,23 @@ export const router = createBrowserRouter([
         ],
       },
 
-      // ── Mentor dashboard ─────────────────────────────────────────────────────
+      // ── Mentor portal ────────────────────────────────────────────────────────
       {
-        path: "/mentor/dashboard",
-        element: withSuspense(<MentorProtectedRoute><MentorDashboardPage /></MentorProtectedRoute>),
+        path: "/mentor",
+        element: withSuspense(<MentorProtectedRoute><MentorPortalShellPage /></MentorProtectedRoute>),
+        children: [
+          { index: true,      element: <Navigate to={routes.mentor.overview} replace /> },
+          { path: "dashboard", element: <Navigate to={routes.mentor.overview} replace /> },
+          { path: "overview",  element: withSuspense(<MentorOverviewPage />) },
+          { path: "courses",   element: withSuspense(<MentorCoursesPage />) },
+          { path: "courses/new", element: withSuspense(<MentorCourseBuilderPage />) },
+          { path: "students",  element: withSuspense(<MentorStudentsPage />) },
+          { path: "tasks",     element: withSuspense(<MentorTasksPage />) },
+          { path: "reviews",   element: withSuspense(<MentorReviewsPage />) },
+          { path: "analytics", element: withSuspense(<MentorAnalyticsPage />) },
+          { path: "notifications", element: withSuspense(<MentorNotificationsPage />) },
+          { path: "profile",   element: withSuspense(<MentorPortalProfilePage />) },
+        ],
       },
 
       // ── Admin ────────────────────────────────────────────────────────────────

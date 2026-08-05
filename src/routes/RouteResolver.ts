@@ -3,7 +3,7 @@ import { routes } from "@/lib/routes";
 
 const ROLE_ROUTE_MAP: Record<string, string> = {
   admin: routes.admin.dashboard,
-  mentor: routes.mentor.dashboard,
+  mentor: routes.mentor.overview,
   student: routes.dashboard,
 };
 
