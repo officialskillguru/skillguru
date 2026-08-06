@@ -999,7 +999,9 @@ export type Database = {
       }
       campaigns: {
         Row: {
+          audience_type: string
           body: string
+          course_id: string | null
           created_at: string
           id: string
           name: string
@@ -1014,7 +1016,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          audience_type?: string
           body: string
+          course_id?: string | null
           created_at?: string
           id?: string
           name: string
@@ -1029,7 +1033,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          audience_type?: string
           body?: string
+          course_id?: string | null
           created_at?: string
           id?: string
           name?: string
@@ -1044,6 +1050,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "campaigns_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "campaigns_sender_id_fkey"
             columns: ["sender_id"]
@@ -6375,6 +6388,14 @@ export type Database = {
       notify_admins_course_submitted: {
         Args: { p_course_id: string }
         Returns: undefined
+      }
+      resolve_campaign_audience: {
+        Args: { p_campaign_id: string; p_selected_recipient_ids?: string[] }
+        Returns: number
+      }
+      start_direct_conversation: {
+        Args: { p_other_user_id: string }
+        Returns: string
       }
       record_interview_feedback: {
         Args: {

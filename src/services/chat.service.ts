@@ -103,51 +103,18 @@ export const chatService = {
     }
   },
 
-  async getOrCreateDirectConversation(otherUserId: string): Promise<Result<Conversation>> {
-    try {
-      const supabase = getExtendedSupabaseClient();
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return fail(new DatabaseError("Unauthenticated", "auth"));
-
-      // Check if direct conversation already exists between these two users
-      const { data: existing } = await supabase
-        .from("conversations")
-        .select(`
-          *,
-          members:conversation_members(user_id)
-        `)
-        .eq("type", "direct");
-
-      if (existing) {
-        const found = (existing as unknown as (Conversation & { members: { user_id: string }[] })[]).find((conv) => {
-          const memberIds = conv.members.map((m) => m.user_id);
-          return memberIds.includes(user.id) && memberIds.includes(otherUserId) && conv.members.length === 2;
-        });
-        if (found) return ok(found as unknown as Conversation);
-      }
-
-      // Create new direct conversation
-      const { data: conv, error: convErr } = await supabase
-        .from("conversations")
-        .insert({ type: "direct", created_by: user.id } as never)
-        .select()
-        .single();
-
-      if (convErr) return fail(new DatabaseError(convErr.message, convErr.code));
-
-      // Add both members
-      const { error: membersErr } = await supabase.from("conversation_members").insert([
-        { conversation_id: (conv as Conversation).id, user_id: user.id, role: "member" },
-        { conversation_id: (conv as Conversation).id, user_id: otherUserId, role: "member" },
-      ] as never[]);
-
-      if (membersErr) return fail(new DatabaseError(membersErr.message, membersErr.code));
-      return ok(conv as Conversation);
-    } catch (e: unknown) {
-      return fail(new DatabaseError(String(e), "chat_direct_create"));
-    }
-  },
-
+  /**
+   * @deprecated Group conversations share the exact RLS gap that
+   * getOrCreateDirectConversation() had (removed - see startAuthorizedDirectConversation()
+   * below): conversation_members' INSERT policy only allows a self-row for any
+   * non-admin caller, so the memberIds.map(...) insert below silently fails
+   * for every member row except the caller's own for any non-admin. Zero call
+   * sites exist anywhere in the app today (group chat is not part of the
+   * Phase C/D messaging scope). Left in place rather than deleted because
+   * group conversations may be a legitimate future feature, but it must NOT
+   * be wired into any UI until an authorized RPC (mirroring
+   * start_direct_conversation) is built for it.
+   */
   async createGroupConversation(title: string, memberIds: string[]): Promise<Result<Conversation>> {
     try {
       const supabase = getExtendedSupabaseClient();
@@ -312,6 +279,27 @@ export const chatService = {
   unsubscribeFromConversation(channel: RealtimeChannel): void {
     const supabase = getExtendedSupabaseClient();
     void supabase.removeChannel(channel);
+  },
+
+  // --------------------------------------------------------------------------
+  // Authorized conversation start (Phase C)
+  // --------------------------------------------------------------------------
+  // The only sanctioned way to start/find a direct conversation with another
+  // user (the previous getOrCreateDirectConversation() had zero call sites
+  // and was removed: its second conversation_members insert was silently
+  // rejected by RLS for any non-admin caller - conversation_members' INSERT
+  // policy only allows a self row). This calls the start_direct_conversation
+  // SECURITY DEFINER RPC, which validates the admin/mentor/student pairing
+  // boundary server-side and inserts both membership rows itself.
+  async startAuthorizedDirectConversation(otherUserId: string): Promise<Result<string>> {
+    try {
+      const supabase = getExtendedSupabaseClient();
+      const { data, error } = await supabase.rpc("start_direct_conversation", { p_other_user_id: otherUserId });
+      if (error) return fail(new DatabaseError(error.message, error.code));
+      return ok(data);
+    } catch (e: unknown) {
+      return fail(new DatabaseError(String(e), "chat_start_authorized_direct"));
+    }
   },
 
   // --------------------------------------------------------------------------
