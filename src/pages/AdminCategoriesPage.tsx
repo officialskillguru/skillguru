@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { type ColumnDef } from "@tanstack/react-table";
-import { Plus, Edit2, Archive, ArchiveRestore, Trash2, FolderTree, Search } from "lucide-react";
+import { Plus, Edit2, Archive, ArchiveRestore, Trash2, FolderTree, Search, ShieldCheck, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import type { AdminCategoryRow, CategoryStatus } from "@/services/courses.service";
@@ -10,6 +10,8 @@ import {
   useCreateCategory,
   useUpdateCategory,
   useSetCategoryStatus,
+  useApproveCategory,
+  useRejectCategory,
   useDeleteCategory,
 } from "@/hooks/admin/useAdminCategories";
 import { DataTable } from "@/components/common/DataTable";
@@ -64,6 +66,8 @@ export default function AdminCategoriesPage() {
   const [presetParentId, setPresetParentId] = useState<string | null>(null);
 
   const [deletingCategory, setDeletingCategory] = useState<AdminCategoryRow | null>(null);
+  const [rejectingCategory, setRejectingCategory] = useState<AdminCategoryRow | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const { data: categories, isLoading } = useAdminCategories({
     search: search || undefined,
@@ -74,17 +78,20 @@ export default function AdminCategoriesPage() {
   const createMutation = useCreateCategory();
   const updateMutation = useUpdateCategory();
   const statusMutation = useSetCategoryStatus();
+  const approveMutation = useApproveCategory();
+  const rejectMutation = useRejectCategory();
   const deleteMutation = useDeleteCategory();
 
   const rows = useMemo(() => categories ?? [], [categories]);
-  const topLevelOptions = useMemo(() => rows.filter((r) => !r.parent_id), [rows]);
+  const topLevelOptions = useMemo(() => rows.filter((r) => !r.parent_id && r.status !== "pending" && r.status !== "rejected"), [rows]);
 
   const stats = useMemo(() => {
     const total = rows.length;
     const active = rows.filter((r) => r.status === "active").length;
+    const pending = rows.filter((r) => r.status === "pending").length;
     const archived = rows.filter((r) => r.status === "archived").length;
     const topLevel = rows.filter((r) => !r.parent_id).length;
-    return { total, active, archived, topLevel };
+    return { total, active, pending, archived, topLevel };
   }, [rows]);
 
   const openCreate = (parentId?: string) => {
@@ -136,6 +143,27 @@ export default function AdminCategoriesPage() {
       toast.success(next === "active" ? "Category activated." : "Category archived.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update status.");
+    }
+  };
+
+  const handleApprove = async (row: AdminCategoryRow) => {
+    try {
+      await approveMutation.mutateAsync(row.id);
+      toast.success(`"${row.name}" approved - now selectable by all mentors.`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to approve category.");
+    }
+  };
+
+  const handleReject = async () => {
+    if (!rejectingCategory || !rejectReason.trim()) return;
+    try {
+      await rejectMutation.mutateAsync({ id: rejectingCategory.id, reason: rejectReason.trim() });
+      toast.success(`"${rejectingCategory.name}" rejected.`);
+      setRejectingCategory(null);
+      setRejectReason("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to reject category.");
     }
   };
 
@@ -204,6 +232,17 @@ export default function AdminCategoriesPage() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {category.status === "pending" ? (
+                <>
+                  <DropdownMenuItem onClick={() => void handleApprove(category)}>
+                    <ShieldCheck className="mr-2 size-3.5" /> Approve
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setRejectingCategory(category)}>
+                    <XCircle className="mr-2 size-3.5" /> Reject
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                </>
+              ) : null}
               <DropdownMenuItem onClick={() => openEdit(category)}>
                 <Edit2 className="mr-2 size-3.5" /> Edit
               </DropdownMenuItem>
@@ -212,17 +251,19 @@ export default function AdminCategoriesPage() {
                   <Plus className="mr-2 size-3.5" /> Add Subcategory
                 </DropdownMenuItem>
               )}
-              <DropdownMenuItem onClick={() => void handleToggleStatus(category)}>
-                {category.status === "active" ? (
-                  <>
-                    <Archive className="mr-2 size-3.5" /> Archive
-                  </>
-                ) : (
-                  <>
-                    <ArchiveRestore className="mr-2 size-3.5" /> Activate
-                  </>
-                )}
-              </DropdownMenuItem>
+              {category.status !== "pending" && (
+                <DropdownMenuItem onClick={() => void handleToggleStatus(category)}>
+                  {category.status === "active" ? (
+                    <>
+                      <Archive className="mr-2 size-3.5" /> Archive
+                    </>
+                  ) : (
+                    <>
+                      <ArchiveRestore className="mr-2 size-3.5" /> Activate
+                    </>
+                  )}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 className="text-destructive focus:text-destructive"
@@ -250,7 +291,7 @@ export default function AdminCategoriesPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Total</p>
           <p className="mt-1 text-2xl font-black text-foreground">{stats.total}</p>
@@ -259,6 +300,14 @@ export default function AdminCategoriesPage() {
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Active</p>
           <p className="mt-1 text-2xl font-black text-foreground">{stats.active}</p>
         </div>
+        <button
+          type="button"
+          onClick={() => setStatusFilter("pending")}
+          className="rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+        >
+          <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Pending</p>
+          <p className="mt-1 text-2xl font-black text-foreground">{stats.pending}</p>
+        </button>
         <div className="rounded-xl border border-border bg-card p-4">
           <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Archived</p>
           <p className="mt-1 text-2xl font-black text-foreground">{stats.archived}</p>
@@ -405,6 +454,50 @@ export default function AdminCategoriesPage() {
             </Button>
             <Button variant="destructive" onClick={() => void handleDelete()} disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? "Deleting..." : "Delete"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!rejectingCategory}
+        onOpenChange={(open) => {
+          if (!open) {
+            setRejectingCategory(null);
+            setRejectReason("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject "{rejectingCategory?.name}"?</DialogTitle>
+            <DialogDescription>
+              The mentor who proposed this category will be notified with your reason. The category stays hidden from the public catalog and other
+              mentors.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="reject-reason">Reason</Label>
+            <Textarea
+              id="reject-reason"
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. This overlaps with the existing 'Data Science' subcategory."
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setRejectingCategory(null);
+                setRejectReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={() => void handleReject()} disabled={!rejectReason.trim() || rejectMutation.isPending}>
+              {rejectMutation.isPending ? "Rejecting..." : "Reject"}
             </Button>
           </DialogFooter>
         </DialogContent>

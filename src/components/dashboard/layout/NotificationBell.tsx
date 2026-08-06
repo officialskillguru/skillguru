@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Trophy, CreditCard, MessageSquare, ClipboardList, Megaphone, Info } from "lucide-react";
+import { Bell, CheckCheck, Trophy, CreditCard, MessageSquare, ClipboardList, Megaphone, Info, FolderTree } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const CATEGORY_ICONS: Record<Notification["category"], typeof Bell> = {
   course: ClipboardList,
+  category_proposal: FolderTree,
   payment: CreditCard,
   message: MessageSquare,
   assignment: ClipboardList,

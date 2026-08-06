@@ -14,11 +14,14 @@ import {
   getCourseById,
   updateCourse,
   listCourseCategories,
+  listMyCategoryProposals,
+  proposeCategory,
   getCourseCompleteness,
   submitCourseForReview,
   withdrawCourseSubmission,
   archiveMentorCourse,
   type CourseInput,
+  type CategoryInput,
 } from "@/services/courses.service";
 import {
   replaceCourseMediaFile,
@@ -99,6 +102,7 @@ export const mentorQueryKeys = {
   course: (courseId: string) => ["mentor", "course", courseId] as const,
   courseCompleteness: (courseId: string) => ["mentor", "course-completeness", courseId] as const,
   categories: () => ["categories", "list"] as const,
+  myCategoryProposals: () => ["categories", "my-proposals"] as const,
   experience: (mentorId: string) => ["mentor", "experience", mentorId] as const,
   projects: (mentorId: string) => ["mentor", "projects", mentorId] as const,
   certifications: (mentorId: string) => ["mentor", "certifications", mentorId] as const,
@@ -198,6 +202,32 @@ export function useCourseCategories() {
     queryKey: mentorQueryKeys.categories(),
     queryFn: () => listCourseCategories(),
     staleTime: 5 * 60_000,
+  });
+}
+
+/** The calling mentor's own pending/rejected category proposals - shown inline in the Course Builder so they aren't left wondering what happened to a proposal. */
+export function useMyCategoryProposals() {
+  return useQuery({
+    queryKey: mentorQueryKeys.myCategoryProposals(),
+    queryFn: () => listMyCategoryProposals(),
+    staleTime: 30_000,
+  });
+}
+
+/**
+ * Propose a new category/subcategory. Always lands as 'pending' - enforced
+ * by the enforce_category_proposal_ownership database trigger, not this
+ * hook. Invalidates the mentor's own proposal list so it shows up
+ * immediately (RLS lets a mentor see their own pending/rejected rows, just
+ * not other mentors' or the public catalog's).
+ */
+export function useProposeCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CategoryInput & { reason?: string }) => proposeCategory(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.myCategoryProposals() });
+    },
   });
 }
 

@@ -1,9 +1,10 @@
-import { Bell, CheckCheck, Trophy, CreditCard, MessageSquare, ClipboardList, Megaphone, Info } from "lucide-react";
+import { Bell, CheckCheck, Trophy, CreditCard, MessageSquare, ClipboardList, Megaphone, Info, FolderTree } from "lucide-react";
 import { useNotifications } from "@/hooks/student/useNotifications";
 import type { Notification } from "@/services/notifications.service";
 
 const NOTIFICATION_CATEGORY_ICONS: Record<Notification["category"], typeof Bell> = {
   course: ClipboardList,
+  category_proposal: FolderTree,
   payment: CreditCard,
   message: MessageSquare,
   assignment: ClipboardList,

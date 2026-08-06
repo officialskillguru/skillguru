@@ -4,11 +4,14 @@ import {
   createCategory,
   updateCategory,
   setCategoryStatus,
+  approveCategory,
+  rejectCategory,
   deleteCategory,
   type AdminCategoryListParams,
   type CategoryInput,
   type CategoryStatus,
 } from "@/services/courses.service";
+import { notificationsService } from "@/services/notifications.service";
 
 const CATEGORIES_KEY = ["admin_categories"] as const;
 
@@ -44,6 +47,48 @@ export function useSetCategoryStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }: { id: string; status: Extract<CategoryStatus, "active" | "archived"> }) => setCategoryStatus(id, status),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
+    },
+  });
+}
+
+export function useApproveCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const category = await approveCategory(id);
+      if (category.created_by) {
+        await notificationsService.sendNotification(
+          category.created_by,
+          "Category approved",
+          `Your proposed category "${category.name}" has been approved and is now available to select.`,
+          { category: "category_proposal", actionUrl: "/mentor/courses/new" }
+        );
+      }
+      return category;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
+    },
+  });
+}
+
+export function useRejectCategory() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { category } = await rejectCategory(id, reason);
+      if (category?.created_by) {
+        await notificationsService.sendNotification(
+          category.created_by,
+          "Category proposal declined",
+          `Your proposed category "${category.name}" was not approved: ${reason}`,
+          { category: "category_proposal", actionUrl: "/mentor/courses/new" }
+        );
+      }
+      return category;
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: CATEGORIES_KEY });
     },

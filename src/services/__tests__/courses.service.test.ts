@@ -413,4 +413,96 @@ describe("courses.service", () => {
       expect(mockSupabase.from).toHaveBeenCalledWith("course_categories");
     });
   });
+
+  describe("mentor category proposals (Phase B)", () => {
+    const pendingCategory = {
+      id: "cat-pending-1",
+      name: "Robotics",
+      slug: "robotics",
+      description: null,
+      parent_id: null,
+      icon: null,
+      sort_order: 0,
+      status: "pending",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      created_by: "mentor-1",
+      updated_by: null,
+      deleted_at: null,
+      deleted_by: null,
+    };
+
+    it("proposeCategory inserts and returns the pending category, then notifies admins via RPC", async () => {
+      fromResults.categories = { data: { ...pendingCategory }, error: null };
+      rpcResults.notify_admins_category_proposed = { data: null, error: null };
+
+      const { proposeCategory } = await loadService();
+      const result = await proposeCategory({ name: "Robotics", reason: "No robotics subcategory exists yet" });
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("categories");
+      expect(mockSupabase.rpc).toHaveBeenCalledWith("notify_admins_category_proposed", { p_category_id: pendingCategory.id });
+      expect(result.status).toBe("pending");
+    });
+
+    it("proposeCategory does not throw when the notify RPC fails (proposal itself already succeeded)", async () => {
+      fromResults.categories = { data: { ...pendingCategory }, error: null };
+      rpcResults.notify_admins_category_proposed = { data: null, error: { message: "rpc failed" } };
+
+      const { proposeCategory } = await loadService();
+      const result = await proposeCategory({ name: "Robotics" });
+
+      expect(result.status).toBe("pending");
+    });
+
+    it("proposeCategory translates a duplicate-slug error into a friendly message", async () => {
+      fromResults.categories = {
+        data: null,
+        error: { code: "23505", message: 'duplicate key value violates unique constraint "categories_slug_unique"' },
+      };
+
+      const { proposeCategory } = await loadService();
+      await expect(proposeCategory({ name: "Robotics" })).rejects.toThrow("A category with this name already exists. Try a different name.");
+    });
+
+    it("listMyCategoryProposals returns [] when there is no authenticated user", async () => {
+      authUser = null;
+
+      const { listMyCategoryProposals } = await loadService();
+      const result = await listMyCategoryProposals();
+
+      expect(result).toEqual([]);
+      expect(mockSupabase.from).not.toHaveBeenCalledWith("categories");
+    });
+
+    it("listMyCategoryProposals fetches the caller's own non-active proposals", async () => {
+      fromResults.categories = { data: [{ ...pendingCategory }], error: null };
+
+      const { listMyCategoryProposals } = await loadService();
+      const result = await listMyCategoryProposals();
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("categories");
+      expect(result).toHaveLength(1);
+      expect(result[0]?.status).toBe("pending");
+    });
+
+    it("approveCategory sets status to active", async () => {
+      fromResults.categories = { data: { ...pendingCategory, status: "active" }, error: null };
+
+      const { approveCategory } = await loadService();
+      const result = await approveCategory("cat-pending-1");
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("categories");
+      expect(result.status).toBe("active");
+    });
+
+    it("rejectCategory sets status to rejected and returns the reason alongside the category", async () => {
+      fromResults.categories = { data: { ...pendingCategory, status: "rejected" }, error: null };
+
+      const { rejectCategory } = await loadService();
+      const { category, reason } = await rejectCategory("cat-pending-1", "Duplicate of an existing subcategory");
+
+      expect(category?.status).toBe("rejected");
+      expect(reason).toBe("Duplicate of an existing subcategory");
+    });
+  });
 });

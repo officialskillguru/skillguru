@@ -16,7 +16,7 @@ export interface Notification {
   title: string;
   body: string;
   status: "unread" | "read";
-  category: "course" | "payment" | "message" | "assignment" | "certificate" | "system" | "general";
+  category: "course" | "category_proposal" | "payment" | "message" | "assignment" | "certificate" | "system" | "general";
   action_url: string | null;
   read_at: string | null;
   metadata: Record<string, unknown>;

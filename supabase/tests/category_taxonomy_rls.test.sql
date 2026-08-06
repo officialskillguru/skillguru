@@ -66,16 +66,21 @@ SET session_replication_role = origin;
 
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.categories TO authenticated, anon;
 
-\echo '=== TEST: mentor INSERT denied ==='
+\echo '=== TEST: mentor INSERT cannot create an ACTIVE category (superseded by Phase B - see note) ==='
+-- NOTE: Phase A shipped with categories fully admin-only for INSERT, so this
+-- test originally expected outright denial. Phase B (20260807000001_mentor_
+-- category_proposals.sql) intentionally adds a controlled mentor INSERT path
+-- (categories.propose): a mentor CAN now insert, but the row is forced to
+-- status='pending' regardless of what they send - it can never land as
+-- 'active'. This is the correct new boundary, exercised exhaustively by
+-- supabase/tests/category_proposal_rls.test.sql (TEST 1/2/2b). This test is
+-- updated in place (not left to perpetually fail) to assert the boundary
+-- that actually matters: whatever the mentor sends, the row is never active.
 SELECT set_config('request.jwt.claims', json_build_object('sub','55555555-5555-5555-5555-555555555555','role','authenticated')::text, true);
 SET LOCAL ROLE authenticated;
-DO $$
-BEGIN
-  INSERT INTO public.categories (name, slug, status) VALUES ('Mentor Injected', 'mentor-injected', 'active');
-  RAISE NOTICE 'FAIL: mentor inserted a category!';
-EXCEPTION WHEN insufficient_privilege THEN
-  RAISE NOTICE 'PASS: mentor insert denied (%)', SQLERRM;
-END $$;
+INSERT INTO public.categories (name, slug, status) VALUES ('Mentor Injected', 'mentor-injected', 'active');
+SELECT CASE WHEN status = 'active' THEN 'FAIL: mentor category landed as active!' ELSE 'PASS: mentor insert landed as ''' || status || ''', never active' END
+FROM public.categories WHERE slug = 'mentor-injected';
 RESET ROLE;
 
 \echo '=== TEST: mentor UPDATE denied ==='

@@ -6368,6 +6368,10 @@ export type Database = {
           similarity: number
         }[]
       }
+      notify_admins_category_proposed: {
+        Args: { p_category_id: string }
+        Returns: undefined
+      }
       notify_admins_course_submitted: {
         Args: { p_course_id: string }
         Returns: undefined

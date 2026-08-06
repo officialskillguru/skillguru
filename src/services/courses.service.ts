@@ -75,6 +75,33 @@ export async function listCourseCategories() {
   return data ?? [];
 }
 
+/**
+ * The calling mentor's own pending/rejected proposals - never active
+ * categories (those already come back from listCourseCategories). RLS lets
+ * a mentor see their own non-active rows (consolidated_select's
+ * created_by = auth.uid() branch, added by Phase B), but
+ * listCourseCategories() deliberately excludes non-active rows for the
+ * general selector, so this is a separate, narrower query rather than
+ * loosening that one.
+ */
+export async function listMyCategoryProposals() {
+  const supabase = getSupabaseClientOrThrow();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .is("deleted_at", null)
+    .neq("status", "active")
+    .eq("created_by", user.id)
+    .order("created_at", { ascending: false });
+  assertServiceResponse(error);
+  return data ?? [];
+}
+
 // ============================================================================
 // Admin category/taxonomy management
 // ============================================================================
@@ -236,6 +263,63 @@ export async function deleteCategory(id: string) {
   const supabase = getSupabaseClientOrThrow();
   const { error } = await supabase.from("categories").delete().eq("id", id);
   assertServiceResponse(error);
+}
+
+// ─── Mentor category proposals (Phase B) ───────────────────────────────────
+// The enforce_category_proposal_ownership trigger (20260807000001) is the
+// actual security boundary: it forces status='pending' and
+// created_by=auth.uid() on any non-admin insert regardless of what this
+// function sends. Sending "pending" explicitly here is just honest client
+// code, not the guarantee itself.
+
+/** Mentor-facing: propose a new category/subcategory. Always lands as 'pending' - enforced by the database trigger, not this function. */
+export async function proposeCategory(input: CategoryInput & { reason?: string }): Promise<AdminCategoryRow> {
+  const supabase = getSupabaseClientOrThrow();
+  const slug = createSlug(input.slug ?? input.name);
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({
+      name: input.name,
+      slug,
+      description: input.reason ? `${input.description ?? ""}\n\nReason: ${input.reason}`.trim() : (input.description ?? null),
+      parent_id: input.parent_id ?? null,
+      sort_order: input.sort_order ?? 0,
+      status: "pending",
+    })
+    .select("*")
+    .single();
+  assertNotDuplicateCategorySlug(error);
+  assertServiceResponse(error);
+
+  try {
+    const { error: notifyError } = await supabase.rpc("notify_admins_category_proposed", { p_category_id: data.id });
+    if (notifyError) {
+      // Non-fatal: the proposal itself succeeded; admins just won't get a
+      // notification this time (mirrors submitCourseForReview's identical
+      // non-fatal-notification handling).
+      console.error("Failed to notify admins of category proposal", notifyError);
+    }
+  } catch (notifyError) {
+    console.error("Failed to notify admins of category proposal", notifyError);
+  }
+
+  return data as AdminCategoryRow;
+}
+
+/** Admin-facing: pending -> active. */
+export async function approveCategory(id: string) {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("categories").update({ status: "active" }).eq("id", id).select("*").single();
+  assertServiceResponse(error);
+  return data;
+}
+
+/** Admin-facing: pending -> rejected, with an optional reason surfaced to the proposing mentor via notification. */
+export async function rejectCategory(id: string, reason?: string) {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("categories").update({ status: "rejected" }).eq("id", id).select("*").single();
+  assertServiceResponse(error);
+  return { category: data, reason };
 }
 
 export async function getCourseBySlug(slug: string) {
