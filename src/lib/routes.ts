@@ -48,6 +48,8 @@ export const routes = {
     tasks: "/mentor/tasks",
     reviews: "/mentor/reviews",
     analytics: "/mentor/analytics",
+    messages: "/mentor/messages",
+    announcements: "/mentor/announcements",
     notifications: "/mentor/notifications",
     profile: "/mentor/profile",
   },

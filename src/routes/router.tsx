@@ -57,6 +57,8 @@ const MentorTasksPage        = lazy(() => import("@/pages/mentor/MentorTasksPage
 const MentorReviewsPage      = lazy(() => import("@/pages/mentor/MentorReviewsPage"));
 const MentorAnalyticsPage    = lazy(() => import("@/pages/mentor/MentorAnalyticsPage"));
 const MentorNotificationsPage = lazy(() => import("@/pages/mentor/MentorNotificationsPage"));
+const MentorMessagesPage    = lazy(() => import("@/pages/mentor/MentorMessagesPage"));
+const MentorAnnouncementsPage = lazy(() => import("@/pages/mentor/MentorAnnouncementsPage"));
 const MentorPortalProfilePage = lazy(() => import("@/pages/mentor/MentorPortalProfilePage"));
 
 // ── Admin shell & auth ────────────────────────────────────────────────────────
@@ -168,6 +170,9 @@ export const router = createBrowserRouter([
           { path: "tasks",     element: withSuspense(<MentorTasksPage />) },
           { path: "reviews",   element: withSuspense(<MentorReviewsPage />) },
           { path: "analytics", element: withSuspense(<MentorAnalyticsPage />) },
+          { path: "messages", element: withSuspense(<MentorMessagesPage />) },
+          { path: "messages/:conversationId", element: withSuspense(<MentorMessagesPage />) },
+          { path: "announcements", element: withSuspense(<MentorAnnouncementsPage />) },
           { path: "notifications", element: withSuspense(<MentorNotificationsPage />) },
           { path: "profile",   element: withSuspense(<MentorPortalProfilePage />) },
         ],

@@ -89,13 +89,35 @@ export const chatService = {
           )
         `)
         .eq("user_id", user.id)
-        .order("created_at", { referencedTable: "conversations", ascending: false });
+        .order("updated_at", { referencedTable: "conversations", ascending: false });
 
       if (error) return fail(new DatabaseError(error.message, error.code));
 
       const conversations = data
         ?.map((d: unknown) => (d as { conversation: Conversation }).conversation)
         .filter(Boolean) ?? [];
+
+      // Bounded extra query (one, regardless of conversation count) for a
+      // last-message preview - not embeddable via a plain PostgREST nested
+      // select since that would need a "top 1 per group" query shape.
+      if (conversations.length > 0) {
+        const { data: recentMessages } = await supabase
+          .from("chat_messages")
+          .select("*, sender:profiles!chat_messages_sender_id_fkey(id, full_name)")
+          .in("conversation_id", conversations.map((c) => c.id))
+          .eq("is_deleted", false)
+          .order("created_at", { ascending: false });
+
+        const lastByConversation = new Map<string, ChatMessage>();
+        for (const message of (recentMessages as unknown as ChatMessage[]) ?? []) {
+          if (!lastByConversation.has(message.conversation_id)) {
+            lastByConversation.set(message.conversation_id, message);
+          }
+        }
+        for (const conv of conversations) {
+          conv.last_message = lastByConversation.get(conv.id) ?? null;
+        }
+      }
 
       return ok(conversations);
     } catch (e: unknown) {
@@ -211,6 +233,19 @@ export const chatService = {
         .update({ updated_at: new Date().toISOString() } as never)
         .eq("id", conversationId);
 
+      // Non-fatal: the message itself already sent successfully. The RPC
+      // self-validates conversation membership and dedupes against an
+      // already-unread notification for the same conversation.
+      try {
+        const { error: notifyError } = await supabase.rpc("notify_new_message", {
+          p_conversation_id: conversationId,
+          p_message_preview: content,
+        });
+        if (notifyError) console.error("Failed to notify recipient of new message", notifyError);
+      } catch (notifyError) {
+        console.error("Failed to notify recipient of new message", notifyError);
+      }
+
       return ok(data as ChatMessage);
     } catch (e: unknown) {
       return fail(new DatabaseError(String(e), "chat_message_send"));
@@ -299,6 +334,24 @@ export const chatService = {
       return ok(data);
     } catch (e: unknown) {
       return fail(new DatabaseError(String(e), "chat_start_authorized_direct"));
+    }
+  },
+
+  // --------------------------------------------------------------------------
+  // Authorized recipient directory (Phase D)
+  // --------------------------------------------------------------------------
+  // profiles' SELECT RLS is self-only, so this is the only way the "New
+  // Message" UI can even see candidate recipients. Server-computed via the
+  // same authorization matrix as start_direct_conversation - never merge in
+  // any other client-side recipient source.
+  async listAuthorizedRecipients(): Promise<Result<{ id: string; full_name: string | null; email: string | null; role: string }[]>> {
+    try {
+      const supabase = getExtendedSupabaseClient();
+      const { data, error } = await supabase.rpc("list_authorized_message_recipients");
+      if (error) return fail(new DatabaseError(error.message, error.code));
+      return ok(data ?? []);
+    } catch (e: unknown) {
+      return fail(new DatabaseError(String(e), "chat_list_authorized_recipients"));
     }
   },
 

@@ -131,4 +131,29 @@ describe("announcements.service", () => {
     expect(result).toHaveLength(1);
     expect(mockSupabase.from).toHaveBeenCalledWith("campaign_recipients");
   });
+
+  it("sendAnnouncement resolves the audience then marks the campaign sent", async () => {
+    rpcResults.resolve_campaign_audience = { data: 5, error: null };
+    fromResults.campaigns = { data: { ...baseCampaign, status: "sent", total_recipients: 5 }, error: null };
+
+    const { sendAnnouncement } = await loadService();
+    const result = await sendAnnouncement("camp-1");
+
+    expect(mockSupabase.rpc).toHaveBeenCalledWith("resolve_campaign_audience", {
+      p_campaign_id: "camp-1",
+      p_selected_recipient_ids: undefined,
+    });
+    expect(result.recipientCount).toBe(5);
+    expect(result.campaign.status).toBe("sent");
+  });
+
+  it("sendAnnouncement throws and never marks the campaign sent when zero recipients resolve", async () => {
+    rpcResults.resolve_campaign_audience = { data: 0, error: null };
+
+    const { sendAnnouncement } = await loadService();
+    await expect(sendAnnouncement("camp-1")).rejects.toThrow("No recipients were resolved");
+
+    // The campaigns table update should never have been reached.
+    expect(mockSupabase.from).not.toHaveBeenCalledWith("campaigns");
+  });
 });

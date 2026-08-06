@@ -7,7 +7,9 @@ import {
   ClipboardList,
   LayoutDashboard,
   LogOut,
+  Megaphone,
   Menu,
+  MessageSquare,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -43,6 +45,8 @@ const navItems = [
   { label: "Tasks", to: "/mentor/tasks", icon: ClipboardList },
   { label: "Reviews", to: "/mentor/reviews", icon: Star },
   { label: "Analytics", to: "/mentor/analytics", icon: BarChart3 },
+  { label: "Inbox", to: "/mentor/messages", icon: MessageSquare, section: "Communication" },
+  { label: "Announcements", to: "/mentor/announcements", icon: Megaphone },
   { label: "Notifications", to: "/mentor/notifications", icon: Bell },
   { label: "Profile", to: "/mentor/profile", icon: UserIcon },
 ] as const;
@@ -92,24 +96,30 @@ function Sidebar({ collapsed, onNavigate }: Readonly<{ collapsed?: boolean; onNa
           {navItems.map((item) => {
             const Icon = item.icon;
             const active = item.to === activeTo;
+            const section = "section" in item ? item.section : undefined;
             return (
-              <Link
-                key={item.to}
-                to={item.to}
-                onClick={onNavigate}
-                title={collapsed ? item.label : undefined}
-                aria-current={active ? "page" : undefined}
-                className={[
-                  "group flex min-h-[40px] items-center gap-3 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                  collapsed ? "justify-center px-0" : "px-3",
-                  active
-                    ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
-                    : "text-sidebar-muted hover:bg-white/5 hover:text-sidebar-foreground",
-                ].join(" ")}
-              >
-                <Icon className="size-4 shrink-0" aria-hidden="true" />
-                {!collapsed && <span className="truncate">{item.label}</span>}
-              </Link>
+              <div key={item.to}>
+                {section && !collapsed && (
+                  <p className="mb-1 mt-4 px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-muted">{section}</p>
+                )}
+                {section && collapsed && <div className="my-2 border-t border-white/10" aria-hidden="true" />}
+                <Link
+                  to={item.to}
+                  onClick={onNavigate}
+                  title={collapsed ? item.label : undefined}
+                  aria-current={active ? "page" : undefined}
+                  className={[
+                    "group flex min-h-[40px] items-center gap-3 rounded-md text-sm font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    collapsed ? "justify-center px-0" : "px-3",
+                    active
+                      ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-sm"
+                      : "text-sidebar-muted hover:bg-white/5 hover:text-sidebar-foreground",
+                  ].join(" ")}
+                >
+                  <Icon className="size-4 shrink-0" aria-hidden="true" />
+                  {!collapsed && <span className="truncate">{item.label}</span>}
+                </Link>
+              </div>
             );
           })}
         </div>

@@ -88,6 +88,29 @@ export async function resolveAnnouncementAudience(campaignId: string, selectedRe
   return data ?? 0;
 }
 
+/**
+ * Resolves the real audience, then marks the campaign 'sent'. campaigns'
+ * "Mentors update own campaigns" UPDATE policy already scopes this to the
+ * sender's own row, so no additional RPC is needed for the status/sent_at
+ * transition itself - only recipient resolution needs the SECURITY DEFINER
+ * RPC, since campaign_recipients has no mentor INSERT policy at all.
+ */
+export async function sendAnnouncement(campaignId: string, selectedRecipientIds?: string[]): Promise<{ campaign: Campaign; recipientCount: number }> {
+  const supabase = getSupabaseClientOrThrow();
+  const recipientCount = await resolveAnnouncementAudience(campaignId, selectedRecipientIds);
+  if (recipientCount === 0) {
+    throw new Error("No recipients were resolved for this audience - nothing was sent.");
+  }
+  const { data, error } = await supabase
+    .from("campaigns")
+    .update({ status: "sent", sent_at: new Date().toISOString() })
+    .eq("id", campaignId)
+    .select("*")
+    .single();
+  assertServiceResponse(error);
+  return { campaign: data, recipientCount };
+}
+
 /** Recipient delivery status for a campaign the caller owns (or, for an admin, any campaign). */
 export async function listAnnouncementRecipients(campaignId: string): Promise<CampaignRecipient[]> {
   const supabase = getSupabaseClientOrThrow();

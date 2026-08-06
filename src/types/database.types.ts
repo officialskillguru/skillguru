@@ -6389,6 +6389,14 @@ export type Database = {
         Args: { p_course_id: string }
         Returns: undefined
       }
+      list_authorized_message_recipients: {
+        Args: Record<PropertyKey, never>
+        Returns: { id: string; full_name: string | null; email: string | null; role: string }[]
+      }
+      notify_new_message: {
+        Args: { p_conversation_id: string; p_message_preview: string }
+        Returns: undefined
+      }
       resolve_campaign_audience: {
         Args: { p_campaign_id: string; p_selected_recipient_ids?: string[] }
         Returns: number
