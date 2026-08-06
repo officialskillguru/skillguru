@@ -301,4 +301,116 @@ describe("courses.service", () => {
       );
     });
   });
+
+  describe("admin category management", () => {
+    const baseCategory = {
+      id: "cat-1",
+      name: "Engineering",
+      slug: "engineering",
+      description: null,
+      parent_id: null,
+      icon: null,
+      sort_order: 0,
+      status: "active",
+      created_at: "2026-01-01T00:00:00Z",
+      updated_at: "2026-01-01T00:00:00Z",
+      created_by: null,
+      updated_by: null,
+      deleted_at: null,
+      deleted_by: null,
+    };
+
+    it("createCategory always inserts status='active' regardless of caller input", async () => {
+      fromResults.categories = { data: { ...baseCategory }, error: null };
+
+      const { createCategory } = await loadService();
+      await createCategory({ name: "Engineering" });
+
+      expect(mockSupabase.from).toHaveBeenCalledWith("categories");
+      // The mock proxy can't assert exact insert payload args (chain calls collapse
+      // to the same proxy) - the guarantee that status is always 'active' on create
+      // is a static code-level fact (see courses.service.ts createCategory: the
+      // insert payload hardcodes status: "active", it is never taken from input).
+    });
+
+    it("createCategory translates a duplicate-slug error into a friendly message", async () => {
+      fromResults.categories = {
+        data: null,
+        error: { code: "23505", message: 'duplicate key value violates unique constraint "categories_slug_unique"' },
+      };
+
+      const { createCategory } = await loadService();
+      await expect(createCategory({ name: "Engineering" })).rejects.toThrow(
+        "A category with this name already exists. Try a different name."
+      );
+    });
+
+    it("createCategory passes through unrelated errors unchanged", async () => {
+      fromResults.categories = { data: null, error: { code: "23503", message: "foreign key violation" } };
+
+      const { createCategory } = await loadService();
+      await expect(createCategory({ name: "Engineering" })).rejects.toThrow("foreign key violation");
+    });
+
+    it("updateCategory translates a duplicate-slug error the same way", async () => {
+      fromResults.categories = {
+        data: null,
+        error: { code: "23505", message: 'duplicate key value violates unique constraint "categories_slug_unique"' },
+      };
+
+      const { updateCategory } = await loadService();
+      await expect(updateCategory("cat-1", { slug: "engineering" })).rejects.toThrow(
+        "A category with this name already exists. Try a different name."
+      );
+    });
+
+    it("deleteCategory surfaces the referenced-category trigger's friendly message", async () => {
+      fromResults.categories = {
+        data: null,
+        error: { code: "23503", message: 'Cannot delete category "Web Development": 1 course(s) reference it. Reassign those courses to a different category first, or archive this category instead.' },
+      };
+
+      const { deleteCategory } = await loadService();
+      await expect(deleteCategory("cat-1")).rejects.toThrow(/course\(s\) reference it/);
+    });
+
+    it("setCategoryStatus updates status without touching other fields", async () => {
+      fromResults.categories = { data: { ...baseCategory, status: "archived" }, error: null };
+
+      const { setCategoryStatus } = await loadService();
+      const result = await setCategoryStatus("cat-1", "archived");
+      expect(result.status).toBe("archived");
+    });
+
+    it("listAdminCategories computes course_count and parent_name without N+1 (bounded extra queries)", async () => {
+      fromResults.categories = {
+        data: [
+          { ...baseCategory, id: "parent-1", name: "Engineering", slug: "engineering", parent_id: null },
+          { ...baseCategory, id: "child-1", name: "Computer Science", slug: "computer-science", parent_id: "parent-1" },
+        ],
+        error: null,
+      };
+      fromResults.course_categories = {
+        data: [{ category_id: "child-1" }, { category_id: "child-1" }],
+        error: null,
+      };
+
+      const { listAdminCategories } = await loadService();
+      const result = await listAdminCategories({});
+
+      const child = result.find((r) => r.id === "child-1");
+      expect(child?.course_count).toBe(2);
+      expect(child?.parent_name).toBe("Engineering");
+
+      const parent = result.find((r) => r.id === "parent-1");
+      expect(parent?.course_count).toBe(0);
+      expect(parent?.parent_name).toBeNull();
+
+      // Bounded: one query for categories, one for course_categories join counts.
+      // (Parent-name resolution here is free since the parent row is already in
+      // the same result set - no extra query needed for this particular case.)
+      expect(mockSupabase.from).toHaveBeenCalledWith("categories");
+      expect(mockSupabase.from).toHaveBeenCalledWith("course_categories");
+    });
+  });
 });

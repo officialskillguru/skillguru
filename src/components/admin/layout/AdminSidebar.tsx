@@ -12,6 +12,7 @@ import {
   CircleDollarSign,
   ClipboardList,
   FileText,
+  FolderTree,
   Gauge,
   LayoutDashboard,
   MessageSquare,
@@ -45,6 +46,7 @@ const NAV: NavEntry[] = [
     label: "Academics",
     items: [
       { label: "Courses", to: "/admin/courses", icon: BookOpen },
+      { label: "Categories", to: "/admin/courses/categories", icon: FolderTree },
       { label: "Students", to: "/admin/students", icon: Users },
       { label: "Mentors", to: "/admin/users/mentors", icon: BriefcaseBusiness },
       { label: "Assignments", to: "/admin/courses/assignments", icon: ClipboardList },

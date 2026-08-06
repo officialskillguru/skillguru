@@ -1146,11 +1146,13 @@ export type Database = {
           deleted_at: string | null
           deleted_by: string | null
           description: string | null
+          icon: string | null
           id: string
           name: string
           parent_id: string | null
           slug: string
           sort_order: number
+          status: string
           updated_at: string
           updated_by: string | null
         }
@@ -1160,11 +1162,13 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           name: string
           parent_id?: string | null
           slug: string
           sort_order?: number
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }
@@ -1174,11 +1178,13 @@ export type Database = {
           deleted_at?: string | null
           deleted_by?: string | null
           description?: string | null
+          icon?: string | null
           id?: string
           name?: string
           parent_id?: string | null
           slug?: string
           sort_order?: number
+          status?: string
           updated_at?: string
           updated_by?: string | null
         }

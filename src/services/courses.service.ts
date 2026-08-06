@@ -62,11 +62,180 @@ export async function listCourses(params: CourseListParams = {}): Promise<Pagina
   return { data: mappedData, count: count ?? 0, page, pageSize, totalPages: Math.ceil((count ?? 0) / pageSize) };
 }
 
+/** Active, non-deleted categories only - the set a mentor may select for a course. */
 export async function listCourseCategories() {
   const supabase = getSupabaseClientOrThrow();
-  const { data, error } = await supabase.from("categories").select("*").order("sort_order", { ascending: true });
+  const { data, error } = await supabase
+    .from("categories")
+    .select("*")
+    .is("deleted_at", null)
+    .eq("status", "active")
+    .order("sort_order", { ascending: true });
   assertServiceResponse(error);
   return data ?? [];
+}
+
+// ============================================================================
+// Admin category/taxonomy management
+// ============================================================================
+// Categories are admin-governed: RLS (consolidated_insert/update/delete on
+// public.categories) already restricts writes to has_role('admin'). A
+// mentor-proposal path (status='pending' inserts) is a later phase's scope,
+// not introduced here - every category created through these functions is
+// 'active' immediately, matching how admin-authored categories always
+// worked before the status column existed.
+
+export type CategoryStatus = "pending" | "active" | "rejected" | "archived";
+
+export type AdminCategoryRow = Omit<Tables<"categories">, "status"> & {
+  status: CategoryStatus;
+  parent_name: string | null;
+  course_count: number;
+};
+
+export type AdminCategoryListParams = {
+  search?: string;
+  status?: CategoryStatus | "all";
+  /** "all" = no parent filter, "top-level" = parent_id IS NULL, any other value = an exact parent category id. */
+  parentId?: string;
+};
+
+export type CategoryInput = {
+  name: string;
+  slug?: string;
+  description?: string | null;
+  parent_id?: string | null;
+  icon?: string | null;
+  sort_order?: number;
+};
+
+/** Postgres 23505 (unique_violation) on categories.slug reads as raw SQL to an admin - translate it. */
+function assertNotDuplicateCategorySlug(error: unknown) {
+  if (
+    error &&
+    typeof error === "object" &&
+    "code" in error &&
+    (error as { code?: string }).code === "23505" &&
+    "message" in error &&
+    typeof (error as { message?: string }).message === "string" &&
+    (error as { message: string }).message.includes("categories_slug_unique")
+  ) {
+    throw new Error("A category with this name already exists. Try a different name.");
+  }
+}
+
+/**
+ * Full admin taxonomy list - search/status/parent filterable, with course
+ * count and parent name resolved without N+1 (two extra bounded queries
+ * total, regardless of result set size, not one query per row).
+ */
+export async function listAdminCategories(params: AdminCategoryListParams = {}): Promise<AdminCategoryRow[]> {
+  const supabase = getSupabaseClientOrThrow();
+  let query = supabase.from("categories").select("*").is("deleted_at", null).order("sort_order", { ascending: true });
+
+  const term = normalizeSearchTerm(params.search);
+  if (term) {
+    query = query.or(`name.ilike.${term},slug.ilike.${term}`);
+  }
+  if (params.status && params.status !== "all") {
+    query = query.eq("status", params.status);
+  }
+  if (params.parentId === "top-level") {
+    query = query.is("parent_id", null);
+  } else if (params.parentId && params.parentId !== "all") {
+    query = query.eq("parent_id", params.parentId);
+  }
+
+  const { data, error } = await query;
+  assertServiceResponse(error);
+  const rows = data ?? [];
+
+  const categoryIds = rows.map((r) => r.id);
+  const courseCountMap = new Map<string, number>();
+  if (categoryIds.length > 0) {
+    const { data: joinRows, error: joinError } = await supabase
+      .from("course_categories")
+      .select("category_id")
+      .in("category_id", categoryIds);
+    assertServiceResponse(joinError);
+    for (const row of joinRows ?? []) {
+      courseCountMap.set(row.category_id, (courseCountMap.get(row.category_id) ?? 0) + 1);
+    }
+  }
+
+  const parentNameMap = new Map<string, string>();
+  for (const row of rows) parentNameMap.set(row.id, row.name);
+  const missingParentIds = Array.from(
+    new Set(rows.map((r) => r.parent_id).filter((id): id is string => !!id && !parentNameMap.has(id)))
+  );
+  if (missingParentIds.length > 0) {
+    const { data: parents, error: parentsError } = await supabase.from("categories").select("id, name").in("id", missingParentIds);
+    assertServiceResponse(parentsError);
+    for (const p of parents ?? []) parentNameMap.set(p.id, p.name);
+  }
+
+  return rows.map((row) => ({
+    ...row,
+    status: row.status as CategoryStatus,
+    parent_name: row.parent_id ? (parentNameMap.get(row.parent_id) ?? null) : null,
+    course_count: courseCountMap.get(row.id) ?? 0,
+  }));
+}
+
+export async function createCategory(input: CategoryInput) {
+  const supabase = getSupabaseClientOrThrow();
+  const slug = createSlug(input.slug ?? input.name);
+  const { data, error } = await supabase
+    .from("categories")
+    .insert({
+      name: input.name,
+      slug,
+      description: input.description ?? null,
+      parent_id: input.parent_id ?? null,
+      icon: input.icon ?? null,
+      sort_order: input.sort_order ?? 0,
+      status: "active",
+    })
+    .select("*")
+    .single();
+  assertNotDuplicateCategorySlug(error);
+  assertServiceResponse(error);
+  return data;
+}
+
+export async function updateCategory(id: string, input: Partial<CategoryInput>) {
+  const supabase = getSupabaseClientOrThrow();
+  const payload: Updates<"categories"> = {
+    ...(input.name !== undefined ? { name: input.name } : {}),
+    ...(input.slug !== undefined ? { slug: createSlug(input.slug) } : {}),
+    ...(input.description !== undefined ? { description: input.description } : {}),
+    ...(input.parent_id !== undefined ? { parent_id: input.parent_id } : {}),
+    ...(input.icon !== undefined ? { icon: input.icon } : {}),
+    ...(input.sort_order !== undefined ? { sort_order: input.sort_order } : {}),
+  };
+  const { data, error } = await supabase.from("categories").update(payload).eq("id", id).select("*").single();
+  assertNotDuplicateCategorySlug(error);
+  assertServiceResponse(error);
+  return data;
+}
+
+/** The "activate/deactivate" action - archiving hides a category from new selection while preserving its existing course associations (course_categories rows are untouched). */
+export async function setCategoryStatus(id: string, status: Extract<CategoryStatus, "active" | "archived">) {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("categories").update({ status }).eq("id", id).select("*").single();
+  assertServiceResponse(error);
+  return data;
+}
+
+/**
+ * Hard delete. Blocked at the database level (prevent_referenced_category_deletion
+ * trigger) if the category has subcategories or any course association - the
+ * resulting Postgres error message is descriptive and safe to surface as-is.
+ */
+export async function deleteCategory(id: string) {
+  const supabase = getSupabaseClientOrThrow();
+  const { error } = await supabase.from("categories").delete().eq("id", id);
+  assertServiceResponse(error);
 }
 
 export async function getCourseBySlug(slug: string) {
@@ -313,13 +482,14 @@ export async function archiveMentorCourse(courseId: string): Promise<Course> {
 export type CategoryRow = Tables<"categories">;
 export type PublicCategory = CategoryRow & { subcategories: CategoryRow[] };
 
-/** Active (deleted_at IS NULL) categories, top-level with nested subcategories, for the public navbar/courses filters. */
+/** Active (deleted_at IS NULL, status='active') categories, top-level with nested subcategories, for the public navbar/courses filters. Pending/rejected/archived categories never appear here. */
 export async function listPublicCategories(): Promise<PublicCategory[]> {
   const supabase = getSupabaseClientOrThrow();
   const { data, error } = await supabase
     .from("categories")
     .select("*")
     .is("deleted_at", null)
+    .eq("status", "active")
     .order("sort_order", { ascending: true });
   assertServiceResponse(error);
 
@@ -368,6 +538,7 @@ async function resolveCategoryIdsForSlug(slug: string): Promise<string[] | null>
     .select("id, parent_id")
     .eq("slug", slug)
     .is("deleted_at", null)
+    .eq("status", "active")
     .maybeSingle();
   assertServiceResponse(error);
   if (!match) return [];
@@ -378,7 +549,8 @@ async function resolveCategoryIdsForSlug(slug: string): Promise<string[] | null>
     .from("categories")
     .select("id")
     .eq("parent_id", match.id)
-    .is("deleted_at", null);
+    .is("deleted_at", null)
+    .eq("status", "active");
   return [match.id, ...((children ?? []).map((c) => c.id))];
 }
 
