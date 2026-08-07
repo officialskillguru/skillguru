@@ -54,25 +54,28 @@ export function useAuthorizedRecipients() {
  */
 export function useConversationMessages(conversationId: string | undefined) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [isLoading, setIsLoading] = useState(!!conversationId);
   const [error, setError] = useState<string | null>(null);
+  // Tracks which conversationId the current `messages`/`error` actually
+  // belong to, so "isLoading" can be derived at render time instead of set
+  // synchronously inside the effect body (every setState call below happens
+  // inside the async .then callback, never in the effect body itself).
+  const [loadedForId, setLoadedForId] = useState<string | undefined>(undefined);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   useEffect(() => {
     if (!conversationId) return;
 
     let cancelled = false;
-    setIsLoading(true);
-    setError(null);
 
     void chatService.getMessages(conversationId).then((result) => {
       if (cancelled) return;
       if (result.success) {
         setMessages(result.data);
+        setError(null);
       } else {
         setError(result.error.message);
       }
-      setIsLoading(false);
+      setLoadedForId(conversationId);
     });
 
     if (channelRef.current) chatService.unsubscribeFromConversation(channelRef.current);
@@ -88,6 +91,8 @@ export function useConversationMessages(conversationId: string | undefined) {
       }
     };
   }, [conversationId]);
+
+  const isLoading = !!conversationId && loadedForId !== conversationId;
 
   return { messages, isLoading, error };
 }
