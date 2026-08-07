@@ -505,4 +505,74 @@ describe("courses.service", () => {
       expect(reason).toBe("Duplicate of an existing subcategory");
     });
   });
+
+  describe("duplicateMentorCourse (Phase F)", () => {
+    // A capturing variant of the shared proxy mock: records the payload
+    // passed to .insert(...) so the test can assert on it directly, instead
+    // of only on what a mocked .single() echoes back.
+    function makeCapturingCoursesFrom(sourceRow: Record<string, unknown>, onInsert: (payload: unknown) => void) {
+      let mode: "select" | "insert" = "select";
+      const handler: ProxyHandler<object> = {
+        get(_target, prop) {
+          if (prop === "then") {
+            const result = mode === "select" ? { data: sourceRow, error: null } : { data: { id: "new-course-id" }, error: null };
+            const promise = Promise.resolve(result);
+            return promise.then.bind(promise);
+          }
+          if (prop === "insert") {
+            return (payload: unknown) => {
+              mode = "insert";
+              onInsert(payload);
+              return proxy;
+            };
+          }
+          return () => proxy;
+        },
+      };
+      const proxy = new Proxy({}, handler);
+      return proxy;
+    }
+
+    it("clones only course-level fields as a new draft, force-owned by the calling mentor, with '(Copy)' appended to the title - never trusting the source row's id/slug/status/mentor_id", async () => {
+      const sourceRow = {
+        id: "course-1",
+        slug: "original-slug",
+        title: "Full-Stack Bootcamp",
+        status: "published",
+        mentor_id: "original-mentor",
+        price: 100,
+        created_at: "2026-01-01T00:00:00Z",
+        updated_at: "2026-01-02T00:00:00Z",
+        deleted_at: null,
+        created_by: "original-mentor",
+        updated_by: "original-mentor",
+        deleted_by: null,
+        course_categories: [{ category_id: "cat-1" }, { category_id: "cat-2" }],
+      };
+
+      const captured: { payload: Record<string, unknown> | null } = { payload: null };
+      mockSupabase.from = vi.fn((table: string) => {
+        if (table === "courses") {
+          return makeCapturingCoursesFrom(sourceRow, (payload) => {
+            captured.payload = payload as Record<string, unknown>;
+          });
+        }
+        return makeQueryResult(fromResults[table] ?? { data: null, error: null });
+      });
+
+      const { duplicateMentorCourse } = await loadService();
+      await duplicateMentorCourse("course-1", "calling-mentor");
+
+      expect(captured.payload).toMatchObject({
+        title: "Full-Stack Bootcamp (Copy)",
+        mentor_id: "calling-mentor",
+        status: "draft",
+        price: 100,
+      });
+      // The source row's own identity/audit fields must never survive into the insert.
+      expect(captured.payload).not.toHaveProperty("id");
+      expect(captured.payload).not.toHaveProperty("course_categories");
+      expect(captured.payload?.created_by).not.toBe("original-mentor");
+    });
+  });
 });

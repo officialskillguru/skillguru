@@ -268,6 +268,36 @@ export const notificationsService = {
   },
 
   // --------------------------------------------------------------------------
+  // Most recent "sent back for changes" reason for a specific course - lets
+  // the Course Builder show admin feedback contextually instead of forcing
+  // the mentor to dig through the general notifications list. Reuses the
+  // existing notifications infrastructure (course_id embedded in metadata by
+  // useRejectCourse) rather than adding a schema column for this.
+  // --------------------------------------------------------------------------
+  async getLatestCourseRejectionReason(courseId: string): Promise<Result<string | null>> {
+    try {
+      const supabase = getExtendedSupabaseClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return ok(null);
+
+      const { data, error } = await supabase
+        .from("notifications")
+        .select("metadata, created_at")
+        .eq("recipient_id", user.id)
+        .contains("metadata", { course_id: courseId })
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) return fail(new DatabaseError(error.message, error.code));
+      const metadata = (data?.metadata ?? {}) as { reason?: string };
+      return ok(metadata.reason ?? null);
+    } catch (e: unknown) {
+      return fail(new DatabaseError(String(e), "notification_course_rejection_reason"));
+    }
+  },
+
+  // --------------------------------------------------------------------------
   // Delete notification
   // --------------------------------------------------------------------------
   async deleteNotification(notificationId: string): Promise<Result<void>> {

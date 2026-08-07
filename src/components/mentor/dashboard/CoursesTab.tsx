@@ -1,8 +1,15 @@
 import { useRef, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Archive, BookOpen, Eye, FileEdit, ListTree, Loader2, Plus, SendHorizonal, Undo2 } from "lucide-react";
-import { useArchiveMentorCourse, useCourseMediaUrl, useMentorCourses, useSubmitCourseForReview, useWithdrawCourseSubmission } from "@/hooks/useMentorPortal";
+import { Archive, BookOpen, Copy, Eye, FileEdit, ListTree, Loader2, Plus, SendHorizonal, Undo2 } from "lucide-react";
+import {
+  useArchiveMentorCourse,
+  useCourseMediaUrl,
+  useDuplicateMentorCourse,
+  useMentorCourses,
+  useSubmitCourseForReview,
+  useWithdrawCourseSubmission,
+} from "@/hooks/useMentorPortal";
 import { CourseNotCompleteError } from "@/services/courses.service";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -43,9 +50,11 @@ function CourseThumbnail({ fileId }: Readonly<{ fileId: string | null }>) {
 }
 
 function CourseRow({ course }: Readonly<{ course: MentorCourseListItem }>) {
+  const navigate = useNavigate();
   const submit = useSubmitCourseForReview(course.id);
   const withdraw = useWithdrawCourseSubmission(course.id);
   const archive = useArchiveMentorCourse();
+  const duplicate = useDuplicateMentorCourse();
   const [archiving, setArchiving] = useState(false);
   const rowRef = useRef<HTMLLIElement>(null);
 
@@ -72,6 +81,16 @@ function CourseRow({ course }: Readonly<{ course: MentorCourseListItem }>) {
       rowRef.current?.focus();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to withdraw submission.");
+    }
+  };
+
+  const handleDuplicate = async () => {
+    try {
+      const copy = await duplicate.mutateAsync(course.id);
+      toast.success(`"${course.title}" duplicated as a new draft.`);
+      void navigate(mentorCourseEditRoute(copy.id));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to duplicate course.");
     }
   };
 
@@ -136,6 +155,18 @@ function CourseRow({ course }: Readonly<{ course: MentorCourseListItem }>) {
             <Eye className="size-3.5" aria-hidden="true" />
             Preview
           </Link>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => void handleDuplicate()}
+          disabled={duplicate.isPending}
+          aria-busy={duplicate.isPending}
+          aria-label={`Duplicate "${course.title}"`}
+          className="gap-1.5"
+        >
+          {duplicate.isPending ? <Loader2 className="size-3.5 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Copy className="size-3.5" aria-hidden="true" />}
+          Duplicate
         </Button>
 
         {course.status === "draft" && (

@@ -38,7 +38,7 @@ export function useApproveCourse() {
         course.mentor_id,
         "Course published",
         `"${course.title}" has been approved and is now live.`,
-        { category: "course", actionUrl: "/mentor/dashboard" }
+        { category: "course", actionUrl: `/mentor/courses/${courseId}/edit`, metadata: { course_id: courseId } }
       );
       return course;
     },
@@ -59,7 +59,7 @@ export function useRejectCourse() {
         course.mentor_id,
         "Course needs changes",
         `"${course.title}" was sent back for changes: ${reason}`,
-        { category: "course", actionUrl: "/mentor/dashboard" }
+        { category: "course", actionUrl: `/mentor/courses/${courseId}/edit`, metadata: { course_id: courseId, reason } }
       );
       return course;
     },

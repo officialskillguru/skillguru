@@ -1,9 +1,14 @@
 import { useRef } from "react";
 import { toast } from "sonner";
-import { AlertTriangle, Check, Loader2, X } from "lucide-react";
+import { AlertTriangle, Check, Loader2, MessageSquareWarning, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useCourseCompleteness, useSubmitCourseForReview, useWithdrawCourseSubmission } from "@/hooks/useMentorPortal";
+import {
+  useCourseCompleteness,
+  useCourseRejectionFeedback,
+  useSubmitCourseForReview,
+  useWithdrawCourseSubmission,
+} from "@/hooks/useMentorPortal";
 import { CourseNotCompleteError } from "@/services/courses.service";
 import type { StepProps } from "@/components/mentor/course-builder/types";
 
@@ -16,6 +21,7 @@ const STATUS_LABEL: Record<string, string> = {
 
 export function ReviewStep({ course }: Readonly<StepProps>) {
   const { data: completeness, isLoading } = useCourseCompleteness(course.id);
+  const { data: rejectionReason } = useCourseRejectionFeedback(course.status === "draft" ? course.id : undefined);
   const submit = useSubmitCourseForReview(course.id);
   const withdraw = useWithdrawCourseSubmission(course.id);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -63,6 +69,16 @@ export function ReviewStep({ course }: Readonly<StepProps>) {
           </div>
         )}
       </div>
+
+      {course.status === "draft" && rejectionReason && (
+        <div className="flex gap-3 rounded-lg border border-amber-300 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/40">
+          <MessageSquareWarning className="size-5 shrink-0 text-amber-600 dark:text-amber-500" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-bold text-amber-900 dark:text-amber-200">Admin requested changes</p>
+            <p className="mt-1 text-sm text-amber-800 dark:text-amber-300">{rejectionReason}</p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-2 rounded-lg border border-border p-4">
         <p className="text-sm font-bold text-foreground">Submission checklist</p>
@@ -117,6 +133,12 @@ export function ReviewStep({ course }: Readonly<StepProps>) {
           <Button type="button" variant="outline" onClick={() => void handleWithdraw()} disabled={withdraw.isPending} aria-busy={withdraw.isPending}>
             {withdraw.isPending ? "Withdrawing…" : "Withdraw & Edit"}
           </Button>
+        </div>
+      )}
+
+      {course.status === "published" && (
+        <div className="border-t border-border pt-4">
+          <Badge variant="success">Published - live on the public catalog</Badge>
         </div>
       )}
 

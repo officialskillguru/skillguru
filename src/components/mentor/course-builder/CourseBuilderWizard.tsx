@@ -7,6 +7,7 @@ import { PricingStep } from "@/components/mentor/course-builder/steps/PricingSte
 import { MediaStep } from "@/components/mentor/course-builder/steps/MediaStep";
 import { CurriculumStep } from "@/components/mentor/course-builder/steps/CurriculumStep";
 import { OutcomesStep } from "@/components/mentor/course-builder/steps/OutcomesStep";
+import { GalleryFaqStep } from "@/components/mentor/course-builder/steps/GalleryFaqStep";
 import { ReviewStep } from "@/components/mentor/course-builder/steps/ReviewStep";
 import { BUILDER_STEPS, type BuilderStepKey } from "@/components/mentor/course-builder/types";
 
@@ -139,6 +140,7 @@ export function CourseBuilderWizard({ courseId: routeCourseId, initialStep }: Re
         {activeStep === "media" && <MediaStep key={course.id} course={course} onDirtyChange={onDirtyChange} />}
         {activeStep === "curriculum" && <CurriculumStep key={course.id} course={course} onDirtyChange={onDirtyChange} />}
         {activeStep === "outcomes" && <OutcomesStep key={course.id} course={course} onDirtyChange={onDirtyChange} />}
+        {activeStep === "gallery" && <GalleryFaqStep key={course.id} course={course} onDirtyChange={onDirtyChange} />}
         {activeStep === "review" && <ReviewStep key={course.id} course={course} onDirtyChange={onDirtyChange} />}
       </div>
     </div>

@@ -370,8 +370,51 @@ export async function createCourse(input: CourseInput) {
     }));
     await supabase.from("course_categories").upsert(categoriesData);
   }
-  
+
   return data;
+}
+
+/**
+ * Mentor-facing "Duplicate": clones a course's own fields (title/pricing/
+ * outcomes/media refs/category links) into a brand-new draft. Never copies
+ * curriculum (modules/lessons) - matches the admin duplicate action's scope,
+ * which only ever copied course-level fields too. mentorId is always the
+ * caller's own id, never trusted from the source row, matching
+ * useCreateMentorCourse's existing convention.
+ */
+export async function duplicateMentorCourse(courseId: string, mentorId: string) {
+  const supabase = getSupabaseClientOrThrow();
+  const { data: source, error } = await supabase
+    .from("courses")
+    .select("*, course_categories(category_id)")
+    .eq("id", courseId)
+    .single();
+  assertServiceResponse(error);
+
+  const selectedCategoryIds = (source.course_categories ?? []).map((cc) => cc.category_id);
+
+  const {
+    id: _id,
+    slug: _slug,
+    status: _status,
+    created_at: _created_at,
+    updated_at: _updated_at,
+    deleted_at: _deleted_at,
+    created_by: _created_by,
+    updated_by: _updated_by,
+    deleted_by: _deleted_by,
+    course_categories: _course_categories,
+    mentor_id: _mentor_id,
+    ...rest
+  } = source;
+
+  return createCourse({
+    ...rest,
+    title: `${source.title} (Copy)`,
+    mentor_id: mentorId,
+    status: "draft",
+    selectedCategoryIds,
+  });
 }
 
 export async function updateCourse(id: string, input: Updates<"courses"> & { selectedCategoryIds?: string[] }) {

@@ -11,6 +11,7 @@ import {
 } from "@/services/mentor-portal.service";
 import {
   createCourse,
+  duplicateMentorCourse,
   getCourseById,
   updateCourse,
   listCourseCategories,
@@ -91,6 +92,7 @@ import {
   deleteQuestion,
   type NewQuestionInput,
 } from "@/services/quiz-authoring.service";
+import { notificationsService } from "@/services/notifications.service";
 
 export const mentorQueryKeys = {
   profileId: (userId: string) => ["mentor", "profileId", userId] as const,
@@ -187,6 +189,21 @@ export function useCreateMentorCourse() {
   });
 }
 
+export function useDuplicateMentorCourse() {
+  const { user } = useAuth();
+  const { data: mentorId } = useMentorProfileId();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (courseId: string) => {
+      if (!user?.id) throw new Error("Not authenticated.");
+      return duplicateMentorCourse(courseId, user.id);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: mentorQueryKeys.courses(mentorId || "") });
+    },
+  });
+}
+
 /** A single course, for the edit route. RLS is the authority on ownership - this just fetches by id, `getCourseById` throws if the row is unreachable under RLS. */
 export function useMentorCourse(courseId: string | undefined) {
   return useQuery({
@@ -236,6 +253,20 @@ export function useCourseCompleteness(courseId: string | undefined) {
     queryKey: mentorQueryKeys.courseCompleteness(courseId || ""),
     queryFn: () => getCourseCompleteness(courseId || ""),
     enabled: !!courseId,
+  });
+}
+
+/** The most recent admin "sent back for changes" reason for this course, if any - courses has no rejection_reason column, so this reuses the notification useRejectCourse() already sends. Only meaningful while the course is back in draft. */
+export function useCourseRejectionFeedback(courseId: string | undefined) {
+  return useQuery({
+    queryKey: ["mentor", "course-rejection-feedback", courseId || ""],
+    queryFn: async () => {
+      const result = await notificationsService.getLatestCourseRejectionReason(courseId!);
+      if (!result.success) throw result.error;
+      return result.data;
+    },
+    enabled: !!courseId,
+    staleTime: 30_000,
   });
 }
 
