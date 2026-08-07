@@ -201,7 +201,7 @@ export const router = createBrowserRouter([
           { path: "courses/lessons",      element: withSuspense(<AdminCoursesPage />) },
           { path: "courses/assignments",  element: withSuspense(<AdminAssignmentsPage />) },
           { path: "courses/quizzes",      element: withSuspense(<AdminCoursesPage />) },
-          { path: "courses/reviews",      element: withSuspense(<AdminMentorsPage />) },
+          { path: "courses/reviews",      element: withSuspense(<AdminCoursesPage />) },
 
           // Students
           { path: "students",                 element: withSuspense(<AdminStudentsPage />) },

@@ -52,7 +52,6 @@ const NAV: NavEntry[] = [
       { label: "Mentors", to: "/admin/users/mentors", icon: BriefcaseBusiness },
       { label: "Assignments", to: "/admin/courses/assignments", icon: ClipboardList },
       { label: "Certificates", to: "/admin/students/certificates", icon: Award },
-      { label: "Reviews", to: "/admin/courses/reviews", icon: Star },
     ],
   },
   { kind: "link", label: "CRM", to: "/admin/crm", icon: Workflow },

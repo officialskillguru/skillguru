@@ -40,3 +40,19 @@ Thumbs.db
 lint*.txt
 typecheck*.txt
 repo-forensics-*.txt
+# Claude
+.claude/
+CLAUDE.md
+
+# AI reports
+*_AUDIT.md
+*_IMPLEMENTATION_PLAN.md
+*_BLUEPRINT.md
+*_REPORT.md
+
+# Documentation
+docs/
+artifacts/
+
+# Scripts
+run_migration.mjs
