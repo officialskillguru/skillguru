@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   BarChart3,
@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 
 import { Logo } from "@/components/common/Logo";
+import { siteConfig } from "@/config/site";
 import { Breadcrumbs } from "@/components/common/Breadcrumbs";
 import { NotificationBell } from "@/components/dashboard/layout/NotificationBell";
 import {
@@ -36,19 +37,20 @@ import { isActiveRoute } from "@/lib/routes";
 
 import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
+import { useFocusTrapDrawer } from "@/hooks/useFocusTrapDrawer";
 
 const navItems = [
   { label: "Overview", to: "/mentor/overview", icon: LayoutDashboard },
-  { label: "Assigned Courses", to: "/mentor/courses", icon: BookOpen },
+  { label: "Assigned Courses", to: "/mentor/courses", icon: BookOpen, section: "Courses" },
   { label: "Course Builder", to: "/mentor/courses/new", icon: PlusCircle },
-  { label: "Students", to: "/mentor/students", icon: Users },
+  { label: "Students", to: "/mentor/students", icon: Users, section: "Learners" },
   { label: "Tasks", to: "/mentor/tasks", icon: ClipboardList },
   { label: "Reviews", to: "/mentor/reviews", icon: Star },
-  { label: "Analytics", to: "/mentor/analytics", icon: BarChart3 },
   { label: "Inbox", to: "/mentor/messages", icon: MessageSquare, section: "Communication" },
   { label: "Announcements", to: "/mentor/announcements", icon: Megaphone },
   { label: "Notifications", to: "/mentor/notifications", icon: Bell },
-  { label: "Profile", to: "/mentor/profile", icon: UserIcon },
+  { label: "Analytics", to: "/mentor/analytics", icon: BarChart3, section: "Insights" },
+  { label: "Profile", to: "/mentor/profile", icon: UserIcon, section: "Account" },
 ] as const;
 
 function initials(name: string | null | undefined, fallback: string) {
@@ -83,10 +85,10 @@ function Sidebar({ collapsed, onNavigate }: Readonly<{ collapsed?: boolean; onNa
         {collapsed ? (
           <div className="grid size-9 place-items-center rounded-lg bg-sidebar-accent font-black text-sidebar-accent-foreground">S</div>
         ) : (
-          <Logo className="text-white" />
+          <Logo src={siteConfig.logoWordmarkPath} imageClassName="h-8 w-auto" onDark />
         )}
       </div>
-      <nav aria-label="Mentor portal" className="flex-1 overflow-y-auto px-3 py-6">
+      <nav aria-label="Mentor portal" className="enterprise-scrollbar flex-1 overflow-y-auto px-3 py-6">
         {!collapsed && (
           <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-muted">
             Mentor Console
@@ -152,45 +154,15 @@ export function MentorPortalShell() {
   const drawerPanelRef = useRef<HTMLDivElement>(null);
   const drawerContainerRef = useRef<HTMLDivElement>(null);
 
-  const closeDrawer = () => {
-    setDrawerOpen(false);
-    mobileMenuButtonRef.current?.focus();
-  };
+  const closeDrawer = () => setDrawerOpen(false);
 
-  // Trap focus inside the mobile drawer (backdrop close button + panel links)
-  // while it is open, close on Escape, and move focus into the drawer when it
-  // opens (WCAG 2.1.2, 2.4.3). The trap spans the whole container, not just
-  // the panel, so Shift+Tab from the initial dialog focus can't escape past
-  // the backdrop's close button.
-  useEffect(() => {
-    if (!drawerOpen) return;
-    const panel = drawerPanelRef.current;
-    const container = drawerContainerRef.current;
-    panel?.focus();
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        closeDrawer();
-        return;
-      }
-      if (event.key !== "Tab" || !container) return;
-      const focusable = container.querySelectorAll<HTMLElement>("a[href], button:not([disabled])");
-      if (focusable.length === 0) return;
-      const first = focusable[0]!;
-      const last = focusable[focusable.length - 1]!;
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [drawerOpen]);
+  // Trap focus inside the mobile drawer (backdrop close button + panel
+  // links), close on Escape, move focus in on open and restore it on close
+  // (WCAG 2.1.2, 2.4.3) - shared with the Admin sidebar instead of a second
+  // hand-rolled copy of the same logic. The trap spans the whole container
+  // (not just the panel) so Shift+Tab from the first focusable can't escape
+  // past the backdrop's close button.
+  useFocusTrapDrawer(drawerOpen, closeDrawer, drawerContainerRef);
 
   const toggleCollapsed = () => {
     const next = !collapsed;

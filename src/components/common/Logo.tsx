@@ -1,7 +1,6 @@
 import { Link } from "react-router-dom";
 
 import { siteConfig } from "@/config/site";
-import { assetUrl } from "@/lib/asset-url";
 import { routes } from "@/lib/routes";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +24,9 @@ export function Logo({
         fetchPriority="high"
         decoding="async"
         onError={(event) => {
-          event.currentTarget.src = siteConfig.logoFallbacks[0] ?? assetUrl("/assets/logo/company-logo-placeholder.svg");
+          const img = event.currentTarget;
+          const nextFallback = siteConfig.logoFallbacks.find((candidate) => candidate !== img.src);
+          if (nextFallback) img.src = nextFallback;
         }}
       />
     </Link>

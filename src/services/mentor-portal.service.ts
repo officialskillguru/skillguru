@@ -35,12 +35,18 @@ export async function getMentorDashboardMetrics(mentorId: string) {
   // Courses
   const { data: mentorCourses, error: mcError } = await supabase
     .from("courses")
-    .select("id")
+    .select("id, status")
     .eq("mentor_id", mentorId);
 
   assertServiceResponse(mcError);
 
-  const courseIds = mentorCourses?.map((mc) => mc.id) || [];
+  const courseIds = (mentorCourses ?? []).map((mc) => mc.id);
+  const courseStatusBreakdown = {
+    draft: (mentorCourses ?? []).filter((c) => c.status === "draft").length,
+    underReview: (mentorCourses ?? []).filter((c) => c.status === "under_review").length,
+    published: (mentorCourses ?? []).filter((c) => c.status === "published").length,
+    archived: (mentorCourses ?? []).filter((c) => c.status === "archived").length,
+  };
 
   let studentsCount = 0;
   let reviewsCount = 0;
@@ -79,6 +85,7 @@ export async function getMentorDashboardMetrics(mentorId: string) {
     activeStudents: studentsCount,
     reviews: reviewsCount,
     completedEnrollments,
+    courseStatusBreakdown,
   };
 }
 

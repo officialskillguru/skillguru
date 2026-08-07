@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { Logo } from "@/components/common/Logo";
+import { siteConfig } from "@/config/site";
 import { isActiveRoute } from "@/lib/routes";
 import { useAuth } from "@/hooks/useAuth";
 import { initials, formatRole } from "@/lib/adminUi";
@@ -253,7 +254,7 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
               S
             </div>
           ) : (
-            <Logo className="text-white" />
+            <Logo src={siteConfig.logoWordmarkPath} imageClassName="h-8 w-auto" onDark />
           )}
         </div>
 

@@ -37,6 +37,20 @@ export function useConversations() {
   });
 }
 
+/** A conversation counts as unread when the caller's own membership row has no last_read_at, or it predates the conversation's last activity. Used for the mentor dashboard's "Unread Messages" tile and a recent-conversations preview - no separate unread-count RPC needed since this is derivable from data useConversations() already fetches. */
+export function useUnreadConversationsCount() {
+  const { authUser } = useAuth();
+  const selfId = authUser?.profile?.id;
+  const { data: conversations = [] } = useConversations();
+  if (!selfId) return 0;
+  return conversations.filter((conv) => {
+    const own = conv.members?.find((m) => m.user_id === selfId);
+    if (!own) return false;
+    if (!own.last_read_at) return true;
+    return new Date(own.last_read_at) < new Date(conv.updated_at);
+  }).length;
+}
+
 export function useAuthorizedRecipients() {
   return useQuery({
     queryKey: messagingQueryKeys.recipients(),

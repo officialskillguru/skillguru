@@ -4,6 +4,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useTheme } from "@/hooks/useTheme";
 import { Button } from "@/components/ui/button";
 import { NotificationBell } from "@/components/dashboard/layout/NotificationBell";
+import { siteConfig } from "@/config/site";
 
 interface DashboardTopbarProps {
   onOpenMenu: () => void;
@@ -30,7 +31,7 @@ export function DashboardTopbar({ onOpenMenu }: Readonly<DashboardTopbarProps>) 
             <Menu size={20} aria-hidden="true" />
           </Button>
           <Link to="/dashboard" className="flex items-center gap-2 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-primary">
-            <img src="/assets/logo/official-skill-guru-navbar.png" alt="SkillGuru" className="h-8 w-auto object-contain" />
+            <img src={siteConfig.logoWordmarkPath} alt="SkillGuru" className="h-8 w-auto object-contain" />
           </Link>
 
           {/* Local Search (Fallback for Global Search) */}
