@@ -39,9 +39,16 @@ export class ProfilesRepository {
       avatar_file_id: dto.avatarFileId,
       city: dto.city,
       state: dto.state,
+      country: dto.country,
+      address: dto.address,
       phone: dto.phone,
       username: dto.username,
       bio: dto.bio,
+      linkedin_url: dto.linkedinUrl,
+      github_url: dto.githubUrl,
+      portfolio_url: dto.portfolioUrl,
+      website_url: dto.websiteUrl,
+      twitter_url: dto.twitterUrl,
       metadata: dto.metadata as unknown as string, // Persistence boundary cast
       updated_at: new Date().toISOString(),
     };

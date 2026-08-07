@@ -13,6 +13,8 @@ export function mapProfileRowToDomain(row: ProfileRow): Profile {
     avatarFileId: row.avatar_file_id,
     city: row.city,
     state: row.state,
+    country: row.country,
+    address: row.address,
     phone: row.phone,
     username: row.username,
     bio: row.bio,
