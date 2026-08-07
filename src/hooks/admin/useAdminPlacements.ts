@@ -12,8 +12,10 @@ import {
   createJobPosting,
   updateJobPosting,
   softDeleteJobPosting,
+  getJobPosting,
   type JobPostingInput,
 } from "@/services/placement-jobs.service";
+import { notificationsService } from "@/services/notifications.service";
 import {
   listApplicantsForJob,
   listAllApplications,
@@ -100,10 +102,36 @@ export function useCreateJobPosting() {
   });
 }
 
+/**
+ * Publishing a job posting (status -> 'open') broadcasts to every student -
+ * checked against the job's status *before* this update, so editing an
+ * already-open posting never re-notifies. Every other placement-pipeline
+ * notification (application status, interview, offer) is already handled by
+ * its own SECURITY DEFINER RPC; this is the one gap - a plain admin-only
+ * UPDATE has no RPC of its own to carry a side effect.
+ */
 export function useUpdateJobPosting() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: { id: string; patch: Partial<JobPostingInput> }) => updateJobPosting(input.id, input.patch),
+    mutationFn: async (input: { id: string; patch: Partial<JobPostingInput> }) => {
+      const isPublishing = input.patch.status === "open";
+      const previous = isPublishing ? await getJobPosting(input.id) : null;
+      const updated = await updateJobPosting(input.id, input.patch);
+      if (isPublishing && previous && previous.status !== "open") {
+        try {
+          await notificationsService.broadcastNotification(
+            "New job opportunity",
+            `${updated.title} is now open for applications.`,
+            "student",
+            "placement",
+            "/dashboard/placement"
+          );
+        } catch (notifyError) {
+          console.error("Failed to notify students of the new job posting", notifyError);
+        }
+      }
+      return updated;
+    },
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.jobPostings }),
   });
 }

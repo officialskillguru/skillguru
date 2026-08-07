@@ -1,62 +1,53 @@
 import { registerMentors } from "./registerMentors";
 import { SearchRegistry } from "../core/SearchRegistry";
 import type { SearchRecord } from "../types";
-import type { Course } from "@/types/platform";
-import { courses } from "@/data/platform";
+import { listPublishedCourses } from "@/services/courses.service";
+import { resolveFileUrl } from "@/services/storage.service";
+import { faqs } from "@/data/platform";
 
 export function initializeSearchRegistry() {
   registerMentors();
 
-  // 1. Register Courses
-  SearchRegistry.register("courses", () => {
-    return courses.map((c: Course) => {
-      const record: SearchRecord = {
-        id: `course_${c.slug}`,
-        type: "course",
-        title: c.title,
-        subtitle: c.category,
-        description: c.summary,
-        category: "Courses",
-        url: `/courses/${c.slug}`,
-        image: c.image,
-        keywords: [c.category, ...c.skills, c.level],
-        popularity: 90,
-      };
-      return record;
-    });
+  // 1. Register Courses - real published courses only, never draft/under_review/archived
+  // (listPublishedCourses hardcodes status='published' server-side).
+  SearchRegistry.register("courses", async () => {
+    const { data: publishedCourses } = await listPublishedCourses({ pageSize: 100 });
+
+    const records = await Promise.all(
+      publishedCourses.map(async (c): Promise<SearchRecord> => {
+        const image = c.thumbnail_file_id ? await resolveFileUrl(c.thumbnail_file_id).catch(() => null) : null;
+        const categoryName = c.course_categories[0]?.categories?.name ?? undefined;
+        return {
+          id: `course_${c.slug}`,
+          type: "course",
+          title: c.title,
+          subtitle: categoryName,
+          description: c.short_description ?? c.description ?? undefined,
+          category: "Courses",
+          url: `/courses/${c.slug}`,
+          image: image ?? undefined,
+          keywords: [categoryName, c.level, c.language].filter((v): v is string => !!v),
+          popularity: 90,
+        };
+      })
+    );
+    return records;
   });
 
-  // 2. Register Projects (Mock)
-  SearchRegistry.register("projects", () => {
-    return [
-      {
-        id: "project_1",
-        type: "project",
-        title: "E-Commerce Microservices",
-        subtitle: "Advanced Node.js",
-        category: "Projects",
-        url: "/projects/e-commerce",
-        icon: "LayoutDashboard",
-        keywords: ["node", "microservices", "backend"],
-        popularity: 80,
-      }
-    ];
-  });
-
-  // 3. Register FAQs (Mock)
+  // 2. Register FAQs - the same static FAQ copy already shown on the public
+  // FAQ/contact pages (src/data/platform.ts `faqs`), not a separate
+  // fabricated single entry that didn't match what the site actually shows.
   SearchRegistry.register("faqs", () => {
-    return [
-      {
-        id: "faq_1",
-        type: "faq",
-        title: "Do you offer placement guarantee?",
-        description: "We offer 100% placement assistance but not a guarantee.",
-        category: "FAQ",
-        url: "/faq#placement",
-        icon: "HelpCircle",
-        keywords: ["placement", "job", "guarantee"],
-        popularity: 100,
-      }
-    ];
+    return faqs.map((f, index): SearchRecord => ({
+      id: `faq_${index}`,
+      type: "faq",
+      title: f.question,
+      description: f.answer,
+      category: "FAQ",
+      url: "/faq",
+      icon: "HelpCircle",
+      keywords: f.question.toLowerCase().split(/\s+/),
+      popularity: 60,
+    }));
   });
 }

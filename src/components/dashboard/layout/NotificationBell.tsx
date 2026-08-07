@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, CheckCheck, Trophy, CreditCard, MessageSquare, ClipboardList, Megaphone, Info, FolderTree } from "lucide-react";
+import { Bell, CheckCheck, Trophy, CreditCard, MessageSquare, ClipboardList, Megaphone, Info, FolderTree, Briefcase } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +21,7 @@ const CATEGORY_ICONS: Record<Notification["category"], typeof Bell> = {
   message: MessageSquare,
   assignment: ClipboardList,
   certificate: Trophy,
+  placement: Briefcase,
   system: Info,
   general: Megaphone,
 };
