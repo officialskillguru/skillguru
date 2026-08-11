@@ -28,6 +28,8 @@ import {
   useCreateJobPosting,
   useUpdateJobPosting,
   useSoftDeleteJobPosting,
+  useApproveJobPosting,
+  useRejectJobPosting,
   useAllApplications,
   useAdvanceApplicationStage,
   useAdminStatusHistory,
@@ -298,6 +300,8 @@ function JobsTab() {
   const createJob = useCreateJobPosting();
   const updateJob = useUpdateJobPosting();
   const softDelete = useSoftDeleteJobPosting();
+  const approveJob = useApproveJobPosting();
+  const rejectJob = useRejectJobPosting();
 
   const [editorOpen, setEditorOpen] = useState(false);
   type JobFormState = Partial<JobPostingWithPartner> & { skillsText?: string };
@@ -368,16 +372,65 @@ function JobsTab() {
         id: "status",
         header: "Status",
         cell: ({ row }) => (
-          <Badge variant={row.original.status === "open" ? "success" : row.original.status === "draft" ? "muted" : "destructive"} className="capitalize">
-            {row.original.status}
+          <Badge
+            variant={
+              row.original.status === "open"
+                ? "success"
+                : row.original.status === "under_review"
+                  ? "warning"
+                  : row.original.status === "draft"
+                    ? "muted"
+                    : "destructive"
+            }
+            className="capitalize"
+          >
+            {row.original.status.replace("_", " ")}
           </Badge>
         ),
+      },
+      {
+        id: "owner",
+        header: "Submitted by",
+        cell: ({ row }) => (row.original.created_by ? <span className="text-xs text-muted-foreground">Mentor</span> : <span className="text-xs text-muted-foreground">Admin</span>),
       },
       {
         id: "actions",
         header: "",
         cell: ({ row }) => (
-          <div className="flex justify-end">
+          <div className="flex items-center justify-end gap-1">
+            {row.original.status === "under_review" && (
+              <>
+                <button
+                  onClick={() =>
+                    approveJob.mutate(row.original.id, {
+                      onSuccess: () => toast.success(`"${row.original.title}" approved and published.`),
+                      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to approve."),
+                    })
+                  }
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-emerald-50 hover:text-emerald-700"
+                  title="Approve and publish"
+                >
+                  <CheckCircle2 className="size-4" />
+                </button>
+                <button
+                  onClick={() => {
+                    const reason = window.prompt(`Reason for sending "${row.original.title}" back to the mentor for changes:`);
+                    if (!reason) return;
+                    rejectJob.mutate(
+                      { id: row.original.id, reason },
+                      {
+                        onSuccess: () => toast.success("Sent back to the mentor for changes."),
+                        onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to send back."),
+                      }
+                    );
+                  }}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600"
+                  title="Send back for changes"
+                >
+                  <Ban className="size-4" />
+                </button>
+              </>
+            )}
             <button
               onClick={() => {
                 if (!window.confirm(`Cancel and delete "${row.original.title}"? Existing applications are kept.`)) return;
@@ -392,7 +445,7 @@ function JobsTab() {
         ),
       },
     ],
-    [softDelete]
+    [softDelete, approveJob, rejectJob]
   );
 
   return (
@@ -467,6 +520,7 @@ function JobsTab() {
                 <FormField label="Status">
                   <select value={selected.status ?? "draft"} onChange={(e) => setSelected({ ...selected, status: e.target.value })} className={INPUT_CLS}>
                     <option value="draft">Draft</option>
+                    <option value="under_review">Under Review</option>
                     <option value="open">Open</option>
                     <option value="closed">Closed</option>
                     <option value="cancelled">Cancelled</option>

@@ -20,7 +20,7 @@ export type JobPostingInput = {
   skillsRequired?: string[];
   openingsCount?: number;
   applicationDeadline?: string | null;
-  status?: "draft" | "open" | "closed" | "cancelled";
+  status?: "draft" | "under_review" | "open" | "closed" | "cancelled";
 };
 
 export type JobBrowseFilters = {
@@ -131,4 +131,129 @@ export async function softDeleteJobPosting(id: string): Promise<void> {
   const supabase = getSupabaseClientOrThrow();
   const { error } = await supabase.from("job_postings").update({ deleted_at: new Date().toISOString(), status: "cancelled" }).eq("id", id);
   assertServiceResponse(error);
+}
+
+// ─── Mentor management (Phase J) ─────────────────────────────────────────────
+// Additive on top of the admin-only functions above - job_postings_insert/
+// update RLS (20260812000001_mentor_job_postings.sql) now also allows a
+// mentor holding jobs.manage_own to write their OWN postings (created_by =
+// auth.uid()), and enforce_job_posting_transition is the actual security
+// boundary for which status changes that write may make - these functions
+// don't re-implement that boundary, they just send honest values through it.
+
+/** The calling mentor's own postings, any status - listAllJobPostings() is admin-scoped (sees every mentor's postings); this is deliberately narrower. */
+export async function listMyJobPostings(mentorId: string): Promise<JobPostingWithPartner[]> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase
+    .from("job_postings")
+    .select("*, hiring_partners(id, name, logo_url, industry)")
+    .eq("created_by", mentorId)
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
+  assertServiceResponse(error);
+  return data ?? [];
+}
+
+/** Mentor-facing create: always inserts as 'draft' - enforce_job_posting_transition rejects anything else regardless of what this sends, so this is honest client code, not the guarantee itself. */
+export async function createMentorJobPosting(mentorId: string, input: JobPostingInput): Promise<JobPosting> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase
+    .from("job_postings")
+    .insert({
+      hiring_partner_id: input.hiringPartnerId,
+      title: input.title,
+      description: input.description,
+      employment_type: input.employmentType ?? "full_time",
+      location: input.location ?? null,
+      is_remote: input.isRemote ?? false,
+      min_package: input.minPackage ?? null,
+      max_package: input.maxPackage ?? null,
+      currency: input.currency ?? "INR",
+      eligibility_criteria: input.eligibilityCriteria ?? {},
+      skills_required: input.skillsRequired ?? [],
+      openings_count: input.openingsCount ?? 1,
+      application_deadline: input.applicationDeadline ?? null,
+      status: "draft",
+      created_by: mentorId,
+      updated_by: mentorId,
+    })
+    .select("*")
+    .single();
+  assertServiceResponse(error);
+  return data;
+}
+
+/** Mentor-facing edit of their own posting's fields. Status transitions go through the dedicated functions below, not this. */
+export async function updateMentorJobPosting(id: string, input: Partial<Omit<JobPostingInput, "status">>): Promise<JobPosting> {
+  return updateJobPosting(id, input);
+}
+
+export async function submitJobForReview(id: string): Promise<JobPosting> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("job_postings").update({ status: "under_review" }).eq("id", id).select("*").single();
+  assertServiceResponse(error);
+
+  try {
+    const { error: notifyError } = await supabase.rpc("notify_admins_job_submitted", { p_job_posting_id: id });
+    if (notifyError) console.error("Failed to notify admins of job submission", notifyError);
+  } catch (notifyError) {
+    console.error("Failed to notify admins of job submission", notifyError);
+  }
+
+  return data;
+}
+
+export async function withdrawJobSubmission(id: string): Promise<JobPosting> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("job_postings").update({ status: "draft" }).eq("id", id).select("*").single();
+  assertServiceResponse(error);
+  return data;
+}
+
+/** Toggles a mentor's own already-approved posting between open (accepting applications) and closed (paused) - never touches draft/under_review. */
+export async function setMentorJobOpenState(id: string, isOpen: boolean): Promise<JobPosting> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase
+    .from("job_postings")
+    .update({ status: isOpen ? "open" : "closed" })
+    .eq("id", id)
+    .select("*")
+    .single();
+  assertServiceResponse(error);
+  return data;
+}
+
+export async function archiveMentorJobPosting(id: string): Promise<JobPosting> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.from("job_postings").update({ status: "cancelled" }).eq("id", id).select("*").single();
+  assertServiceResponse(error);
+  return data;
+}
+
+/**
+ * Clones a posting's own fields into a brand-new draft, force-owned by the
+ * calling mentor - mirrors duplicateMentorCourse()'s exact scope and
+ * ownership-forcing pattern (Phase F). Never copies id/status/timestamps/
+ * audit fields from the source.
+ */
+export async function duplicateMentorJobPosting(jobPostingId: string, mentorId: string): Promise<JobPosting> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data: source, error } = await supabase.from("job_postings").select("*").eq("id", jobPostingId).single();
+  assertServiceResponse(error);
+
+  return createMentorJobPosting(mentorId, {
+    hiringPartnerId: source.hiring_partner_id,
+    title: `${source.title} (Copy)`,
+    description: source.description,
+    employmentType: source.employment_type as JobPostingInput["employmentType"],
+    location: source.location,
+    isRemote: source.is_remote,
+    minPackage: source.min_package,
+    maxPackage: source.max_package,
+    currency: source.currency,
+    eligibilityCriteria: source.eligibility_criteria,
+    skillsRequired: source.skills_required,
+    openingsCount: source.openings_count,
+    applicationDeadline: source.application_deadline,
+  });
 }

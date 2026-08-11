@@ -144,6 +144,48 @@ export function useSoftDeleteJobPosting() {
   });
 }
 
+/** Approves a mentor's under_review job posting (-> open) and notifies the owning mentor - mirrors useApproveCourse(). */
+export function useApproveJobPosting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const job = await getJobPosting(id);
+      const updated = await updateJobPosting(id, { status: "open" });
+      if (job?.created_by) {
+        await notificationsService.sendNotification(
+          job.created_by,
+          "Job posting approved",
+          `"${updated.title}" has been approved and is now open for applications.`,
+          { category: "placement", actionUrl: "/mentor/jobs", metadata: { job_posting_id: id } }
+        );
+      }
+      return updated;
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.jobPostings }),
+  });
+}
+
+/** Rejects a mentor's under_review job posting (-> draft) with a reason, and notifies the owning mentor - mirrors useRejectCourse(). */
+export function useRejectJobPosting() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; reason: string }) => {
+      const job = await getJobPosting(input.id);
+      const updated = await updateJobPosting(input.id, { status: "draft" });
+      if (job?.created_by) {
+        await notificationsService.sendNotification(
+          job.created_by,
+          "Job posting needs changes",
+          `"${updated.title}" was sent back for changes: ${input.reason}`,
+          { category: "placement", actionUrl: "/mentor/jobs", metadata: { job_posting_id: input.id, reason: input.reason } }
+        );
+      }
+      return updated;
+    },
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: adminPlacementQueryKeys.jobPostings }),
+  });
+}
+
 // ─── Applications / pipeline ─────────────────────────────────────────────────
 
 export function useApplicantsForJob(jobId: string | undefined) {

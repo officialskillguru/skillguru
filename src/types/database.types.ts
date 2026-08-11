@@ -6389,6 +6389,10 @@ export type Database = {
         Args: { p_course_id: string }
         Returns: undefined
       }
+      notify_admins_job_submitted: {
+        Args: { p_job_posting_id: string }
+        Returns: undefined
+      }
       list_authorized_message_recipients: {
         Args: Record<PropertyKey, never>
         Returns: { id: string; full_name: string | null; email: string | null; role: string }[]

@@ -55,6 +55,7 @@ const MentorCourseBuilderPage = lazy(() => import("@/pages/mentor/MentorCourseBu
 const MentorStudentsPage     = lazy(() => import("@/pages/mentor/MentorStudentsPage"));
 const MentorTasksPage        = lazy(() => import("@/pages/mentor/MentorTasksPage"));
 const MentorReviewsPage      = lazy(() => import("@/pages/mentor/MentorReviewsPage"));
+const MentorJobsPage         = lazy(() => import("@/pages/mentor/MentorJobsPage"));
 const MentorAnalyticsPage    = lazy(() => import("@/pages/mentor/MentorAnalyticsPage"));
 const MentorNotificationsPage = lazy(() => import("@/pages/mentor/MentorNotificationsPage"));
 const MentorMessagesPage    = lazy(() => import("@/pages/mentor/MentorMessagesPage"));
@@ -169,6 +170,7 @@ export const router = createBrowserRouter([
           { path: "students",  element: withSuspense(<MentorStudentsPage />) },
           { path: "tasks",     element: withSuspense(<MentorTasksPage />) },
           { path: "reviews",   element: withSuspense(<MentorReviewsPage />) },
+          { path: "jobs",      element: withSuspense(<MentorJobsPage />) },
           { path: "analytics", element: withSuspense(<MentorAnalyticsPage />) },
           { path: "messages", element: withSuspense(<MentorMessagesPage />) },
           { path: "messages/:conversationId", element: withSuspense(<MentorMessagesPage />) },
