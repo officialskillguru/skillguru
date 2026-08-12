@@ -22,7 +22,10 @@ import type { badgeVariants } from "@/components/ui/badge-variants";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { QuickFilterChips } from "@/components/common/QuickFilterChips";
 import type { VariantProps } from "class-variance-authority";
+
+type QuickType = "all" | "jobs" | "internships";
 
 const INPUT_CLS = "w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus:border-primary";
 
@@ -54,9 +57,17 @@ export default function MentorJobsPage() {
   const [editorOpen, setEditorOpen] = useState(false);
   const [selected, setSelected] = useState<JobFormState | null>(null);
   const [applicantsJob, setApplicantsJob] = useState<JobPostingWithPartner | null>(null);
+  const [quickType, setQuickType] = useState<QuickType>("all");
 
   const handleCreate = () => {
-    setSelected({ title: "", description: "", employment_type: "full_time", currency: "INR", openings_count: 1, skillsText: "" });
+    setSelected({
+      title: "",
+      description: "",
+      employment_type: quickType === "internships" ? "internship" : "full_time",
+      currency: "INR",
+      openings_count: 1,
+      skillsText: "",
+    });
     setEditorOpen(true);
   };
 
@@ -125,13 +136,15 @@ export default function MentorJobsPage() {
   }
 
   const list = jobs ?? [];
+  const visibleList =
+    quickType === "all" ? list : list.filter((j) => (quickType === "internships") === (j.employment_type === "internship"));
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-foreground">Job Postings</h2>
-          <p className="text-sm text-muted-foreground">Post openings for your network and track applicants. New postings need admin approval before going live.</p>
+          <p className="text-sm text-muted-foreground">Post openings and internships for your network and track applicants. New postings need admin approval before going live.</p>
         </div>
         <Button onClick={handleCreate} className="gap-2">
           <Plus className="size-4" aria-hidden="true" />
@@ -148,11 +161,28 @@ export default function MentorJobsPage() {
         ))}
       </div>
 
+      {list.length > 0 && (
+        <QuickFilterChips
+          label="Filter by opportunity type"
+          value={quickType}
+          onChange={setQuickType}
+          options={[
+            { value: "all", label: "All" },
+            { value: "jobs", label: "Jobs" },
+            { value: "internships", label: "Internships" },
+          ]}
+        />
+      )}
+
+      <p aria-live="polite" className="sr-only">
+        {`${visibleList.length} posting${visibleList.length === 1 ? "" : "s"} shown`}
+      </p>
+
       {list.length === 0 ? (
         <EmptyState
           icon={<Briefcase className="size-8" aria-hidden="true" />}
           title="No job postings yet"
-          description="Post an opening for your students and professional network to apply to."
+          description="Post an opening or internship for your students and professional network to apply to."
           primaryAction={
             <Button onClick={handleCreate} className="gap-2">
               <Plus className="size-4" aria-hidden="true" />
@@ -160,9 +190,15 @@ export default function MentorJobsPage() {
             </Button>
           }
         />
+      ) : visibleList.length === 0 ? (
+        <EmptyState
+          icon={<Briefcase className="size-8" aria-hidden="true" />}
+          title={quickType === "internships" ? "No internship postings yet" : "No job postings yet"}
+          description="Switch the filter above, or create a new posting."
+        />
       ) : (
         <ul className="space-y-3">
-          {list.map((job) => (
+          {visibleList.map((job) => (
             <JobRow
               key={job.id}
               job={job}

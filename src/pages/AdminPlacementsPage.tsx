@@ -17,6 +17,7 @@ import {
   Ban,
 } from "lucide-react";
 import { DataTable } from "@/components/common/DataTable";
+import { QuickFilterChips } from "@/components/common/QuickFilterChips";
 import { Badge } from "@/components/ui/badge";
 import {
   useAdminHiringPartners,
@@ -448,18 +449,39 @@ function JobsTab() {
     [softDelete, approveJob, rejectJob]
   );
 
+  const [quickType, setQuickType] = useState<"all" | "jobs" | "internships">("all");
+  const visibleJobs = useMemo(() => {
+    const list = jobs ?? [];
+    if (quickType === "all") return list;
+    return list.filter((j) => (quickType === "internships") === (j.employment_type === "internship"));
+  }, [jobs, quickType]);
+
   return (
     <div className="space-y-4 pt-4">
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <QuickFilterChips
+          label="Filter by opportunity type"
+          value={quickType}
+          onChange={setQuickType}
+          options={[
+            { value: "all", label: "All" },
+            { value: "jobs", label: "Jobs" },
+            { value: "internships", label: "Internships" },
+          ]}
+        />
         <button onClick={handleCreate} className="flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground shadow-lg shadow-primary/15 hover:bg-primary/90">
           <Plus className="size-4" /> New Job Posting
         </button>
       </div>
 
+      <p aria-live="polite" className="sr-only">
+        {`${visibleJobs.length} posting${visibleJobs.length === 1 ? "" : "s"} shown`}
+      </p>
+
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-14 w-full animate-pulse rounded-xl bg-muted" />)}</div>
       ) : (
-        <DataTable columns={columns} data={jobs ?? []} />
+        <DataTable columns={columns} data={visibleJobs} />
       )}
 
       <AnimatePresence>

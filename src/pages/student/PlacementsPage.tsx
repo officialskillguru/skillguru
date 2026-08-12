@@ -15,6 +15,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
+import { QuickFilterChips } from "@/components/common/QuickFilterChips";
 import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { uploadFile } from "@/services/storage.service";
@@ -77,7 +78,7 @@ export default function PlacementsPage() {
 
       <div className="flex flex-wrap gap-2 border-b border-border">
         {([
-          { id: "browse", label: "Browse Jobs" },
+          { id: "browse", label: "Browse Opportunities" },
           { id: "applications", label: "My Applications" },
           { id: "interviews", label: "Interviews" },
           { id: "offers", label: "Offers & History" },
@@ -107,14 +108,17 @@ export default function PlacementsPage() {
 // Browse
 // ─────────────────────────────────────────────────────────────────────────
 
+type QuickType = "all" | "jobs" | "internships";
+
 function BrowseJobsTab() {
   const [search, setSearch] = useState("");
+  const [quickType, setQuickType] = useState<QuickType>("all");
   const [employmentType, setEmploymentType] = useState("");
   const [remoteOnly, setRemoteOnly] = useState(false);
 
   const filters: JobBrowseFilters = {
     search: search || undefined,
-    employmentType: employmentType || undefined,
+    employmentType: quickType === "internships" ? "internship" : employmentType || undefined,
     isRemote: remoteOnly ? true : undefined,
   };
 
@@ -125,22 +129,45 @@ function BrowseJobsTab() {
 
   if (error) return <ErrorState title="Failed to load job postings" message={error.message} />;
 
+  const visibleJobs = quickType === "jobs" ? (jobs ?? []).filter((j) => j.employment_type !== "internship") : jobs ?? [];
+  const emptyMessage =
+    quickType === "internships"
+      ? "No internship listings right now. Check back soon - new openings are added regularly."
+      : "Check back soon - new openings are added regularly.";
+
   return (
     <div className="space-y-4 pt-2">
+      <QuickFilterChips
+        label="Filter by opportunity type"
+        value={quickType}
+        onChange={setQuickType}
+        options={[
+          { value: "all", label: "All" },
+          { value: "jobs", label: "Jobs" },
+          { value: "internships", label: "Internships" },
+        ]}
+      />
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[220px]">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
-          <label htmlFor="job-search" className="sr-only">Search jobs</label>
+          <label htmlFor="job-search" className="sr-only">Search opportunities</label>
           <input
             id="job-search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search jobs by title..."
+            placeholder="Search by title..."
             className="h-10 w-full rounded-xl border border-border bg-card pl-9 pr-4 text-sm outline-none focus:border-primary"
           />
         </div>
         <label htmlFor="employment-type" className="sr-only">Employment type</label>
-        <select id="employment-type" value={employmentType} onChange={(e) => setEmploymentType(e.target.value)} className="h-10 rounded-xl border border-border bg-card px-3 text-xs font-bold outline-none focus:border-primary">
+        <select
+          id="employment-type"
+          value={employmentType}
+          onChange={(e) => setEmploymentType(e.target.value)}
+          disabled={quickType === "internships"}
+          className="h-10 rounded-xl border border-border bg-card px-3 text-xs font-bold outline-none focus:border-primary disabled:opacity-50"
+        >
           <option value="">All types</option>
           <option value="full_time">Full Time</option>
           <option value="part_time">Part Time</option>
@@ -152,13 +179,17 @@ function BrowseJobsTab() {
         </label>
       </div>
 
+      <p aria-live="polite" className="sr-only">
+        {isLoading ? "Loading results" : `${visibleJobs.length} result${visibleJobs.length === 1 ? "" : "s"} found`}
+      </p>
+
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-40 w-full rounded-2xl" />)}
         </div>
-      ) : jobs && jobs.length > 0 ? (
+      ) : visibleJobs.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
-          {jobs.map((job) => (
+          {visibleJobs.map((job) => (
             <JobCard
               key={job.id}
               job={job}
@@ -169,7 +200,7 @@ function BrowseJobsTab() {
           ))}
         </div>
       ) : (
-        <EmptyState title="No open positions right now" message="Check back soon - new openings are added regularly." icon={<Briefcase className="size-10" aria-hidden="true" />} />
+        <EmptyState title="No open positions right now" message={emptyMessage} icon={<Briefcase className="size-10" aria-hidden="true" />} />
       )}
 
       {applyingJob && <ApplyModal job={applyingJob} onClose={() => setApplyingJob(null)} />}
