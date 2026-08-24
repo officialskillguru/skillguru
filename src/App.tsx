@@ -7,6 +7,6 @@ export default function App() {
   return (
     <HelmetProvider>
       <RouterProvider router={router} />
-    </HelmetProvider>
+    </HelmetProvider>  
   );
 }

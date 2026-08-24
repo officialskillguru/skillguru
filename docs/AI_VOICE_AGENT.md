@@ -17,7 +17,7 @@ The original ask for this feature was a full enterprise voice AI platform — RA
 | 2.3 — AIProvider abstraction + Gemini integration | **Code-complete, deployed (2026-07-26)** | Conversation orchestrator, provider abstraction, prompt manager, state machine, intent/entity extraction, lead scoring, tool framework, rate limiting, PII-safe logging — see below. **Blocked on `GEMINI_API_KEY`** before it can actually generate a response end-to-end. |
 | 2.4 — One real n8n workflow (lead capture → CRM → notification) | Not started | Proves the integration pattern end-to-end before adding voice on top. **Blocked on `N8N_BASE_URL` + `N8N_API_KEY`** — no n8n instance is connected yet. |
 | 2.5 — Voice (ElevenLabs STT/TTS) | Not started | Streaming, VAD, barge-in. Needs a real ElevenLabs key (rotate the exposed one first) and a decision on where audio streaming terminates (browser ↔ edge function vs. browser ↔ n8n). |
-| 2.6 — Website embed (widget on Home page etc.) | Not started | A `<VoiceAgentWidget />` component, added to the public layout once 2.3–2.5 are real. Not built yet — there is nothing real to embed. |
+| 2.6 — Website embed (chat widget on the public site) | **Code-complete (2026-08-20)** | Frontend plumbing + an accessible non-modal chat widget mounted in `MarketingLayout`. Built ahead of 2.5 (voice) because 2.3's `converse` endpoint is already real and callable — chat needs no new provider. **Not yet verified live**: the Supabase project is paused. See below. |
 | 2.7+ — Payments, Calendar, SMS, analytics dashboards, testing, security hardening | Not started | Each needs its own real provider credentials (`PAYMENT_PROVIDER`/keys, `GOOGLE_CALENDAR_*`, Twilio phone number) before it can be wired for real, per this project's standing rule against building UI on top of unconfigured integrations. |
 
 ## What Phase 2.1 actually built
@@ -116,3 +116,40 @@ This confirms every stage of the checklist: documents exist → chunks are embed
 - `TWILIO_PHONE` — blank (SID/token were provided but the sending number wasn't).
 - `JWT_SECRET`/`ENCRYPTION_KEY` — blank; needed before any custom token signing or field-level encryption (e.g. for `mentor_profiles.payout_details`-style sensitive data) is added to this feature.
 - A live ElevenLabs key (the one shared in chat should be rotated before use, per the security note above).
+
+## What Phase 2.6 actually built (2026-08-20)
+
+Chat-channel frontend integration for the Phase 2.3 `converse` endpoint. Voice (2.5) is still not started — this deliberately went first because chat needs no provider that isn't already connected, so it turns the existing orchestrator into something a real visitor can use.
+
+- **`src/services/ai-conversation.service.ts`** — browser client for `POST /functions/v1/converse`. Does not touch the `agent_*` tables directly (anonymous visitors have no RLS access to them by design). Two things it handles that a naive client would get wrong:
+  - **Failures are values, not exceptions.** `converse` answers some non-OK outcomes with HTTP 200 and a `code` in the body, and others with a non-2xx status. supabase-js surfaces those two cases completely differently (the latter as an opaque `error` with the real envelope hidden on `error.context`). Both are normalised to `{ ok: false, error }` so callers have one failure path.
+  - **Rate limiting keeps its `retryAfterSeconds`.** It is read back off the `Response` on the error object. Without this, the widget would render a generic "something went wrong" for the endpoint's single most routine failure (20 msgs/60s).
+  - `getOrCreateVisitorId()` persists the UUID `converse` requires to continue a session. Guarded against localStorage throwing outright (Safari private mode, blocked cookies) and against a corrupted stored value, which would otherwise 400 on every request and wedge the widget permanently for that browser.
+- **`src/types/ai-agent.ts`** — browser-side mirror of the intent/state/entity vocabulary. The canonical lists live in the Deno edge modules, which the Vite app cannot import.
+- **`src/types/__tests__/agentContractParity.test.ts`** — parses the real edge sources at test time and fails if either list drifts from the mirror. Drift would not fail typecheck; the browser would just silently stop recognising a state the agent really returns. Also asserts the inline `conversationState` enum inside `AGENT_TURN_RESPONSE_SCHEMA` matches the state machine, so the model cannot be handed a state nothing downstream handles.
+- **`src/hooks/useAIConversation.ts`** — session state machine. Deliberately **not** react-query: this is an append-only conversation, not cached server state. Replaying a turn would create a second real `agent_messages` row and re-run lead scoring, so there is nothing safe to invalidate or refetch. Renders the user's turn optimistically (a 2–25s round trip is far too long to leave the composer inert), keeps a failed turn visible and retryable rather than discarding what the visitor typed, and guards double-submit with a ref rather than `isSending` (two handlers can read the same stale `false`).
+- **`src/components/site/AIAgentWidget.tsx`** + **`AgentCitations.tsx`** — the widget, mounted in `MarketingLayout` after `<Footer />`.
+
+### Accessibility
+
+Specified by a full review against this codebase's own primitives before implementation, not retrofitted. The load-bearing decisions:
+
+- **Disclosure, not a Dialog.** `ui/dialog.tsx`/`ui/sheet.tsx` hardcode a full-screen `bg-black/80` scrim inside their Content, and Radix Dialog with `modal={false}` still closes on outside pointerdown — which would discard a half-typed message every time the visitor clicked the page behind it. `useFocusTrapDrawer` is also unusable here: it traps Tab, listens for Escape on `document`, and restores focus from effect *cleanup*. All three are wrong for a non-modal widget.
+- **The panel is always mounted, toggled via the `hidden` attribute.** `aria-controls` must reference a node that exists while closed; `hidden` removes it from the a11y tree and tab order for free; and keeping it mounted preserves the draft and transcript across close/reopen, which is what makes unconditional Escape-to-close safe.
+- **Exactly one live region.** The transcript is `role="log"` with an explicit `aria-live="off"` (overriding the implicit `polite` on `role="log"`), and all announcement flows through a single `sr-only` `role="status"` region. This is what prevents the whole history being announced on open and the visitor's own message being read back to them — both of which the existing `ConversationView.tsx` does. Identical consecutive announcements are re-announced by clearing and setting on the next frame, since React would otherwise render no change and the screen reader would stay silent.
+- **Focus is never stolen by an arriving reply.** It moves to the composer on open, returns to the launcher on close, and otherwise stays put. Yanking focus 2–25s after the visitor moved on to reading the page is hostile.
+- **The rate-limit countdown is `aria-hidden`.** A per-second number inside a live region announces every single tick. The 429 itself is announced once via `role="alert"`; recovery once via the polite region. The send button uses `aria-disabled` rather than `disabled` while cooling down, so a visitor who tabs to it still hears *why* it is unavailable.
+- Errors are inline with `role="alert"` and `--destructive-text` (#B91C1C — `--destructive` #EF4444 is ~3.76:1 on white and fails 4.5:1 at body size), never sonner toasts, which maintain a competing live region and are transient.
+- Auto-scroll branches on `prefers-reduced-motion`; every spinner carries `aria-hidden` + `motion-reduce:animate-none`; the thinking state has real text, not animation alone.
+- The transcript carries `data-lenis-prevent` — `LenisProvider` is instantiated globally with no `prevent` option and would otherwise hijack wheel events over the nested scroll container.
+- The widget is mounted **outside** `#main-content`, since that is the Navbar skip link's target and a persistent widget inside it would sit in the content users skip to.
+- **Non-modal at every breakpoint.** Below `sm` it insets (`max-h-[85svh]`, `w-[calc(100vw-2rem)]`) rather than going full-screen, so the page behind stays genuinely usable and the non-modal semantics stay honest. Going full-screen on mobile would require `role="dialog"`/`aria-modal` plus a focus trap below the breakpoint — a real behavioural fork, deliberately not taken.
+
+**Fixed in passing**: `MarketingLayout.tsx` used `<div id="main-content">`, so the site had no `main` landmark despite the skip link targeting that container. Now `<main>`.
+
+### Verified
+- `tsc --noEmit` clean; `eslint src` clean; `vitest run` 123/123 across 17 files (up from 18 — 9 new service tests, 4 new parity tests); `npm run build` succeeds.
+- **Not verified live.** The Supabase project (`thhivnrxthsvoxftblwg`) is `INACTIVE`/paused, so the widget has not been exercised against the real `converse` deployment. Everything above is static verification plus unit tests against a mocked transport. The first real end-to-end pass still needs to happen once the project is restored, and will also re-hit the Gemini quota ceiling documented above.
+
+### Known pre-existing issue found while verifying
+`npm run lint` reports ~9,548 errors, **all** of them from `.claude/worktrees/enterprise-admin-redesign/` — a full duplicate worktree checkout including its own `dist/` build output. `vitest.config.ts` already excludes that path; `eslint.config.mjs` does not, so the project's own documented lint verification step is currently unusable without scoping it to `src`. Not fixed here (out of scope for this phase).
