@@ -1,3 +1,5 @@
+import { FunctionsHttpError } from "@supabase/supabase-js";
+
 import type { Json, Tables, Updates } from "@/types/database";
 
 import {
@@ -144,7 +146,24 @@ export async function createMentor(input: CreateMentorInput) {
   });
 
   if (error) {
-    throw error;
+    // supabase-js only surfaces a generic "Edge Function returned a non-2xx
+    // status code" on `error` - the function's actual structured error body
+    // (e.g. { code: "EMAIL_EXISTS", message: "..." }) lives on the raw HTTP
+    // Response at FunctionsHttpError.context and is otherwise silently
+    // discarded. Read it so the admin sees "Email is already registered"
+    // instead of a meaningless generic message.
+    let parsedMessage: string | undefined;
+    if (error instanceof FunctionsHttpError && error.context instanceof Response) {
+      try {
+        const body: unknown = await error.context.clone().json();
+        if (body && typeof body === "object" && "message" in body && typeof body.message === "string") {
+          parsedMessage = body.message;
+        }
+      } catch {
+        /* response body wasn't JSON - fall through to the generic error */
+      }
+    }
+    throw new Error(parsedMessage || (error instanceof Error ? error.message : "Failed to create mentor"));
   }
 
   if (!data?.success || !data.data) {

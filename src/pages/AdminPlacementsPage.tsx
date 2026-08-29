@@ -759,6 +759,7 @@ function ApplicationDrawer({
       {scheduleOpen && (
         <ScheduleInterviewModal
           existingRounds={rounds?.length ?? 0}
+          submitting={scheduleInterview.isPending}
           onClose={() => setScheduleOpen(false)}
           onSubmit={(input) =>
             scheduleInterview.mutate(
@@ -774,6 +775,7 @@ function ApplicationDrawer({
 
       {offerOpen && (
         <ReleaseOfferModal
+          submitting={releaseOffer.isPending}
           onClose={() => setOfferOpen(false)}
           onSubmit={(input) =>
             releaseOffer.mutate(
@@ -789,6 +791,7 @@ function ApplicationDrawer({
 
       {feedbackRoundId && (
         <FeedbackModal
+          submitting={recordFeedback.isPending}
           onClose={() => setFeedbackRoundId(null)}
           onSubmit={(input) =>
             recordFeedback.mutate(
@@ -807,10 +810,12 @@ function ApplicationDrawer({
 
 function ScheduleInterviewModal({
   existingRounds,
+  submitting,
   onClose,
   onSubmit,
 }: {
   existingRounds: number;
+  submitting?: boolean;
   onClose: () => void;
   onSubmit: (input: { roundNumber: number; roundType: "technical" | "hr" | "managerial" | "other"; startsAt: string; endsAt: string; stageStatus: "interview_round_1" | "interview_round_2" | "hr_round"; meetUrl?: string }) => void;
 }) {
@@ -860,16 +865,18 @@ function ScheduleInterviewModal({
         </div>
         <FormField label="Duration (minutes)"><input type="number" value={duration} onChange={(e) => setDuration(Number(e.target.value))} className={INPUT_CLS} /></FormField>
         <FormField label="Meeting URL (optional)"><input value={meetUrl} onChange={(e) => setMeetUrl(e.target.value)} className={INPUT_CLS} placeholder="https://meet.google.com/..." /></FormField>
-        <DrawerFooter onCancel={onClose} submitLabel="Schedule" />
+        <DrawerFooter onCancel={onClose} submitLabel="Schedule" submitting={submitting} />
       </form>
     </Modal>
   );
 }
 
 function FeedbackModal({
+  submitting,
   onClose,
   onSubmit,
 }: {
+  submitting?: boolean;
   onClose: () => void;
   onSubmit: (input: { decision: "pass" | "fail" | "pending"; recommendation: "advance" | "reject" | "hold"; rating?: number; strengths?: string; weaknesses?: string; notes?: string }) => void;
 }) {
@@ -908,16 +915,18 @@ function FeedbackModal({
         <FormField label="Strengths"><textarea value={strengths} onChange={(e) => setStrengths(e.target.value)} rows={2} className={INPUT_CLS} /></FormField>
         <FormField label="Weaknesses"><textarea value={weaknesses} onChange={(e) => setWeaknesses(e.target.value)} rows={2} className={INPUT_CLS} /></FormField>
         <FormField label="Notes"><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} className={INPUT_CLS} /></FormField>
-        <DrawerFooter onCancel={onClose} submitLabel="Save Feedback" />
+        <DrawerFooter onCancel={onClose} submitLabel="Save Feedback" submitting={submitting} />
       </form>
     </Modal>
   );
 }
 
 function ReleaseOfferModal({
+  submitting,
   onClose,
   onSubmit,
 }: {
+  submitting?: boolean;
   onClose: () => void;
   onSubmit: (input: { packageAmount: number; currency: string; designation?: string; joiningDate?: string }) => void;
 }) {
@@ -946,7 +955,7 @@ function ReleaseOfferModal({
           </FormField>
         </div>
         <FormField label="Joining Date"><input type="date" value={joiningDate} onChange={(e) => setJoiningDate(e.target.value)} className={INPUT_CLS} /></FormField>
-        <DrawerFooter onCancel={onClose} submitLabel="Release Offer" />
+        <DrawerFooter onCancel={onClose} submitLabel="Release Offer" submitting={submitting} />
       </form>
     </Modal>
   );
@@ -1026,11 +1035,13 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   );
 }
 
-function DrawerFooter({ onCancel, submitLabel }: { onCancel: () => void; submitLabel: string }) {
+function DrawerFooter({ onCancel, submitLabel, submitting }: { onCancel: () => void; submitLabel: string; submitting?: boolean }) {
   return (
     <div className="flex items-center justify-end gap-3 border-t border-border px-0 py-4 sm:px-6 mt-4">
       <button type="button" onClick={onCancel} className="h-11 rounded-xl px-5 text-xs font-black text-muted-foreground hover:bg-muted">Cancel</button>
-      <button type="submit" className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90">{submitLabel}</button>
+      <button type="submit" disabled={submitting} className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
+        {submitting ? "Saving..." : submitLabel}
+      </button>
     </div>
   );
 }

@@ -57,6 +57,7 @@ export default function AdminCoursesPage() {
   const [editorTab, setEditorTab] = useState<"basic" | "details" | "curriculum" | "seo" | "mentors">("basic");
   const [rejectingCourse, setRejectingCourse] = useState<CourseWithCategories | null>(null);
   const [rejectReason, setRejectReason] = useState("");
+  const [deletingCourse, setDeletingCourse] = useState<CourseWithCategories | null>(null);
 
   const { data: coursesData, isLoading } = useAdminCourses({
     search: search || undefined,
@@ -167,7 +168,7 @@ export default function AdminCoursesPage() {
   const handleDelete = (id: string) => {
     mutations.remove.mutate(id, {
       onSuccess: () => {
-        toast.error("Course deleted.");
+        toast.success("Course deleted.");
       }
     });
   };
@@ -183,6 +184,11 @@ export default function AdminCoursesPage() {
   const saveCourse = (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedCourse) return;
+
+    if (!selectedCourse.id && !selectedCourse.mentor_id) {
+      toast.error("Select a mentor before creating the course.");
+      return;
+    }
 
     if (selectedCourse.id) {
       mutations.update.mutate({ id: selectedCourse.id, input: selectedCourse }, {
@@ -319,7 +325,7 @@ export default function AdminCoursesPage() {
                 <DropdownMenuItem onClick={() => handleStatusChange(c.id, "archived")} className="gap-2 text-xs font-bold text-warning">
                   <Archive className="size-3.5" aria-hidden="true" /> Archive
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => handleDelete(c.id)} className="gap-2 text-xs font-bold text-destructive-text">
+                <DropdownMenuItem onClick={() => setDeletingCourse(c)} className="gap-2 text-xs font-bold text-destructive-text">
                   <Trash2 className="size-3.5" aria-hidden="true" /> Delete
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -532,7 +538,7 @@ export default function AdminCoursesPage() {
                 </p>
               )}
 
-              <form onSubmit={saveCourse} className="flex-1 overflow-y-auto p-6 space-y-6">
+              <form id="admin-course-form" onSubmit={saveCourse} className="flex-1 overflow-y-auto p-6 space-y-6">
                 {editorTab === "basic" && (
                   <div className="space-y-5">
                     <div className="space-y-1">
@@ -687,10 +693,12 @@ export default function AdminCoursesPage() {
                 </button>
                 {editorTab !== "details" && editorTab !== "curriculum" && (
                   <button
-                    onClick={saveCourse}
-                    className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    type="submit"
+                    form="admin-course-form"
+                    disabled={mutations.create.isPending || mutations.update.isPending}
+                    className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                   >
-                    Save Course Record
+                    {mutations.create.isPending || mutations.update.isPending ? "Saving..." : "Save Course Record"}
                   </button>
                 )}
               </div>
@@ -739,6 +747,37 @@ export default function AdminCoursesPage() {
               className="h-10 rounded-xl bg-destructive px-4 text-xs font-black text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               {rejectCourseMutation.isPending ? "Sending..." : "Send Back to Mentor"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!deletingCourse} onOpenChange={(open) => !open && setDeletingCourse(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete &ldquo;{deletingCourse?.title}&rdquo;?</DialogTitle>
+            <DialogDescription>This permanently removes the course. This cannot be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <button
+              type="button"
+              onClick={() => setDeletingCourse(null)}
+              className="h-10 rounded-xl px-4 text-xs font-black text-muted-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                if (!deletingCourse) return;
+                handleDelete(deletingCourse.id);
+                setDeletingCourse(null);
+              }}
+              disabled={mutations.remove.isPending}
+              className="h-10 rounded-xl bg-destructive px-4 text-xs font-black text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            >
+              {mutations.remove.isPending ? "Deleting..." : "Delete"}
             </button>
           </DialogFooter>
         </DialogContent>

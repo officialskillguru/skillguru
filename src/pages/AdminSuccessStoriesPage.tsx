@@ -45,20 +45,23 @@ export default function AdminSuccessStoriesPage() {
   const handleCreate = () => {
     setSelectedStory({
       title: "",
-      job_role: "Software Engineer",
-      company_name: "Wipro",
-      image_url: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=256&auto=format&fit=crop",
+      job_role: "",
+      company_name: "",
+      image_url: "",
       full_story: "",
-      package: "10 LPA",
+      package: "",
     });
     setEditorOpen(true);
   };
 
+  const [unpublishingStory, setUnpublishingStory] = useState<SuccessStory | null>(null);
+
   const handleDelete = (id: number) => {
     mutations.update.mutate({ id, input: { published: false } }, {
       onSuccess: () => {
-        toast.error("Success story unpublished.");
+        toast.success("Success story unpublished.");
         setActiveMenu(null);
+        setUnpublishingStory(null);
       },
       onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to unpublish success story."),
     });
@@ -193,7 +196,7 @@ export default function AdminSuccessStoriesPage() {
                             <span>Edit Record</span>
                           </button>
                           <button
-                            onClick={() => handleDelete(story.id)}
+                            onClick={() => { setUnpublishingStory(story); setActiveMenu(null); }}
                             className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-xs font-black text-rose-600 hover:bg-rose-50/50 dark:hover:bg-rose-950/10"
                           >
                             <Trash2 className="size-3" />
@@ -232,7 +235,7 @@ export default function AdminSuccessStoriesPage() {
               <div className="mt-4 relative bg-slate-50 p-4 rounded-2xl border border-slate-100 dark:bg-slate-900/60 dark:border-slate-850">
                 <Quote className="absolute right-3.5 top-3.5 size-4 text-primary/10 dark:text-cyan-300/10" />
                 <p className="text-xs font-bold text-slate-500 dark:text-slate-400 leading-relaxed italic pr-4">
-                  "{story.full_story || "The placement support at SkillGuru assisted me at each transition phase. Clear mock sessions and resume endorsements guaranteed success."}"
+                  {story.full_story ? `"${story.full_story}"` : "No story text provided."}
                 </p>
               </div>
             </div>
@@ -263,7 +266,7 @@ export default function AdminSuccessStoriesPage() {
               </div>
 
               {/* Form Scrollable */}
-              <form onSubmit={saveStory} className="mt-5 space-y-4 max-h-[60svh] overflow-y-auto pr-1">
+              <form id="success-story-form" onSubmit={saveStory} className="mt-5 space-y-4 max-h-[60svh] overflow-y-auto pr-1">
                 <div className="space-y-1">
                   <label className="text-xs font-black text-primary dark:text-slate-350">Student Full Name</label>
                   <input
@@ -340,10 +343,48 @@ export default function AdminSuccessStoriesPage() {
                   Cancel
                 </button>
                 <button
-                  onClick={saveStory}
-                  className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 dark:bg-cyan-400 dark:text-primary"
+                  type="submit"
+                  form="success-story-form"
+                  disabled={mutations.create.isPending || mutations.update.isPending}
+                  className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 disabled:opacity-50 dark:bg-cyan-400 dark:text-primary"
                 >
-                  Save Record
+                  {mutations.create.isPending || mutations.update.isPending ? "Saving..." : "Save Record"}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Unpublish confirmation */}
+      <AnimatePresence>
+        {unpublishingStory && (
+          <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="w-full max-w-sm rounded-3xl border border-border bg-card p-6 shadow-2xl dark:border-slate-800 dark:bg-slate-950"
+            >
+              <h3 className="text-lg font-black text-primary dark:text-white">Unpublish "{unpublishingStory.title}"?</h3>
+              <p className="mt-2 text-xs font-bold text-slate-500 dark:text-slate-400">
+                This hides the story from the public site immediately. It stays in this list and can be republished later.
+              </p>
+              <div className="mt-5 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUnpublishingStory(null)}
+                  className="h-10 rounded-xl px-4 text-xs font-black text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-850"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(unpublishingStory.id)}
+                  disabled={mutations.update.isPending}
+                  className="h-10 rounded-xl bg-rose-600 px-4 text-xs font-black text-white hover:bg-rose-700 disabled:opacity-50"
+                >
+                  {mutations.update.isPending ? "Unpublishing..." : "Unpublish"}
                 </button>
               </div>
             </motion.div>

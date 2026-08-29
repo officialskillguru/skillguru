@@ -18,12 +18,15 @@ function getFormString(form: FormData, key: string, fallback = "") {
 export default function ContactPage() {
   usePageMeta("Contact");
   const [status, setStatus] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (submitting) return;
     const form = event.currentTarget;
     const data = new FormData(form);
     setStatus("Submitting...");
+    setSubmitting(true);
 
     try {
       await submitLead("contact", {
@@ -39,6 +42,8 @@ export default function ContactPage() {
       setStatus("Request submitted. Our counselling team will contact you shortly.");
     } catch (error: unknown) {
       setStatus(error instanceof Error ? error.message : "Unable to submit request.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -105,8 +110,12 @@ export default function ContactPage() {
               <input name="consent" type="checkbox" required className="mt-1 accent-secondary" />
               I agree to be contacted by SkillGuru.
             </label>
-            <button type="submit" className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-secondary text-sm font-black text-primary-foreground transition hover:-translate-y-1 hover:bg-primary">
-              Send Message <Send className="size-4" />
+            <button
+              type="submit"
+              disabled={submitting}
+              className="mt-6 inline-flex h-12 w-full items-center justify-center gap-2 rounded-md bg-secondary text-sm font-black text-primary-foreground transition hover:-translate-y-1 hover:bg-primary disabled:opacity-50 disabled:hover:translate-y-0"
+            >
+              {submitting ? "Sending..." : "Send Message"} <Send className="size-4" />
             </button>
             <p className="mt-4 flex items-center justify-center gap-2 text-xs font-semibold text-muted-foreground">
               <LockKeyhole className="size-4" />

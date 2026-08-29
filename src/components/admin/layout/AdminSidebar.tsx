@@ -138,10 +138,28 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
     }
   });
 
-  // The group containing the current route is always shown expanded, regardless
-  // of the persisted/toggled state — computed during render, not via an effect,
-  // so navigating never fights a manual toggle or triggers extra renders.
-  const displayExpandedGroup = groupContainingPath(location.pathname) ?? expandedGroup;
+  // Auto-expand the group containing the current route, but only when the route
+  // actually changes — not on every render — so a manual toggle click (e.g.
+  // opening "Commerce" while still on a "Content" page) isn't immediately
+  // overridden on the next render. Adjusted during render (React's sanctioned
+  // pattern for "reset/derive state when a prop changes") rather than in a
+  // useEffect, so there's no extra commit+effect round-trip or flash of the
+  // previous group before the auto-expand applies.
+  const [syncedPathname, setSyncedPathname] = useState(location.pathname);
+  if (location.pathname !== syncedPathname) {
+    setSyncedPathname(location.pathname);
+    const g = groupContainingPath(location.pathname);
+    if (g) {
+      setExpandedGroup(g);
+      try {
+        localStorage.setItem(EXPANDED_GROUP_KEY, g);
+      } catch {
+        /* best-effort persistence only */
+      }
+    }
+  }
+
+  const displayExpandedGroup = expandedGroup;
 
   const toggleGroup = (id: string) => {
     setExpandedGroup((current) => {
@@ -260,7 +278,7 @@ export function AdminSidebar({ collapsed, onNavigate }: Readonly<AdminSidebarPro
         <nav
           ref={navRef}
           onScroll={handleNavScroll}
-          className="enterprise-scrollbar flex-1 overflow-y-auto px-3 py-6"
+          className="enterprise-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-6"
         >
           <div className="grid gap-1">
             {NAV.map((entry) => {

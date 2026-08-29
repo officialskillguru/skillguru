@@ -1070,8 +1070,15 @@ export default function AdminMentorsPage() {
                     Cancel
                   </button>
                 </DialogPrimitive.Close>
-                <button type="submit" form="mentor-form" className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90">
-                  {selectedMentor.id ? "Save Changes" : "Create Mentor"}
+                <button
+                  type="submit"
+                  form="mentor-form"
+                  disabled={mutations.create.isPending || mutations.update.isPending}
+                  className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {mutations.create.isPending || mutations.update.isPending
+                    ? "Saving..."
+                    : selectedMentor.id ? "Save Changes" : "Create Mentor"}
                 </button>
               </div>
                 </motion.div>

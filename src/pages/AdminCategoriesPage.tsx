@@ -204,7 +204,15 @@ export default function AdminCategoriesPage() {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => {
-        const badge = STATUS_BADGE[row.original.status];
+        // Defensive fallback: row.original.status is now NOT NULL at the DB
+        // level (see 20260806000001_category_taxonomy_governance.sql), but
+        // this previously crashed with "Cannot read properties of undefined
+        // (reading 'variant')" whenever a row's status wasn't a recognized
+        // key (e.g. before that migration added the column at all - every
+        // row's status was simply absent). Falling back to "pending"'s badge
+        // keeps a genuinely unrecognized status visible/actionable instead
+        // of taking down the whole page.
+        const badge = STATUS_BADGE[row.original.status] ?? STATUS_BADGE.pending;
         return <Badge variant={badge.variant}>{badge.label}</Badge>;
       },
     },

@@ -9,7 +9,6 @@ import {
   FileText,
   Heart,
   LayoutDashboard,
-  Settings,
   StickyNote,
   User,
   Users
@@ -43,7 +42,6 @@ const NAV_GROUPS = [
     title: "ACCOUNT",
     items: [
       { name: "Profile", path: "/dashboard/profile", icon: User, disabled: false },
-      { name: "Settings", path: "/dashboard/settings", icon: Settings, disabled: false },
     ]
   }
 ];
@@ -57,7 +55,7 @@ function SidebarContent({ onNavigate }: Readonly<SidebarContentProps>) {
 
   return (
     <div className="flex h-full flex-col">
-      <nav aria-label="Dashboard" className="flex-1 space-y-8 overflow-y-auto p-6">
+      <nav aria-label="Dashboard" className="min-h-0 flex-1 space-y-8 overflow-y-auto p-6">
         {NAV_GROUPS.map((group) => (
           <div key={group.title}>
             <h4 className="mb-3 px-3 text-xs font-black tracking-widest text-muted-foreground uppercase">

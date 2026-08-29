@@ -90,7 +90,7 @@ function Sidebar({ collapsed, onNavigate }: Readonly<{ collapsed?: boolean; onNa
           <Logo src={siteConfig.logoWordmarkPath} imageClassName="h-8 w-auto" onDark />
         )}
       </div>
-      <nav aria-label="Mentor portal" className="enterprise-scrollbar flex-1 overflow-y-auto px-3 py-6">
+      <nav aria-label="Mentor portal" className="enterprise-scrollbar min-h-0 flex-1 overflow-y-auto px-3 py-6">
         {!collapsed && (
           <p className="mb-2 px-3 text-[10px] font-bold uppercase tracking-wider text-sidebar-muted">
             Mentor Console

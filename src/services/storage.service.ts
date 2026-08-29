@@ -54,7 +54,18 @@ export async function uploadFile(bucketKey: StorageBucketKey, file: File, folder
   if (!bucket) throw new Error(`Bucket configuration not found for key: ${bucketKey}`);
   const extension = file.name.split(".").pop()?.toLowerCase() ?? "bin";
   const fileName = `${Date.now()}-${createSlug(file.name.replace(/\.[^.]+$/, ""))}.${extension}`;
-  const path = [folder ? createSlug(folder) : "", fileName].filter(Boolean).join("/");
+  // Slugify each folder segment independently and rejoin with "/" — running the
+  // whole folder string (e.g. "<courseId>/gallery") through createSlug collapses
+  // the "/" separator into "-", producing "<courseId>-gallery" which later broke
+  // any code deriving a UUID from the path (see: gallery/FAQ UUID insert bug).
+  const folderPath = folder
+    ? folder
+        .split("/")
+        .filter(Boolean)
+        .map((segment) => createSlug(segment))
+        .join("/")
+    : "";
+  const path = [folderPath, fileName].filter(Boolean).join("/");
 
   const { error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
     cacheControl: "3600",
