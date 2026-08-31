@@ -14,7 +14,7 @@ import { BUILDER_STEPS, type BuilderStepKey } from "@/components/mentor/course-b
 interface CourseBuilderWizardProps {
   /** Present in edit mode (/mentor/courses/:courseId/edit), absent in create mode (/mentor/courses/new). */
   courseId?: string;
-  /** Lets workspace row actions (e.g. "Curriculum") deep-link straight to a step. */
+  /** Lets workspace row actions (e.g. "Curriculum") deep-link straight to a step. 2*/
   initialStep?: BuilderStepKey;
 }
 
