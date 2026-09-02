@@ -3461,6 +3461,7 @@ export type Database = {
           locked_by: string | null
           locked_reason: string | null
           login_disabled: boolean
+          login_disabled_by_deletion: boolean
           payout_details: Json
           portfolio_url: string | null
           skills: string[] | null
@@ -3492,6 +3493,7 @@ export type Database = {
           locked_by?: string | null
           locked_reason?: string | null
           login_disabled?: boolean
+          login_disabled_by_deletion?: boolean
           payout_details?: Json
           portfolio_url?: string | null
           skills?: string[] | null
@@ -3523,6 +3525,7 @@ export type Database = {
           locked_by?: string | null
           locked_reason?: string | null
           login_disabled?: boolean
+          login_disabled_by_deletion?: boolean
           payout_details?: Json
           portfolio_url?: string | null
           skills?: string[] | null
@@ -6244,6 +6247,14 @@ export type Database = {
       }
     }
     Functions: {
+      admin_restore_mentor: {
+        Args: { p_mentor_id: string }
+        Returns: undefined
+      }
+      admin_soft_delete_mentor: {
+        Args: { p_mentor_id: string }
+        Returns: undefined
+      }
       advance_application_stage: {
         Args: {
           p_application_id: string
@@ -6260,6 +6271,7 @@ export type Database = {
         }
         Returns: string
       }
+      assert_login_allowed: { Args: never; Returns: undefined }
       calculate_profile_completion: {
         Args: { profile_id: string }
         Returns: number
@@ -6340,7 +6352,20 @@ export type Database = {
       has_active_enrollment: { Args: { p_course_id: string }; Returns: boolean }
       has_permission: { Args: { _permission_code: string }; Returns: boolean }
       has_role: { Args: { _role_code: string }; Returns: boolean }
+      is_conversation_member: {
+        Args: { p_conversation_id: string; p_user_id?: string }
+        Returns: boolean
+      }
       is_course_mentor: { Args: { p_course_id: string }; Returns: boolean }
+      list_authorized_message_recipients: {
+        Args: never
+        Returns: {
+          email: string
+          full_name: string
+          id: string
+          role: string
+        }[]
+      }
       log_audit_event: {
         Args: {
           p_action: string
@@ -6393,21 +6418,9 @@ export type Database = {
         Args: { p_job_posting_id: string }
         Returns: undefined
       }
-      list_authorized_message_recipients: {
-        Args: Record<PropertyKey, never>
-        Returns: { id: string; full_name: string | null; email: string | null; role: string }[]
-      }
       notify_new_message: {
         Args: { p_conversation_id: string; p_message_preview: string }
         Returns: undefined
-      }
-      resolve_campaign_audience: {
-        Args: { p_campaign_id: string; p_selected_recipient_ids?: string[] }
-        Returns: number
-      }
-      start_direct_conversation: {
-        Args: { p_other_user_id: string }
-        Returns: string
       }
       record_interview_feedback: {
         Args: {
@@ -6452,6 +6465,10 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      resolve_campaign_audience: {
+        Args: { p_campaign_id: string; p_selected_recipient_ids?: string[] }
+        Returns: number
+      }
       schedule_interview_round: {
         Args: {
           p_application_id: string
@@ -6468,6 +6485,10 @@ export type Database = {
       }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      start_direct_conversation: {
+        Args: { p_other_user_id: string }
+        Returns: string
+      }
       submit_quiz_attempt: {
         Args: {
           p_enrollment_id: string
@@ -6485,6 +6506,10 @@ export type Database = {
           p_skills?: string[]
         }
         Returns: undefined
+      }
+      user_has_role: {
+        Args: { p_role_code: string; p_user_id: string }
+        Returns: boolean
       }
       verify_certificate_by_code: {
         Args: { p_code: string }
@@ -6703,3 +6728,4 @@ export const Constants = {
     },
   },
 } as const
+

@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from "@supabase/supabase-js";
 
 import type { Json, Tables, Updates } from "@/types/database";
+import { AppError, type ErrorCode } from "@/lib/errors";
 
 import {
   assertServiceResponse,
@@ -11,6 +12,28 @@ import {
   type PaginatedResult,
 } from "./_shared";
 import { resolveFileUrl } from "./storage.service";
+
+// Maps the create-mentor Edge Function's response `code` to the shared
+// AppError taxonomy so callers (mutation hooks, UI) can tell an expected
+// business rejection (duplicate email, validation, permissions) apart from
+// a genuine unexpected failure, instead of every non-2xx response looking
+// like the same opaque Error.
+const EDGE_FUNCTION_CODE_MAP: Record<string, ErrorCode> = {
+  EMAIL_EXISTS: "CONFLICT",
+  ARCHIVED_MENTOR_EXISTS: "CONFLICT",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+};
+
+/** Extra detail carried on the CONFLICT AppError thrown by createMentor() when the
+ *  Edge Function's `code` was ARCHIVED_MENTOR_EXISTS — lets the caller offer a
+ *  "Restore existing mentor" action instead of a dead-end error. */
+export interface ArchivedMentorConflictDetails {
+  edgeFunctionCode: "ARCHIVED_MENTOR_EXISTS";
+  mentorId: string;
+}
 
 export type Mentor = Tables<"mentor_profiles"> & {
   name?: string;
@@ -151,23 +174,33 @@ export async function createMentor(input: CreateMentorInput) {
     // (e.g. { code: "EMAIL_EXISTS", message: "..." }) lives on the raw HTTP
     // Response at FunctionsHttpError.context and is otherwise silently
     // discarded. Read it so the admin sees "Email is already registered"
-    // instead of a meaningless generic message.
+    // instead of a meaningless generic message, and so the code survives as
+    // a typed AppError instead of a plain Error the UI can't distinguish
+    // from an unexpected failure.
     let parsedMessage: string | undefined;
+    let parsedCode: string | undefined;
+    let parsedMentorId: string | undefined;
     if (error instanceof FunctionsHttpError && error.context instanceof Response) {
       try {
         const body: unknown = await error.context.clone().json();
-        if (body && typeof body === "object" && "message" in body && typeof body.message === "string") {
-          parsedMessage = body.message;
+        if (body && typeof body === "object") {
+          if ("message" in body && typeof body.message === "string") parsedMessage = body.message;
+          if ("code" in body && typeof body.code === "string") parsedCode = body.code;
+          if ("details" in body && body.details && typeof body.details === "object" && "mentorId" in body.details && typeof body.details.mentorId === "string") {
+            parsedMentorId = body.details.mentorId;
+          }
         }
       } catch {
         /* response body wasn't JSON - fall through to the generic error */
       }
     }
-    throw new Error(parsedMessage || (error instanceof Error ? error.message : "Failed to create mentor"));
+    const message = parsedMessage || (error instanceof Error ? error.message : "Failed to create mentor");
+    const mappedCode = parsedCode ? EDGE_FUNCTION_CODE_MAP[parsedCode] : undefined;
+    throw new AppError(message, mappedCode ?? "INTERNAL_ERROR", { edgeFunctionCode: parsedCode, mentorId: parsedMentorId });
   }
 
   if (!data?.success || !data.data) {
-    throw new Error(data?.message || "Failed to create mentor");
+    throw new AppError(data?.message || "Failed to create mentor", "INTERNAL_ERROR");
   }
 
   return data.data;
@@ -230,13 +263,25 @@ export async function setMentorStatus(id: string, status: "active" | "suspended"
   return updateMentor(id, { status });
 }
 
-/** Soft-delete: keeps the account/history intact (courses, enrollments, certificates) so it can be restored. */
+/**
+ * Soft-delete: keeps the account/history intact (courses, enrollments, certificates)
+ * so it can be restored. Goes through the admin_soft_delete_mentor() RPC (not a plain
+ * table update) so deleted_at, login_disabled, and active-session revocation change
+ * atomically — a mentor who is "deleted" must actually be unable to log in, not just
+ * hidden from the admin list while their existing session/credentials still work.
+ */
 export async function softDeleteMentor(id: string) {
-  return updateMentor(id, { deleted_at: new Date().toISOString() });
+  const supabase = getSupabaseClientOrThrow();
+  const { error } = await supabase.rpc("admin_soft_delete_mentor", { p_mentor_id: id });
+  assertServiceResponse(error);
+  return getMentorProfile(id);
 }
 
 export async function restoreMentor(id: string) {
-  return updateMentor(id, { deleted_at: null });
+  const supabase = getSupabaseClientOrThrow();
+  const { error } = await supabase.rpc("admin_restore_mentor", { p_mentor_id: id });
+  assertServiceResponse(error);
+  return getMentorProfile(id);
 }
 
 // ─── Account Ownership & Security (Phase 1) ─────────────────────────────────

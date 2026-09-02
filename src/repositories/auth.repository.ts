@@ -1,6 +1,6 @@
 import type { SupabaseClient, Session, User } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
-import { type Result, ok, fail, type AppError } from "@/utils/result";
+import { type Result, ok, fail, type AppError, AuthenticationError } from "@/utils/result";
 import { AuthErrorMapper } from "@/utils/AuthErrorMapper";
 import type { IAuthRepository } from "./interfaces/IAuthRepository";
 import type { LoginFormData, SignupFormData } from "@/schemas/auth.schema";
@@ -23,6 +23,23 @@ export class AuthRepository implements IAuthRepository {
       if (error) return fail(this.mapError(error));
       if (!data.user || !data.session) {
         return fail(this.mapError({ message: "Session could not be established.", status: 500 }));
+      }
+
+      // A mentor who was soft-deleted or admin-locked must not be able to sign in
+      // just because their password still works - nothing else in the request path
+      // checks mentor_profiles.deleted_at/login_disabled at authentication time.
+      // assert_login_allowed() raises for a disabled/deleted mentor and is a no-op
+      // for every other account (students/admins have no mentor_profiles row).
+      const { error: gateError } = await this.client.rpc("assert_login_allowed");
+      if (gateError) {
+        await this.client.auth.signOut();
+        return fail(
+          new AuthenticationError(
+            "This account has been disabled by an administrator.",
+            gateError.message,
+            "Contact your administrator to restore access."
+          )
+        );
       }
 
       // Best-effort — a login_history logging failure must never fail the login itself.

@@ -54,6 +54,27 @@ import {
   updateSuccessStory,
   type SuccessStoryListParams,
 } from "@/services/successStories.service";
+import { isAppError } from "@/lib/errors";
+import { logger } from "@/config/logger";
+
+// Mutations below are called with their own `mutate(vars, { onError })` at the
+// UI layer (e.g. AdminMentorsPage) to show a specific, actionable message.
+// Without a hook-level `onError` here, react-query falls back to the
+// QueryClient's global default (queryClient.ts), which ALSO toasts and
+// console.errors - so every failure would render twice and an expected
+// business rejection (duplicate email, validation) would still get logged
+// as if it were a bug. This hook-level handler replaces that default: it
+// only logs (at a level matching whether the error was expected), and
+// leaves all user-facing messaging to the call site.
+function logMutationError(context: string) {
+  return (error: unknown) => {
+    if (isAppError(error) && error.code !== "INTERNAL_ERROR") {
+      logger.warn(`${context} rejected`, { code: error.code, message: error.message });
+    } else {
+      logger.error(`${context} failed unexpectedly`, error);
+    }
+  };
+}
 
 export const adminQueryKeys = {
   courses: (params: CourseListParams) => ["admin", "courses", params] as const,
@@ -105,13 +126,20 @@ export function useMentors(params: MentorListParams = {}) {
 
 export function useMentorMutations() {
   const queryClient = useQueryClient();
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "mentor_profiles"] });
+  const invalidate = () => {
+    // AdminMentorsPage's list query lives under the separate ["admin_mentors", params]
+    // key (src/hooks/admin/useAdminMentors.ts) — both must be invalidated or the visible
+    // table goes stale after a single-row action until a full page reload.
+    void queryClient.invalidateQueries({ queryKey: ["admin", "mentor_profiles"] });
+    void queryClient.invalidateQueries({ queryKey: ["admin_mentors"] });
+  };
 
   return {
-    create: useMutation({ mutationFn: createMentor, onSuccess: invalidate }),
+    create: useMutation({ mutationFn: createMentor, onSuccess: invalidate, onError: logMutationError("createMentor") }),
     update: useMutation({
       mutationFn: ({ id, input }: { id: string; input: MentorFullUpdateInput }) => updateMentorFull(id, input),
       onSuccess: invalidate,
+      onError: logMutationError("updateMentor"),
     }),
     setStatus: useMutation({
       mutationFn: ({ id, status }: { id: string; status: "active" | "suspended" }) => setMentorStatus(id, status),

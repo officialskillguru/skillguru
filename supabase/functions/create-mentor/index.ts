@@ -14,6 +14,7 @@ type ResponseCode =
   | "FORBIDDEN"
   | "VALIDATION_ERROR"
   | "EMAIL_EXISTS"
+  | "ARCHIVED_MENTOR_EXISTS"
   | "AUTH_PROVISION_FAILED"
   | "WORKSPACE_PROVISION_FAILED"
   | "ROLLBACK_FAILED"
@@ -132,7 +133,10 @@ Deno.serve(async (req) => {
     }
 
     const { fullName, email, password, phone, timezone, onboardingMethod } = parseResult.data;
-    const normalizedEmail = email.toLowerCase();
+    // Trim + lowercase so "Test.Mentor@Example.com " and "test.mentor@example.com"
+    // are always treated as the same account for duplicate detection, Auth
+    // creation, and persistence (Phase 8 email normalization).
+    const normalizedEmail = email.trim().toLowerCase();
 
     // We'll use service client to bypass RLS for provisioning
     const serviceClient = createClient(supabaseUrl, serviceRoleKey);
@@ -140,10 +144,38 @@ Deno.serve(async (req) => {
     // Fast-path duplicate check (best-effort — the real guarantee is the DB's UNIQUE
     // constraint on profiles.email / auth.users.email, checked again via the
     // auth.admin.createUser() error below, so concurrent double-submits are still safe).
+    //
+    // A soft-deleted (archived) mentor's profiles row is intentionally kept alive
+    // (it preserves courses/enrollments/reviews/audit history), so it will always
+    // match here too. Without distinguishing that case, an admin who deletes a
+    // mentor and tries to recreate them with the same email hits a dead-end
+    // "User already exists" 409 with no path forward - the actual production bug
+    // this precheck now resolves by pointing them at Restore instead.
     const { data: existingUser } = await serviceClient.from("profiles").select("id").eq("email", normalizedEmail).maybeSingle();
     if (existingUser) {
+      const { data: archivedMentor } = await serviceClient
+        .from("mentor_profiles")
+        .select("id, deleted_at")
+        .eq("id", existingUser.id)
+        .not("deleted_at", "is", null)
+        .maybeSingle();
+
+      if (archivedMentor) {
+        log(requestId, "info", "duplicate_email_precheck_archived", { email: normalizedEmail, mentorId: archivedMentor.id });
+        return createResponse(
+          false,
+          "ARCHIVED_MENTOR_EXISTS",
+          "This email belongs to an archived mentor. Restore the existing mentor instead of creating another account.",
+          null,
+          ["Email belongs to a deleted mentor account that can be restored"],
+          { email: normalizedEmail, mentorId: archivedMentor.id },
+          409,
+          requestId
+        );
+      }
+
       log(requestId, "info", "duplicate_email_precheck", { email: normalizedEmail });
-      return createResponse(false, "EMAIL_EXISTS", "User already exists", null, ["Email is already registered"], { email: normalizedEmail }, 409, requestId);
+      return createResponse(false, "EMAIL_EXISTS", "An account with this email already exists.", null, ["Email is already registered"], { email: normalizedEmail }, 409, requestId);
     }
 
     // Determine temporary password
@@ -173,7 +205,7 @@ Deno.serve(async (req) => {
       if (authResult.error || !authResult.data.user) {
         const alreadyExists = /already.*regist/i.test(authResult.error?.message ?? "");
         if (alreadyExists) {
-          return createResponse(false, "EMAIL_EXISTS", "User already exists", null, ["Email is already registered"], { email: normalizedEmail }, 409, requestId);
+          return createResponse(false, "EMAIL_EXISTS", "An account with this email already exists.", null, ["Email is already registered"], { email: normalizedEmail }, 409, requestId);
         }
         throw new Error(authResult.error?.message || "Failed to create auth user");
       }

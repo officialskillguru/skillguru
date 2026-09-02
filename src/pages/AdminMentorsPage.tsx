@@ -34,6 +34,7 @@ import { exportToCSV, exportToExcel, exportToPDF } from "@/utils/export";
 import { getExtendedSupabaseClient } from "@/services/_shared";
 import { listMentorLoginHistory, listMentorActiveSessions, getUnassignedMentorId } from "@/services/mentors.service";
 import type { Mentor, CreateMentorResult } from "@/services/mentors.service";
+import { isAppError } from "@/lib/errors";
 import { MentorCRMPanel, MentorCoursesPanel, MentorPerformancePanel, MentorDocumentsPanel } from "@/components/admin/mentors/MentorCRMPanel";
 import { listCourses } from "@/services/courses.service";
 import { getNextTabIndex } from "@/lib/a11y-tabs";
@@ -436,7 +437,37 @@ export default function AdminMentorsPage() {
           setEditorOpen(false);
           setCreatedCredentials(result);
         },
-        onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
+        onError: (err) => {
+          if (isAppError(err) && err.code === "CONFLICT") {
+            const details = err.details as { edgeFunctionCode?: string; mentorId?: string } | undefined;
+            if (details?.edgeFunctionCode === "ARCHIVED_MENTOR_EXISTS" && details.mentorId) {
+              const archivedMentorId = details.mentorId;
+              toast.error("This email belongs to a deleted mentor.", {
+                description: "Restore the existing mentor instead of creating a duplicate account.",
+                action: {
+                  label: "Restore Mentor",
+                  onClick: () => {
+                    mutations.restore.mutate(archivedMentorId, {
+                      onSuccess: () => {
+                        toast.success("Mentor restored.");
+                        setEditorOpen(false);
+                      },
+                      onError: (restoreErr) => toast.error(restoreErr instanceof Error ? restoreErr.message : "Failed to restore mentor."),
+                    });
+                  },
+                },
+              });
+              setEmailError("This email belongs to a deleted mentor — restore them instead.");
+              setActiveTab("Personal");
+              return;
+            }
+            toast.error("This email is already registered. Use a different email or open the existing account.");
+            setEmailError("This email is already registered.");
+            setActiveTab("Personal");
+            return;
+          }
+          toast.error(err instanceof Error ? err.message : "Unable to create mentor right now. Check your connection and try again.");
+        },
       });
     }
   };
