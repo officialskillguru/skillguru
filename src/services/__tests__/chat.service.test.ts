@@ -101,4 +101,75 @@ describe("chat.service", () => {
       expect((chatService as Record<string, unknown>).getOrCreateDirectConversation).toBeUndefined();
     });
   });
+
+  // Regression test for a real bug found during live QA: PostgREST cannot resolve a
+  // self-referencing FK embed (`chat_messages!chat_messages_reply_to_id_fkey`) on this
+  // table - confirmed live via a direct REST call returning PGRST200 even immediately
+  // after a schema cache reload. getMessages was rewritten to fetch reply_to data via a
+  // second, flat (non-embedded) query instead. This test locks in that two-query shape
+  // so a future refactor can't silently reintroduce the broken embed.
+  describe("getMessages", () => {
+    it("hydrates reply_to via a separate flat query, not an embedded self-join", async () => {
+      const mainRows = [
+        { id: "msg-2", conversation_id: "conv-1", sender_id: "u2", content: "reply", reply_to_id: "msg-1", created_at: "2026-01-02" },
+        { id: "msg-1", conversation_id: "conv-1", sender_id: "u1", content: "original", reply_to_id: null, created_at: "2026-01-01" },
+      ];
+      const replyRows = [{ id: "msg-1", content: "original", sender_id: "u1" }];
+
+      let chatMessagesCallCount = 0;
+      const fromMock = vi.fn((table: string) => {
+        if (table !== "chat_messages") return makeQueryResult({ data: null, error: null });
+        chatMessagesCallCount += 1;
+        const isFirstCall = chatMessagesCallCount === 1;
+        const builder: Record<string, unknown> = {};
+        const chain = () => builder;
+        builder.select = vi.fn(chain);
+        builder.eq = vi.fn(chain);
+        builder.order = vi.fn(chain);
+        builder.limit = vi.fn(chain);
+        builder.lt = vi.fn(chain);
+        builder.in = vi.fn(chain);
+        builder.then = (resolve: (v: unknown) => unknown) =>
+          Promise.resolve(isFirstCall ? { data: mainRows, error: null } : { data: replyRows, error: null }).then(resolve);
+        return builder;
+      });
+      mockSupabase.from = fromMock;
+
+      const { chatService } = await loadService();
+      const result = await chatService.getMessages("conv-1");
+
+      expect(chatMessagesCallCount).toBe(2);
+      expect(result.success).toBe(true);
+      if (!result.success) return;
+      const reply = result.data.find((m) => m.id === "msg-2");
+      expect(reply?.reply_to).toEqual({ id: "msg-1", content: "original", sender_id: "u1" });
+    });
+
+    it("skips the reply_to lookup query entirely when no message in the page has a reply_to_id", async () => {
+      const mainRows = [{ id: "msg-1", conversation_id: "conv-1", sender_id: "u1", content: "original", reply_to_id: null, created_at: "2026-01-01" }];
+
+      let chatMessagesCallCount = 0;
+      const fromMock = vi.fn((table: string) => {
+        if (table !== "chat_messages") return makeQueryResult({ data: null, error: null });
+        chatMessagesCallCount += 1;
+        const builder: Record<string, unknown> = {};
+        const chain = () => builder;
+        builder.select = vi.fn(chain);
+        builder.eq = vi.fn(chain);
+        builder.order = vi.fn(chain);
+        builder.limit = vi.fn(chain);
+        builder.lt = vi.fn(chain);
+        builder.in = vi.fn(chain);
+        builder.then = (resolve: (v: unknown) => unknown) => Promise.resolve({ data: mainRows, error: null }).then(resolve);
+        return builder;
+      });
+      mockSupabase.from = fromMock;
+
+      const { chatService } = await loadService();
+      const result = await chatService.getMessages("conv-1");
+
+      expect(chatMessagesCallCount).toBe(1);
+      expect(result).toEqual({ success: true, data: mainRows });
+    });
+  });
 });

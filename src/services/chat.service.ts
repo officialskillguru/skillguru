@@ -172,13 +172,18 @@ export const chatService = {
   async getMessages(conversationId: string, limit = 50, before?: string): Promise<Result<ChatMessage[]>> {
     try {
       const supabase = getExtendedSupabaseClient();
+      // NOTE: reply_to is intentionally fetched as a separate flat query below,
+      // not as an embedded `chat_messages!chat_messages_reply_to_id_fkey(...)`
+      // resource. PostgREST cannot resolve a self-referencing FK embed on this
+      // table (confirmed live: PGRST200 "Could not find a relationship between
+      // 'chat_messages' and 'chat_messages'" even immediately after a schema
+      // cache reload) - a real, pre-existing limitation, not a stale cache.
       let query = supabase
         .from("chat_messages")
         .select(`
           *,
           sender:profiles!chat_messages_sender_id_fkey(id, full_name),
-          attachments:message_attachments(*),
-          reply_to:chat_messages!chat_messages_reply_to_id_fkey(id, content, sender_id)
+          attachments:message_attachments(*)
         `)
         .eq("conversation_id", conversationId)
         .eq("is_deleted", false)
@@ -192,8 +197,26 @@ export const chatService = {
       const { data, error } = await query;
       if (error) return fail(new DatabaseError(error.message, error.code));
 
+      const messages = (data as unknown as ChatMessage[]) ?? [];
+
+      const replyToIds = [...new Set(messages.map((m) => m.reply_to_id).filter((id): id is string => !!id))];
+      if (replyToIds.length > 0) {
+        const { data: replyRows, error: replyError } = await supabase
+          .from("chat_messages")
+          .select("id, content, sender_id")
+          .in("id", replyToIds);
+        if (replyError) return fail(new DatabaseError(replyError.message, replyError.code));
+
+        const replyById = new Map((replyRows ?? []).map((r) => [r.id, r]));
+        for (const m of messages) {
+          if (m.reply_to_id) {
+            m.reply_to = replyById.get(m.reply_to_id) ?? null;
+          }
+        }
+      }
+
       // Return in chronological order
-      return ok(((data as unknown as ChatMessage[]) ?? []).reverse());
+      return ok(messages.reverse());
     } catch (e: unknown) {
       return fail(new DatabaseError(String(e), "chat_messages_get"));
     }
