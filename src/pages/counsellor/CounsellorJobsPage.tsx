@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Briefcase, Loader2, Plus, X } from "lucide-react";
+import { Briefcase, Loader2, Plus } from "lucide-react";
 import type { VariantProps } from "class-variance-authority";
 
 import { usePageMeta } from "@/hooks/usePageMeta";
@@ -9,8 +9,11 @@ import { getSupabaseClientOrThrow } from "@/services/_shared";
 import { Badge } from "@/components/ui/badge";
 import type { badgeVariants } from "@/components/ui/badge-variants";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 
 interface HiringPartner {
   id: string;
@@ -34,7 +37,8 @@ const STATUS_BADGE: Record<string, { label: string; variant: VariantProps<typeof
   cancelled: { label: "Cancelled", variant: "outline" },
 };
 
-const INPUT_CLS = "w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus:border-primary";
+const SELECT_CLS =
+  "w-full h-11 rounded-xl border border-border bg-muted px-3.5 text-sm outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
 async function fetchJobs(): Promise<JobRow[]> {
   const supabase = getSupabaseClientOrThrow();
@@ -176,51 +180,45 @@ export default function CounsellorJobsPage() {
         </ul>
       )}
 
-      {creatorOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/40 backdrop-blur-xs p-4">
-          <button className="absolute inset-0 cursor-default" onClick={() => setCreatorOpen(false)} aria-label="Close" />
-          <div role="dialog" aria-modal="true" aria-label="New job posting" className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border px-6 py-5">
-              <h2 className="text-lg font-black text-foreground">New Job Posting</h2>
-              <button onClick={() => setCreatorOpen(false)} className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Close">
-                <X className="size-5" />
-              </button>
+      <Dialog open={creatorOpen} onOpenChange={setCreatorOpen}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>New Job Posting</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreate} className="space-y-4">
+            <div className="space-y-1">
+              <label htmlFor="job-partner" className="text-xs font-black text-foreground">Hiring Partner</label>
+              <select id="job-partner" value={form.hiring_partner_id} onChange={(e) => setForm({ ...form, hiring_partner_id: e.target.value })} className={SELECT_CLS}>
+                <option value="">Select a company…</option>
+                {(partners ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
             </div>
-            <form onSubmit={handleCreate} className="space-y-4 p-6">
-              <div className="space-y-1">
-                <label htmlFor="job-partner" className="text-xs font-black text-foreground">Hiring Partner</label>
-                <select id="job-partner" value={form.hiring_partner_id} onChange={(e) => setForm({ ...form, hiring_partner_id: e.target.value })} className={INPUT_CLS}>
-                  <option value="">Select a company…</option>
-                  {(partners ?? []).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="job-title" className="text-xs font-black text-foreground">Title</label>
-                <input id="job-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={INPUT_CLS} placeholder="Software Engineer" />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="job-desc" className="text-xs font-black text-foreground">Description</label>
-                <textarea id="job-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} className={INPUT_CLS} />
-              </div>
-              <div className="space-y-1">
-                <label htmlFor="job-type" className="text-xs font-black text-foreground">Employment Type</label>
-                <select id="job-type" value={form.employment_type} onChange={(e) => setForm({ ...form, employment_type: e.target.value })} className={INPUT_CLS}>
-                  <option value="full_time">Full Time</option>
-                  <option value="part_time">Part Time</option>
-                  <option value="internship">Internship</option>
-                  <option value="contract">Contract</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setCreatorOpen(false)} className="h-11 rounded-xl px-5 text-xs font-black text-muted-foreground hover:bg-muted">Cancel</button>
-                <button type="submit" disabled={createMutation.isPending} className="h-11 rounded-xl bg-primary px-6 text-xs font-black text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-                  {createMutation.isPending ? "Posting…" : "Publish Posting"}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+            <div className="space-y-1">
+              <label htmlFor="job-title" className="text-xs font-black text-foreground">Title</label>
+              <Input id="job-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Software Engineer" />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="job-desc" className="text-xs font-black text-foreground">Description</label>
+              <Textarea id="job-desc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={4} />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="job-type" className="text-xs font-black text-foreground">Employment Type</label>
+              <select id="job-type" value={form.employment_type} onChange={(e) => setForm({ ...form, employment_type: e.target.value })} className={SELECT_CLS}>
+                <option value="full_time">Full Time</option>
+                <option value="part_time">Part Time</option>
+                <option value="internship">Internship</option>
+                <option value="contract">Contract</option>
+              </select>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setCreatorOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={createMutation.isPending}>
+                {createMutation.isPending ? "Posting…" : "Publish Posting"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
