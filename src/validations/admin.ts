@@ -17,17 +17,11 @@ export const passwordSchema = z
 export const contentStatusSchema = z.enum(["draft", "published", "archived"]);
 export const accountStatusSchema = z.enum(["active", "inactive", "disabled"]);
 export const crmLeadStatusSchema = z.enum(["new", "contacted", "qualified", "follow_up", "converted", "lost"]);
-export const appRoleSchema = z.enum([
-  "super_admin",
-  "admin",
-  "editor",
-  "mentor_manager",
-  "course_manager",
-  "crm_manager",
-  "counsellor",
-  "sales",
-  "content_manager",
-]);
+// Previously included super_admin/editor/mentor_manager/course_manager/crm_manager -
+// none of those are seeded database roles and this schema isn't wired to any live
+// form (verified: unused outside this file). Trimmed to the roles that actually
+// exist and do something.
+export const appRoleSchema = z.enum(["admin", "counsellor", "mentor", "student"]);
 
 export const courseSchema = z.object({
   title: z.string().trim().min(2),

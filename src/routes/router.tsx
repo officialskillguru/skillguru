@@ -2,7 +2,7 @@ import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
 import { PageLoader } from "@/components/common/PageLoader";
 import { routes } from "@/lib/routes";
-import { AdminProtectedRoute, ProtectedRoute, MentorProtectedRoute } from "@/routes/guards";
+import { AdminProtectedRoute, ProtectedRoute, MentorProtectedRoute, CounsellorProtectedRoute } from "@/routes/guards";
 
 import { DashboardLayout } from "@/layouts/DashboardLayout";
 
@@ -61,6 +61,16 @@ const MentorNotificationsPage = lazy(() => import("@/pages/mentor/MentorNotifica
 const MentorMessagesPage    = lazy(() => import("@/pages/mentor/MentorMessagesPage"));
 const MentorAnnouncementsPage = lazy(() => import("@/pages/mentor/MentorAnnouncementsPage"));
 const MentorPortalProfilePage = lazy(() => import("@/pages/mentor/MentorPortalProfilePage"));
+
+// ── Counsellor portal ────────────────────────────────────────────────────────
+const CounsellorPortalShellPage = lazy(() => import("@/components/counsellor/layout/CounsellorPortalShell").then((m) => ({ default: m.CounsellorPortalShell })));
+const CounsellorOverviewPage    = lazy(() => import("@/pages/counsellor/CounsellorOverviewPage"));
+const CounsellorStudentsPage    = lazy(() => import("@/pages/counsellor/CounsellorStudentsPage"));
+const CounsellorMentorsPage     = lazy(() => import("@/pages/counsellor/CounsellorMentorsPage"));
+const CounsellorCoursesPage     = lazy(() => import("@/pages/counsellor/CounsellorCoursesPage"));
+const CounsellorJobsPage        = lazy(() => import("@/pages/counsellor/CounsellorJobsPage"));
+const CounsellorMessagesPage    = lazy(() => import("@/pages/counsellor/CounsellorMessagesPage"));
+const CounsellorProfilePage     = lazy(() => import("@/pages/counsellor/CounsellorProfilePage"));
 
 // ── Admin shell & auth ────────────────────────────────────────────────────────
 const AdminLoginPage = lazy(() => import("@/pages/AdminLoginPage"));
@@ -177,6 +187,23 @@ export const router = createBrowserRouter([
           { path: "announcements", element: withSuspense(<MentorAnnouncementsPage />) },
           { path: "notifications", element: withSuspense(<MentorNotificationsPage />) },
           { path: "profile",   element: withSuspense(<MentorPortalProfilePage />) },
+        ],
+      },
+
+      // ── Counsellor portal ────────────────────────────────────────────────────
+      {
+        path: "/counsellor",
+        element: withSuspense(<CounsellorProtectedRoute><CounsellorPortalShellPage /></CounsellorProtectedRoute>),
+        children: [
+          { index: true,        element: <Navigate to={routes.counsellor.dashboard} replace /> },
+          { path: "dashboard",  element: withSuspense(<CounsellorOverviewPage />) },
+          { path: "students",   element: withSuspense(<CounsellorStudentsPage />) },
+          { path: "mentors",    element: withSuspense(<CounsellorMentorsPage />) },
+          { path: "courses",    element: withSuspense(<CounsellorCoursesPage />) },
+          { path: "jobs",       element: withSuspense(<CounsellorJobsPage />) },
+          { path: "messages",   element: withSuspense(<CounsellorMessagesPage />) },
+          { path: "messages/:conversationId", element: withSuspense(<CounsellorMessagesPage />) },
+          { path: "profile",    element: withSuspense(<CounsellorProfilePage />) },
         ],
       },
 

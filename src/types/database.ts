@@ -3,7 +3,10 @@ import type { Database as GenDatabase, Json as GenJson } from "./database.types"
 export type Database = GenDatabase;
 export type Json = GenJson;
 
-export type AppRole = "admin" | "counsellor" | "sales" | "content_manager";
+// Re-exported from the domain model so there's a single source of truth for
+// the app's role union - this file previously declared its own (stale,
+// missing "student"/"mentor") copy.
+export type { AppRole } from "@/domain/auth/models/Profile";
 export type AccountStatus = "active" | "inactive" | "suspended" | "pending";
 export type CrmLeadStatus = "new" | "contacted" | "qualified" | "converted" | "closed";
 

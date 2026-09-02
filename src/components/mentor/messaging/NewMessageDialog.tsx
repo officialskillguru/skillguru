@@ -23,9 +23,11 @@ const ROLE_GROUP_LABEL: Record<string, string> = {
 interface NewMessageDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Base messages route to navigate into after starting a conversation. Defaults to the mentor portal for backward compatibility. */
+  basePath?: string;
 }
 
-export function NewMessageDialog({ open, onOpenChange }: Readonly<NewMessageDialogProps>) {
+export function NewMessageDialog({ open, onOpenChange, basePath = "/mentor/messages" }: Readonly<NewMessageDialogProps>) {
   const navigate = useNavigate();
   const { data: recipients = [], isLoading } = useAuthorizedRecipients();
   const startConversation = useStartConversation();
@@ -50,7 +52,7 @@ export function NewMessageDialog({ open, onOpenChange }: Readonly<NewMessageDial
       const conversationId = await startConversation.mutateAsync(recipientId);
       onOpenChange(false);
       setSearch("");
-      void navigate(`/mentor/messages/${conversationId}`);
+      void navigate(`${basePath}/${conversationId}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Couldn't start this conversation.");
     }

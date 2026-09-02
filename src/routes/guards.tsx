@@ -146,3 +146,33 @@ export function MentorProtectedRoute({ children }: Readonly<{ children: ReactNod
 
   return <>{children}</>;
 }
+
+export function CounsellorProtectedRoute({ children }: Readonly<{ children: ReactNode }>) {
+  const auth = useAuth();
+  const location = useLocation();
+  const isAdmin = !!auth.authUser?.roles.includes("admin");
+
+  if (auth.status === "WAITING_EMAIL_CONFIRMATION") {
+    return <Navigate to="/verify-email" replace />;
+  }
+
+  if (auth.status === "UNAUTHENTICATED" || auth.status === "LOGOUT" || auth.status === "ERROR" || auth.status === "SESSION_EXPIRED") {
+    return <Navigate to={routes.login} replace state={{ from: location.pathname }} />;
+  }
+
+  if (auth.status !== "READY" || !auth.authUser) {
+    return <PageLoader />;
+  }
+
+  if (auth.authUser.passwordResetRequired && location.pathname !== routes.forcePasswordChange) {
+    return <Navigate to={routes.forcePasswordChange} replace />;
+  }
+
+  // Allow admins to also view the counsellor portal, or just counsellors.
+  if (!auth.authUser.roles.includes("counsellor") && !isAdmin) {
+    const dashboard = RouteResolver.getDashboard(auth.authUser);
+    return <Navigate to={dashboard} replace />;
+  }
+
+  return <>{children}</>;
+}

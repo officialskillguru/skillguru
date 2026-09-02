@@ -83,6 +83,7 @@ export class IdentityService {
    */
   private resolveHighestRole(roles: string[]): string {
     if (roles.includes("admin")) return "admin";
+    if (roles.includes("counsellor")) return "counsellor";
     if (roles.includes("mentor")) return "mentor";
     if (roles.includes("student")) return "student";
     // Fallback if no specific role is assigned yet (shouldn't happen with trigger)

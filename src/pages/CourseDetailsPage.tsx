@@ -242,6 +242,30 @@ export default function CourseDetailsPage() {
     enabled: !!course?.mentorId,
   });
 
+  // A course can now have multiple teachers via course_mentors (many-to-many).
+  // Falls back to the single legacy `mentor` above only if no active
+  // course_mentors rows exist for this course (shouldn't happen post-backfill,
+  // but a brand-new admin-created course may not have an assignment yet).
+  const { data: courseInstructors } = useQuery({
+    queryKey: ["course-instructors", course?.id],
+    queryFn: async () => {
+      const supabase = getSupabaseClientOrThrow();
+      const { data: rows, error } = await supabase
+        .from("course_mentors")
+        .select("mentor_id, is_primary, sort_order")
+        .eq("course_id", course!.id)
+        .eq("status", "active")
+        .order("is_primary", { ascending: false })
+        .order("sort_order", { ascending: true });
+      if (error || !rows || rows.length === 0) return [];
+      const summaries = await Promise.all(rows.map((r) => mentorService.getMentorSummaryById(r.mentor_id)));
+      return summaries.filter((m): m is NonNullable<typeof m> => m !== null);
+    },
+    enabled: !!course?.id,
+  });
+
+  const instructors = courseInstructors && courseInstructors.length > 0 ? courseInstructors : mentor ? [mentor] : [];
+
   const { data: gallery = [] } = useQuery({
     queryKey: ["course-media", course?.id, "gallery_image"],
     queryFn: () => listCourseMedia(course!.id, "gallery_image"),
@@ -403,9 +427,15 @@ export default function CourseDetailsPage() {
                 {course.shortDescription && <p className="mt-4 text-base font-semibold text-foreground/80">{course.shortDescription}</p>}
 
                 <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-muted-foreground">
-                  {mentor && (
+                  {instructors.length > 0 && (
                     <span>
-                      By <Link to={`/mentors/${mentor.slug}`} className="font-black text-secondary hover:underline">{mentor.name}</Link>
+                      By{" "}
+                      {instructors.map((i, idx) => (
+                        <span key={i.slug}>
+                          <Link to={`/mentors/${i.slug}`} className="font-black text-secondary hover:underline">{i.name}</Link>
+                          {idx < instructors.length - 1 ? (idx === instructors.length - 2 ? " & " : ", ") : ""}
+                        </span>
+                      ))}
                     </span>
                   )}
                   {ratingSummary && (ratingSummary.review_count ?? 0) > 0 && (
@@ -534,9 +564,13 @@ export default function CourseDetailsPage() {
                 </section>
 
                 <section id="course-4" className="mt-12">
-                  <h2 className="text-2xl font-black text-primary">Instructor</h2>
-                  <div className="mt-5 max-w-md">
-                    {mentor ? <MentorCard mentor={mentor} /> : <p className="text-sm text-muted-foreground">Instructor details unavailable.</p>}
+                  <h2 className="text-2xl font-black text-primary">{instructors.length > 1 ? "Teachers for This Course" : "Instructor"}</h2>
+                  <div className={instructors.length > 1 ? "mt-5 grid gap-4 sm:grid-cols-2" : "mt-5 max-w-md"}>
+                    {instructors.length > 0 ? (
+                      instructors.map((i) => <MentorCard key={i.slug} mentor={i} />)
+                    ) : (
+                      <p className="text-sm text-muted-foreground">Instructor details unavailable.</p>
+                    )}
                   </div>
                 </section>
 

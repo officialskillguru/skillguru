@@ -53,6 +53,15 @@ export const routes = {
     notifications: "/mentor/notifications",
     profile: "/mentor/profile",
   },
+  counsellor: {
+    dashboard: "/counsellor/dashboard",
+    students: "/counsellor/students",
+    mentors: "/counsellor/mentors",
+    courses: "/counsellor/courses",
+    jobs: "/counsellor/jobs",
+    messages: "/counsellor/messages",
+    profile: "/counsellor/profile",
+  },
 } as const;
 
 export function courseDetailRoute(slug: string) {
