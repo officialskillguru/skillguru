@@ -19,6 +19,8 @@ const ContactPage         = lazy(() => import("@/pages/ContactPage"));
 const StudentMentorsPage  = lazy(() => import("@/pages/student/StudentMentorsPage"));
 const WishlistPage        = lazy(() => import("@/pages/student/WishlistPage"));
 const NotesPage           = lazy(() => import("@/pages/student/NotesPage"));
+const StudentLiveClassesPage  = lazy(() => import("@/pages/student/StudentLiveClassesPage"));
+const StudentLiveClassRoomPage = lazy(() => import("@/pages/student/StudentLiveClassRoomPage"));
 const StudentPlacementsPage = lazy(() => import("@/pages/student/PlacementsPage"));
 const ResumeBuilderPage = lazy(() => import("@/pages/student/ResumeBuilderPage"));
 const CareerGuidancePage = lazy(() => import("@/pages/student/CareerGuidancePage"));
@@ -58,6 +60,8 @@ const MentorReviewsPage      = lazy(() => import("@/pages/mentor/MentorReviewsPa
 const MentorJobsPage         = lazy(() => import("@/pages/mentor/MentorJobsPage"));
 const MentorAnalyticsPage    = lazy(() => import("@/pages/mentor/MentorAnalyticsPage"));
 const MentorNotificationsPage = lazy(() => import("@/pages/mentor/MentorNotificationsPage"));
+const MentorLiveClassesPage  = lazy(() => import("@/pages/mentor/MentorLiveClassesPage"));
+const MentorLiveClassRoomPage = lazy(() => import("@/pages/mentor/MentorLiveClassRoomPage"));
 const MentorMessagesPage    = lazy(() => import("@/pages/mentor/MentorMessagesPage"));
 const MentorAnnouncementsPage = lazy(() => import("@/pages/mentor/MentorAnnouncementsPage"));
 const MentorPortalProfilePage = lazy(() => import("@/pages/mentor/MentorPortalProfilePage"));
@@ -161,6 +165,8 @@ export const router = createBrowserRouter([
           { path: "mentors",          element: withSuspense(<StudentMentorsPage />) },
           { path: "wishlist",         element: withSuspense(<WishlistPage />) },
           { path: "notes",            element: withSuspense(<NotesPage />) },
+          { path: "live-classes",     element: withSuspense(<StudentLiveClassesPage />) },
+          { path: "live-classes/:id/room", element: withSuspense(<StudentLiveClassRoomPage />) },
           { path: "placement",        element: withSuspense(<StudentPlacementsPage />) },
           { path: "resume-builder",   element: withSuspense(<ResumeBuilderPage />) },
           { path: "career-guidance",  element: withSuspense(<CareerGuidancePage />) },
@@ -187,6 +193,8 @@ export const router = createBrowserRouter([
           { path: "messages/:conversationId", element: withSuspense(<MentorMessagesPage />) },
           { path: "announcements", element: withSuspense(<MentorAnnouncementsPage />) },
           { path: "notifications", element: withSuspense(<MentorNotificationsPage />) },
+          { path: "live-classes", element: withSuspense(<MentorLiveClassesPage />) },
+          { path: "live-classes/:id/room", element: withSuspense(<MentorLiveClassRoomPage />) },
           { path: "profile",   element: withSuspense(<MentorPortalProfilePage />) },
         ],
       },

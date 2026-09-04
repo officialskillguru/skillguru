@@ -9,6 +9,7 @@ import {
   FileText,
   Heart,
   LayoutDashboard,
+  Radio,
   StickyNote,
   User,
   Users
@@ -25,6 +26,7 @@ const NAV_GROUPS = [
       { name: "My Courses", path: "/dashboard/courses", icon: BookOpen, disabled: false },
       { name: "Learning Tasks", path: "/dashboard/assignments", icon: CheckSquare, disabled: false },
       { name: "My Notes", path: "/dashboard/notes", icon: StickyNote, disabled: false },
+      { name: "Live Classes", path: "/dashboard/live-classes", icon: Radio, disabled: false },
     ]
   },
   {
