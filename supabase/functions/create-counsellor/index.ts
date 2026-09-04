@@ -182,6 +182,21 @@ Deno.serve(async (req) => {
         .upsert({ user_id: createdAuthUserId, role_id: roleRecord.id }, { onConflict: "user_id,role_id" });
       if (roleAssignError) throw new Error("Role assignment failed: " + roleAssignError.message);
 
+      // handle_new_user() unconditionally grants every new auth.users row the
+      // default 'student' role - revoke it now that the real role is assigned,
+      // or this counsellor would also show up in every student-scoped list/RLS
+      // check (confirmed live: the Admin Students page listed staff accounts).
+      const { data: studentRoleRecord } = await serviceClient.from("roles").select("id").eq("code", "student").maybeSingle();
+      if (studentRoleRecord) {
+        const { error: revokeStudentError } = await serviceClient
+          .from("user_roles")
+          .update({ revoked_at: new Date().toISOString() })
+          .eq("user_id", createdAuthUserId)
+          .eq("role_id", studentRoleRecord.id)
+          .is("revoked_at", null);
+        if (revokeStudentError) log(requestId, "error", "revoke_default_student_role_failed", { userId: createdAuthUserId, error: revokeStudentError.message });
+      }
+
       // User Settings (force password reset if manual) — upsert: trg_create_user_settings
       // already created a default row for this user the moment the profile was inserted.
       const { error: settingsError } = await serviceClient

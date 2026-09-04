@@ -25,9 +25,14 @@ export async function listStudents(params: StudentListParams = {}): Promise<Pagi
   let query = supabase.from("profiles").select("*", { count: "exact" });
 
   // Scope to the student role by default so this never silently includes admins/mentors.
+  // revoked_at must be filtered here too: handle_new_user() grants every new
+  // auth.users row a default student role, and account-provisioning flows for
+  // other roles revoke it (rather than delete the row) once the real role is
+  // assigned - an unfiltered query here previously listed every Teacher/
+  // Counsellor/Admin account as a "student" (confirmed live in the Admin UI).
   const { data: studentRole } = await supabase.from("roles").select("id").eq("code", "student").maybeSingle();
   if (studentRole) {
-    const { data: studentUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", studentRole.id);
+    const { data: studentUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", studentRole.id).is("revoked_at", null);
     const studentIds = (studentUserRoles ?? []).map((ur) => ur.user_id);
     if (studentIds.length === 0) return { data: [], count: 0, page, pageSize, totalPages: 0 };
     query = query.in("id", studentIds);

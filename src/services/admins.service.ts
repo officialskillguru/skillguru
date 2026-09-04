@@ -12,7 +12,7 @@ export async function listAdmins(_params: AdminListParams = {}): Promise<Paginat
   const { data: adminRole } = await supabase.from("roles").select("id").eq("code", "admin").maybeSingle();
   if (!adminRole) return { data: [], count: 0, page: 1, pageSize: 100, totalPages: 0 };
 
-  const { data: adminUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", adminRole.id);
+  const { data: adminUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", adminRole.id).is("revoked_at", null);
   const adminIds = (adminUserRoles ?? []).map((ur) => ur.user_id);
   if (adminIds.length === 0) return { data: [], count: 0, page: 1, pageSize: 100, totalPages: 0 };
 

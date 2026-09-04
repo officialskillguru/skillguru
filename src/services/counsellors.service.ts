@@ -49,7 +49,7 @@ export async function listCounsellors(params: CounsellorListParams = {}): Promis
   const roleId = await getCounsellorRoleId();
   if (!roleId) return { data: [], count: 0, page, pageSize, totalPages: 0 };
 
-  const { data: counsellorUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", roleId);
+  const { data: counsellorUserRoles } = await supabase.from("user_roles").select("user_id").eq("role_id", roleId).is("revoked_at", null);
   const counsellorIds = (counsellorUserRoles ?? []).map((ur) => ur.user_id);
   if (counsellorIds.length === 0) return { data: [], count: 0, page, pageSize, totalPages: 0 };
 
