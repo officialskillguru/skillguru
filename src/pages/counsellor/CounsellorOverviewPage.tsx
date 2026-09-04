@@ -7,13 +7,25 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 async function fetchCounts() {
   const supabase = getSupabaseClientOrThrow();
+  const { data: userResp } = await supabase.auth.getUser();
+  const callerId = userResp.user?.id;
 
-  const { data: studentRole } = await supabase.from("roles").select("id").eq("code", "student").maybeSingle();
+  // profiles' own RLS policy scopes SELECT to rows where
+  // user_has_role(id, 'student') OR id = caller (the "view your own profile"
+  // clause) for a caller holding students.read - so a direct count needs to
+  // exclude the caller's own row to avoid an off-by-one, but is otherwise
+  // the real, correctly-scoped student count. A user_roles-based count used
+  // to be here and was a real bug: user_roles' own RLS only lets a caller
+  // read their OWN row (or an admin read any row), so a real counsellor's
+  // count only ever reflected whether their own (often-revoked) student-
+  // role row existed - not the actual student population - confirmed live
+  // (0 via user_roles vs 9 real student profiles visible to the same
+  // counsellor session).
+  let studentsQuery = supabase.from("profiles").select("id", { count: "exact", head: true });
+  if (callerId) studentsQuery = studentsQuery.neq("id", callerId);
 
   const [students, mentors, courses, openJobs] = await Promise.all([
-    studentRole
-      ? supabase.from("user_roles").select("user_id", { count: "exact", head: true }).eq("role_id", studentRole.id).is("revoked_at", null)
-      : Promise.resolve({ count: 0 }),
+    studentsQuery,
     supabase.from("mentor_profiles").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("courses").select("id", { count: "exact", head: true }).is("deleted_at", null),
     supabase.from("job_postings").select("id", { count: "exact", head: true }).eq("status", "open").is("deleted_at", null),

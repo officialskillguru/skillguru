@@ -27,25 +27,28 @@ function initials(name: string | null | undefined) {
 async function fetchStudents(search: string): Promise<StudentRow[]> {
   const supabase = getSupabaseClientOrThrow();
 
-  const { data: studentRole } = await supabase.from("roles").select("id").eq("code", "student").maybeSingle();
-  if (!studentRole) return [];
-
-  const { data: memberships } = await supabase
-    .from("user_roles")
-    .select("user_id")
-    .eq("role_id", studentRole.id)
-    .is("revoked_at", null)
-    .limit(200);
-
-  const ids = (memberships ?? []).map((m) => m.user_id);
-  if (ids.length === 0) return [];
+  // profiles' own RLS policy already scopes SELECT to rows where
+  // user_has_role(id, 'student') for a caller holding students.read — no
+  // need to pre-resolve student ids via user_roles first. That pre-resolve
+  // step used to be here and was a real bug: user_roles' own RLS only
+  // allows a caller to read their OWN row (or an admin to read any row), so
+  // a real counsellor querying user_roles for OTHER users' role grants
+  // always got back nothing, making this page permanently show "No
+  // students found" regardless of how many students actually exist
+  // (confirmed live: 0 via user_roles vs 9 via a direct profiles query, for
+  // the same counsellor session).
+  const { data: userResp } = await supabase.auth.getUser();
+  const callerId = userResp.user?.id;
 
   let query = supabase
     .from("profiles")
     .select("id, full_name, email, phone, created_at")
-    .in("id", ids)
     .order("created_at", { ascending: false })
     .limit(100);
+
+  // profiles' RLS also has a "view your own profile" clause, which would
+  // otherwise put the counsellor's own row in a list titled "Students".
+  if (callerId) query = query.neq("id", callerId);
 
   if (search.trim()) {
     query = query.or(`full_name.ilike.%${search.trim()}%,email.ilike.%${search.trim()}%`);
