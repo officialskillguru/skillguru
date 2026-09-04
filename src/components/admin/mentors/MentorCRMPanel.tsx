@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { getNextTabIndex } from "@/lib/a11y-tabs";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Calendar, CheckCircle2, ArrowRightLeft, Upload, Download, Trash2, History } from "lucide-react";
+import { Plus, Calendar, CheckCircle2, ArrowRightLeft, Upload, Download, Trash2, History, Star, X } from "lucide-react";
 import {
   useMentorNotes,
   useMentorTasks,
@@ -431,20 +431,57 @@ function TimelineTab({ mentorId, active }: { mentorId: string; active: boolean }
 // ─── Courses tab ─────────────────────────────────────────────────────────────
 
 export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; active: boolean }) {
-  const { data: courses, isLoading, isError, refetch, reassign } = useMentorCourses(mentorId, active);
+  const { data: courses, isLoading, isError, refetch, assignableQuery, assign, remove, setPrimary, reassign } = useMentorCourses(mentorId, active);
+  const [courseToAssign, setCourseToAssign] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [targetMentorId, setTargetMentorId] = useState("");
+  const [transferOpen, setTransferOpen] = useState(false);
 
   const { data: mentorOptions } = useQuery({
     queryKey: ["admin-mentor-reassign-options"],
     queryFn: async () => (await listMentors({ pageSize: 200 })).data,
-    enabled: active,
+    enabled: active && transferOpen,
   });
 
   const toggle = (id: string) => {
     const next = new Set(selected);
     if (next.has(id)) next.delete(id); else next.add(id);
     setSelected(next);
+  };
+
+  const handleAssign = () => {
+    if (!courseToAssign) return;
+    assign.mutate(courseToAssign, {
+      onSuccess: () => {
+        toast.success("Mentor assigned to course.");
+        setCourseToAssign("");
+      },
+      onError: (err) => {
+        const message = err instanceof Error ? err.message : "Failed to assign to course.";
+        if (message.includes("inactive/suspended")) {
+          toast.error("This mentor is inactive or suspended and can't be newly assigned to a course.");
+        } else if (message.includes("duplicate key")) {
+          toast.error("This mentor is already assigned to that course.");
+        } else {
+          toast.error(message);
+        }
+      },
+    });
+  };
+
+  const handleRemove = (courseId: string, title: string) => {
+    if (!window.confirm(`Remove this mentor from "${title}"? This does not delete the course or its history.`)) return;
+    remove.mutate(courseId, {
+      onSuccess: () => toast.success("Mentor removed from course."),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to remove course assignment."),
+    });
+  };
+
+  const handleSetPrimary = (courseId: string) => {
+    setPrimary.mutate(courseId, {
+      onSuccess: () => toast.success("Primary instructor updated."),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to update primary instructor."),
+    });
   };
 
   const handleTransfer = () => {
@@ -458,6 +495,8 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
         onSuccess: () => {
           toast.success("Course ownership transferred.");
           setSelected(new Set());
+          setTargetMentorId("");
+          setTransferOpen(false);
         },
         onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to transfer courses."),
       }
@@ -466,41 +505,129 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
 
   if (isLoading) return <p className="text-xs font-semibold text-muted-foreground">Loading courses...</p>;
   if (isError) return <ErrorState message="Failed to load courses." onRetry={() => void refetch()} />;
-  if ((courses ?? []).length === 0) return <p className="text-xs font-semibold text-muted-foreground">No courses owned by this mentor.</p>;
 
   return (
-    <div className="space-y-3">
-      <div className="space-y-2">
-        {courses!.map((c) => (
-          <label key={c.id} className="flex items-center gap-3 rounded-xl border border-border p-3 cursor-pointer">
-            <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)} />
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-bold text-foreground">{c.title}</p>
-              <p className="text-[10px] font-bold text-muted-foreground">
-                {c.enrollmentCount} enrolled · {c.ratingCount > 0 ? `${c.avgRating.toFixed(1)}★ (${c.ratingCount})` : "No ratings"} · {c.avgCompletion.toFixed(0)}% avg completion
-              </p>
-            </div>
-            <span className="text-[10px] font-black uppercase text-muted-foreground">{c.status}</span>
-          </label>
-        ))}
+    <div className="space-y-5">
+      <div>
+        <h4 className="mb-2 text-xs font-black uppercase tracking-wider text-foreground">Teaching</h4>
+        {(courses ?? []).length === 0 ? (
+          <p className="text-xs font-semibold text-muted-foreground">Not currently assigned to any course.</p>
+        ) : (
+          <div className="space-y-2">
+            {courses!.map((c) => (
+              <div key={c.id} className="flex items-center gap-3 rounded-xl border border-border p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="truncate text-sm font-bold text-foreground">{c.title}</p>
+                    {c.isPrimary && (
+                      <span className="flex shrink-0 items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-emerald-700">
+                        <Star className="size-2.5 fill-current" aria-hidden="true" /> Primary
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[10px] font-bold text-muted-foreground">
+                    {c.enrollmentCount} enrolled · {c.ratingCount > 0 ? `${c.avgRating.toFixed(1)}★ (${c.ratingCount})` : "No ratings"} · {c.avgCompletion.toFixed(0)}% avg completion
+                  </p>
+                </div>
+                <span className="text-[10px] font-black uppercase text-muted-foreground">{c.status}</span>
+                {!c.isPrimary && (
+                  <button
+                    type="button"
+                    onClick={() => handleSetPrimary(c.id)}
+                    disabled={setPrimary.isPending}
+                    title="Make primary instructor"
+                    aria-label={`Make primary instructor for ${c.title}`}
+                    className="rounded-lg p-1.5 text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Star className="size-3.5" aria-hidden="true" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleRemove(c.id, c.title)}
+                  disabled={remove.isPending}
+                  title="Remove from course"
+                  aria-label={`Remove mentor from ${c.title}`}
+                  className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <X className="size-3.5" aria-hidden="true" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
-      <div className="flex gap-2 rounded-xl border border-border p-3">
-        <label htmlFor="course-transfer-target" className="sr-only">Transfer selected courses to</label>
-        <select id="course-transfer-target" value={targetMentorId} onChange={(e) => setTargetMentorId(e.target.value)} className="h-10 flex-1 rounded-lg border border-border bg-muted px-3 text-sm outline-none focus:border-primary">
-          <option value="">Transfer selected to...</option>
-          {(mentorOptions ?? []).filter((m) => m.id !== mentorId).map((m) => (
-            <option key={m.id} value={m.id}>{m.name}</option>
-          ))}
-        </select>
-        <button
-          type="button"
-          onClick={handleTransfer}
-          disabled={reassign.isPending}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-        >
-          <ArrowRightLeft className="size-3.5" aria-hidden="true" /> Transfer
-        </button>
+      <div>
+        <h4 className="mb-2 text-xs font-black uppercase tracking-wider text-foreground">Assign to a Course</h4>
+        <div className="flex gap-2">
+          <label htmlFor="admin-mentor-assign-course" className="sr-only">Select a course to assign</label>
+          <select
+            id="admin-mentor-assign-course"
+            value={courseToAssign}
+            onChange={(e) => setCourseToAssign(e.target.value)}
+            className="h-10 flex-1 rounded-lg border border-border bg-muted px-3 text-sm outline-none focus:border-primary"
+          >
+            <option value="">Select a course…</option>
+            {(assignableQuery.data ?? []).map((c) => (
+              <option key={c.id} value={c.id}>{c.title}</option>
+            ))}
+          </select>
+          <button
+            type="button"
+            onClick={handleAssign}
+            disabled={!courseToAssign || assign.isPending}
+            className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            <Plus className="size-3.5" aria-hidden="true" /> Assign
+          </button>
+        </div>
+        {assignableQuery.data?.length === 0 && (courses ?? []).length > 0 && (
+          <p className="mt-1.5 text-[10px] font-bold text-muted-foreground">Already assigned to every course.</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-border p-3">
+        {!transferOpen ? (
+          <button
+            type="button"
+            onClick={() => setTransferOpen(true)}
+            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground hover:text-foreground"
+          >
+            <ArrowRightLeft className="size-3.5" aria-hidden="true" /> Bulk-transfer courses to another mentor…
+          </button>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-muted-foreground">
+              For full ownership transfer (e.g. before deleting this mentor) — moves the selected courses' primary ownership to another mentor entirely.
+            </p>
+            <div className="max-h-40 space-y-1.5 overflow-y-auto">
+              {(courses ?? []).map((c) => (
+                <label key={c.id} className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                  <input type="checkbox" checked={selected.has(c.id)} onChange={() => toggle(c.id)} />
+                  {c.title}
+                </label>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <label htmlFor="course-transfer-target" className="sr-only">Transfer selected courses to</label>
+              <select id="course-transfer-target" value={targetMentorId} onChange={(e) => setTargetMentorId(e.target.value)} className="h-10 flex-1 rounded-lg border border-border bg-muted px-3 text-sm outline-none focus:border-primary">
+                <option value="">Transfer selected to...</option>
+                {(mentorOptions ?? []).filter((m) => m.id !== mentorId).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleTransfer}
+                disabled={reassign.isPending}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[10px] font-black uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <ArrowRightLeft className="size-3.5" aria-hidden="true" /> Transfer
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -359,23 +359,34 @@ export async function listMentorLoginHistory(mentorId: string, limit = 20) {
   return data ?? [];
 }
 
-// ─── Course Ownership (Phase 2) ─────────────────────────────────────────────
+// ─── Course Assignments (many-to-many via course_mentors) ──────────────────
 
 export interface MentorCourseSummary {
   id: string;
   title: string;
   status: string;
+  isPrimary: boolean;
   enrollmentCount: number;
   avgRating: number;
   ratingCount: number;
   avgCompletion: number;
 }
 
+/** Every course this mentor teaches, sourced from course_mentors (the many-to-many
+ *  source of truth) rather than the legacy single-owner courses.mentor_id column —
+ *  so a co-teacher shows up here too, not just the course's original legacy owner. */
 export async function listMentorCourses(mentorId: string): Promise<MentorCourseSummary[]> {
   const supabase = getSupabaseClientOrThrow();
-  const { data: courses, error } = await supabase.from("courses").select("id, title, status").eq("mentor_id", mentorId).is("deleted_at", null);
+  const { data: assignments, error } = await supabase
+    .from("course_mentors")
+    .select("is_primary, courses!inner(id, title, status, deleted_at)")
+    .eq("mentor_id", mentorId)
+    .eq("status", "active")
+    .is("courses.deleted_at", null);
   assertServiceResponse(error);
-  const list = courses ?? [];
+  const list = (assignments ?? [])
+    .filter((a) => a.courses)
+    .map((a) => ({ id: a.courses.id, title: a.courses.title, status: a.courses.status, isPrimary: a.is_primary }));
   if (list.length === 0) return [];
   const courseIds = list.map((c) => c.id);
 
@@ -417,6 +428,7 @@ export async function listMentorCourses(mentorId: string): Promise<MentorCourseS
       id: c.id,
       title: c.title,
       status: c.status,
+      isPrimary: c.isPrimary,
       enrollmentCount: enrollmentsByCourse.get(c.id)?.length ?? 0,
       avgRating: rating ? rating.sum / rating.count : 0,
       ratingCount: rating?.count ?? 0,
@@ -439,7 +451,13 @@ export async function getUnassignedMentorId(): Promise<string | null> {
   return data?.id ?? null;
 }
 
-/** Transfers ownership of the given courses to another mentor. `courses.mentor_id` is NOT NULL, so a course can only be reassigned, never fully "removed" without a new owner. */
+/** Transfers full ownership of the given courses to another mentor: updates the legacy
+ *  courses.mentor_id column (still NOT NULL) AND removes the old mentor's course_mentors
+ *  row so they stop showing as a co-teacher. Order matters: the old row is deleted first,
+ *  so when courses.mentor_id changes it fires course_mentors_sync_from_courses() with no
+ *  existing primary row left — the new mentor correctly becomes primary, not a second
+ *  non-primary co-teacher. Use assignMentorToCourse/removeMentorFromCourse instead for
+ *  genuine multi-teacher add/remove that isn't a full ownership transfer. */
 export async function reassignMentorCourses(courseIds: string[], toMentorId: string): Promise<void> {
   if (courseIds.length === 0) return;
   const supabase = getSupabaseClientOrThrow();
@@ -447,8 +465,26 @@ export async function reassignMentorCourses(courseIds: string[], toMentorId: str
   const { data: oldRows } = await supabase.from("courses").select("id, mentor_id").in("id", courseIds);
   const oldMentorByCourse = new Map((oldRows ?? []).map((c) => [c.id, c.mentor_id]));
 
+  await Promise.all(
+    courseIds.map(async (courseId) => {
+      const oldMentorId = oldMentorByCourse.get(courseId);
+      if (!oldMentorId || oldMentorId === toMentorId) return;
+      const { error: delErr } = await supabase.from("course_mentors").delete().eq("course_id", courseId).eq("mentor_id", oldMentorId);
+      assertServiceResponse(delErr);
+    })
+  );
+
   const { error } = await supabase.from("courses").update({ mentor_id: toMentorId }).in("id", courseIds);
   assertServiceResponse(error);
+
+  // Belt-and-suspenders: ensure the new mentor's row is primary even if a stale
+  // non-primary row for them already existed for one of these courses before the
+  // trigger ran (trigger only inserts when no row for that (course, mentor) exists yet).
+  await Promise.all(
+    courseIds.map((courseId) =>
+      supabase.from("course_mentors").update({ is_primary: true }).eq("course_id", courseId).eq("mentor_id", toMentorId)
+    )
+  );
 
   await Promise.all(
     courseIds.map((courseId) =>
@@ -461,6 +497,72 @@ export async function reassignMentorCourses(courseIds: string[], toMentorId: str
       })
     )
   );
+}
+
+export interface AssignableCourse {
+  id: string;
+  title: string;
+  status: string;
+}
+
+/** Courses this mentor is not already assigned to (via course_mentors), for the "assign to a
+ *  course" picker — excludes soft-deleted courses. */
+export async function listAssignableCoursesForMentor(mentorId: string): Promise<AssignableCourse[]> {
+  const supabase = getSupabaseClientOrThrow();
+  const [{ data: allCourses, error: coursesError }, { data: assigned, error: assignedError }] = await Promise.all([
+    supabase.from("courses").select("id, title, status").is("deleted_at", null).order("title"),
+    supabase.from("course_mentors").select("course_id").eq("mentor_id", mentorId),
+  ]);
+  assertServiceResponse(coursesError);
+  assertServiceResponse(assignedError);
+  const assignedIds = new Set((assigned ?? []).map((a) => a.course_id));
+  return (allCourses ?? []).filter((c) => !assignedIds.has(c.id));
+}
+
+/** Adds this mentor as a (non-primary, by default) co-teacher on a course via the
+ *  course_mentors many-to-many table. RLS/the course_mentors_guard_active_mentor trigger
+ *  reject inactive, suspended, or soft-deleted mentors — surfaced to the caller as a normal
+ *  thrown error so the UI can show a clear message instead of a raw Postgres one. */
+export async function assignMentorToCourse(mentorId: string, courseId: string): Promise<void> {
+  const supabase = getSupabaseClientOrThrow();
+  const { error } = await supabase.from("course_mentors").insert({ mentor_id: mentorId, course_id: courseId, is_primary: false });
+  assertServiceResponse(error);
+  await supabase.rpc("log_audit_event", {
+    p_action: "course_mentor_assigned",
+    p_entity_type: "course",
+    p_entity_id: courseId,
+    p_old_values: null,
+    p_new_values: { mentor_id: mentorId },
+  });
+}
+
+/** Removes this mentor from a course's teaching assignments. Does not touch the legacy
+ *  courses.mentor_id column — if this mentor was the legacy primary owner, that column
+ *  still points at them (courses.mentor_id is NOT NULL and can't be cleared); Admin should
+ *  assign a new primary via setPrimaryMentorForCourse or reassignMentorCourses afterward. */
+export async function removeMentorFromCourse(mentorId: string, courseId: string): Promise<void> {
+  const supabase = getSupabaseClientOrThrow();
+  const { error } = await supabase.from("course_mentors").delete().eq("mentor_id", mentorId).eq("course_id", courseId);
+  assertServiceResponse(error);
+  await supabase.rpc("log_audit_event", {
+    p_action: "course_mentor_removed",
+    p_entity_type: "course",
+    p_entity_id: courseId,
+    p_old_values: { mentor_id: mentorId },
+    p_new_values: null,
+  });
+}
+
+/** Makes this mentor the primary instructor for a course. Clears any other primary flag on
+ *  the same course first (the partial unique index only allows one). Does NOT change the
+ *  legacy courses.mentor_id column — the many-to-many is_primary flag is the forward-looking
+ *  source of truth for "who's the lead teacher," independent of the legacy owner column. */
+export async function setPrimaryMentorForCourse(mentorId: string, courseId: string): Promise<void> {
+  const supabase = getSupabaseClientOrThrow();
+  const { error: clearError } = await supabase.from("course_mentors").update({ is_primary: false }).eq("course_id", courseId).eq("is_primary", true);
+  assertServiceResponse(clearError);
+  const { error } = await supabase.from("course_mentors").update({ is_primary: true }).eq("course_id", courseId).eq("mentor_id", mentorId);
+  assertServiceResponse(error);
 }
 
 // ─── Performance Dashboard (Phase 2) ────────────────────────────────────────

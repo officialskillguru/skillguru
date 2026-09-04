@@ -7,7 +7,15 @@ import {
   completeMeetingWithOutcome,
   type CreateAdminMeetingInput,
 } from "@/services/mentor-booking.service";
-import { listMentorCourses, reassignMentorCourses, getMentorPerformance } from "@/services/mentors.service";
+import {
+  listMentorCourses,
+  reassignMentorCourses,
+  getMentorPerformance,
+  listAssignableCoursesForMentor,
+  assignMentorToCourse,
+  removeMentorFromCourse,
+  setPrimaryMentorForCourse,
+} from "@/services/mentors.service";
 import {
   listMentorDocuments,
   uploadMentorDocument,
@@ -135,11 +143,35 @@ export function useMentorCourses(mentorId: string, enabled: boolean) {
     queryFn: () => listMentorCourses(mentorId),
     enabled,
   });
+  const assignableQuery = useQuery({
+    queryKey: [...keys.courses(mentorId), "assignable"],
+    queryFn: () => listAssignableCoursesForMentor(mentorId),
+    enabled,
+  });
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: keys.courses(mentorId) });
+    // A course_mentors change can affect other mentors' assignable lists too
+    // (e.g. this mentor becoming primary doesn't change theirs, but keep it simple
+    // and correct rather than trying to selectively invalidate every other mentor).
+    void queryClient.invalidateQueries({ queryKey: ["admin-mentor-courses"] });
+  };
   const reassign = useMutation({
     mutationFn: ({ courseIds, toMentorId }: { courseIds: string[]; toMentorId: string }) => reassignMentorCourses(courseIds, toMentorId),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: keys.courses(mentorId) }),
+    onSuccess: invalidate,
   });
-  return { ...query, reassign };
+  const assign = useMutation({
+    mutationFn: (courseId: string) => assignMentorToCourse(mentorId, courseId),
+    onSuccess: invalidate,
+  });
+  const remove = useMutation({
+    mutationFn: (courseId: string) => removeMentorFromCourse(mentorId, courseId),
+    onSuccess: invalidate,
+  });
+  const setPrimary = useMutation({
+    mutationFn: (courseId: string) => setPrimaryMentorForCourse(mentorId, courseId),
+    onSuccess: invalidate,
+  });
+  return { ...query, assignableQuery, reassign, assign, remove, setPrimary };
 }
 
 export function useMentorPerformance(mentorId: string, enabled: boolean) {
