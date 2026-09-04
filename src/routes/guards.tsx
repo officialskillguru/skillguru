@@ -89,15 +89,25 @@ export function AdminProtectedRoute({ children, requiredPermission }: Readonly<{
 
   const userPermissions = auth.authUser.permissions ?? [];
   const userRoles = auth.authUser.roles ?? [];
-  
+
   // Super admin overrides everything
   const isSuperAdmin = userRoles.includes("admin");
 
-  // Check specific permission or default dashboard access
-  const hasAccess = isSuperAdmin || 
-    (requiredPermission 
-      ? userPermissions.includes(requiredPermission)
-      : userPermissions.includes("canViewAdminDashboard") || userRoles.some(r => ["counsellor", "sales", "content_manager", "hr", "finance"].includes(r)));
+  // SECURITY: this single guard gates the ENTIRE /admin/* route tree (there is
+  // exactly one AdminProtectedRoute wrapper in router.tsx, applied to the whole
+  // subtree) - no route passes requiredPermission today. A previous fallback
+  // here blanket-granted every /admin/* route (Teachers, Settings, Roles &
+  // Permissions, everything) to any "counsellor"/"sales"/"content_manager"/"hr"/
+  // "finance" role, including three role names that don't even exist in this
+  // database - confirmed live via a real browser session where a disposable
+  // Counsellor account navigated directly to /admin/users/teachers and got the
+  // full Admin Teacher CRUD panel. Counsellor's real, intended workspace is the
+  // separate RLS-gated /counsellor/* portal; their operational teacher/course
+  // access (e.g. courses.assign_mentor) is already exposed there via RLS, not
+  // by reaching into Admin's own command center. Only real admins may pass this
+  // gate now; requiredPermission remains available for a future route that
+  // genuinely needs to be shared more narrowly than "admin only".
+  const hasAccess = isSuperAdmin || (requiredPermission ? userPermissions.includes(requiredPermission) : false);
 
   if (!hasAccess) {
     const dashboard = RouteResolver.getDashboard(auth.authUser);
