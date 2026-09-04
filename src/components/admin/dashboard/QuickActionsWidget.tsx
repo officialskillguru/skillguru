@@ -18,7 +18,7 @@ export function QuickActionsWidget() {
       icon: UserPlus,
       iconColor: "text-blue-600",
       iconBg: "bg-blue-50",
-      onClick: () => navigate("/admin/users/mentors"), // Ideally opens a modal
+      onClick: () => navigate("/admin/users/teachers"), // Ideally opens a modal
     },
     {
       title: "Assign Course to Teacher",

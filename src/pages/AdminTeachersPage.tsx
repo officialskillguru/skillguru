@@ -100,7 +100,7 @@ async function fetchMentorRatings(mentorIds: string[]): Promise<Map<string, Ment
   return result;
 }
 
-export default function AdminMentorsPage() {
+export default function AdminTeachersPage() {
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState(() => searchParams.get("search") ?? "");
   const [page, setPage] = useState(1);

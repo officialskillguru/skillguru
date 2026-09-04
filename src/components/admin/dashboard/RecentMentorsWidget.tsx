@@ -40,7 +40,7 @@ export function RecentMentorsWidget() {
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between p-5 border-b border-slate-100">
         <h2 className="text-base font-bold text-slate-900 tracking-tight">Recently Registered Teachers</h2>
-        <Link to="/admin/users/mentors" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
+        <Link to="/admin/users/teachers" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
           View all teachers
         </Link>
       </div>

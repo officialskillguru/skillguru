@@ -11,6 +11,7 @@ import {
   Loader2,
   Settings,
   ShieldCheck,
+  UserCog,
   Users,
   Workflow,
 } from "lucide-react"
@@ -152,14 +153,14 @@ export function CommandPalette() {
             )}
 
             {mentors.length > 0 && (
-              <CommandGroup heading="Mentors">
+              <CommandGroup heading="Teachers">
                 {mentors.map((m) => (
                   <CommandItem
                     key={m.id}
-                    onSelect={() => { runCommand(() => { void navigate(`/admin/users/mentors?search=${encodeURIComponent(m.name || m.email || "")}`) }) }}
+                    onSelect={() => { runCommand(() => { void navigate(`/admin/users/teachers?search=${encodeURIComponent(m.name || m.email || "")}`) }) }}
                   >
                     <BriefcaseBusiness className="mr-2 h-4 w-4" aria-hidden="true" />
-                    <span>{m.name || "Unnamed mentor"}</span>
+                    <span>{m.name || "Unnamed teacher"}</span>
                     <span className="ml-2 text-xs text-muted-foreground">{m.email}</span>
                   </CommandItem>
                 ))}
@@ -233,9 +234,13 @@ export function CommandPalette() {
             <CommandSeparator />
 
             <CommandGroup heading="Management">
-              <CommandItem onSelect={() => { runCommand(() => { void navigate("/admin/users/mentors"); }); }}>
+              <CommandItem onSelect={() => { runCommand(() => { void navigate("/admin/users/teachers"); }); }}>
                 <BriefcaseBusiness className="mr-2 h-4 w-4" aria-hidden="true" />
-                <span>Mentors</span>
+                <span>Teachers</span>
+              </CommandItem>
+              <CommandItem onSelect={() => { runCommand(() => { void navigate("/admin/users/counsellors"); }); }}>
+                <UserCog className="mr-2 h-4 w-4" aria-hidden="true" />
+                <span>Counsellors</span>
               </CommandItem>
               <CommandItem onSelect={() => { runCommand(() => { void navigate("/admin/students"); }); }}>
                 <Users className="mr-2 h-4 w-4" aria-hidden="true" />
