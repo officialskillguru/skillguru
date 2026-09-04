@@ -1,0 +1,1 @@
+export { UpcomingLiveClasses } from "./UpcomingLiveClasses";

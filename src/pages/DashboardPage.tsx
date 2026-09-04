@@ -4,6 +4,7 @@ import { MissionControlHero } from "@/components/dashboard/sections/MissionContr
 import { TodaysFocus } from "@/components/dashboard/sections/TodaysFocus";
 import { ContinueLearning } from "@/components/dashboard/sections/ContinueLearning";
 import { LearningAnalytics } from "@/components/dashboard/sections/LearningAnalytics";
+import { UpcomingLiveClasses } from "@/components/dashboard/sections/UpcomingLiveClasses";
 import { useAuth } from "@/hooks/useAuth";
 import { useStudentDashboard } from "@/hooks/student/useStudentDashboard";
 import { PageLoader } from "@/components/common/PageLoader";
@@ -35,6 +36,7 @@ export default function DashboardPage() {
     stats, isLoadingStats, statsError,
     continueLearning, isLoadingContinueLearning, continueLearningError,
     weeklyStudyHours,
+    nextAssignment,
   } = useStudentDashboard(studyHoursRangeDays);
 
   // API Failure Strategy: Loading State
@@ -75,7 +77,14 @@ export default function DashboardPage() {
               progress: continueLearning.progress?.completion_percentage || 0,
             } : null}
             nextLesson={continueLearning?.nextLesson ? { title: continueLearning.nextLesson.title, duration: "30m" } : { title: "No upcoming lessons", duration: "0m" }}
-            nextAssignment={{ title: "No pending assignments", due: "N/A" }}
+            nextAssignment={
+              nextAssignment
+                ? {
+                    title: nextAssignment.pendingCount > 1 ? `${nextAssignment.title} (+${nextAssignment.pendingCount - 1} more)` : nextAssignment.title,
+                    due: nextAssignment.dueDate ? new Date(nextAssignment.dueDate).toLocaleDateString() : "No due date",
+                  }
+                : null
+            }
             loading={isLoadingContinueLearning}
           />
         </ErrorBoundary>
@@ -135,11 +144,9 @@ export default function DashboardPage() {
             </ErrorBoundary>
           )}
           
-          {/* Upcoming Schedule / Mentor Workspace - DISABLED (Feature Matrix) */}
-          <div className="flex flex-col h-48 items-center justify-center gap-3 rounded-3xl border border-dashed border-border bg-muted/20 p-6 text-center text-muted-foreground opacity-60" title="Coming in a future release">
-            <span className="text-sm font-semibold uppercase tracking-widest text-muted-foreground/80">Future Release</span>
-            <p className="text-sm">Mentor Workspace & Calendar Integration</p>
-          </div>
+          <ErrorBoundary fallback={<WidgetError message="Live Classes unavailable" />}>
+            <UpcomingLiveClasses />
+          </ErrorBoundary>
         </div>
       </section>
     </div>

@@ -41,16 +41,30 @@ export function useStudentDashboard(studyHoursRangeDays: 7 | 30 = 7) {
     enabled: !!studentId,
   });
 
+  const nextAssignmentQuery = useQuery({
+    queryKey: ["student-next-assignment", studentId],
+    queryFn: async () => {
+      if (!studentId) return null;
+      const res = await studentService.getNextPendingAssignment(studentId);
+      if (!res.success) throw res.error;
+      return res.data;
+    },
+    enabled: !!studentId,
+  });
+
   return {
     stats: statsQuery.data,
     isLoadingStats: statsQuery.isLoading,
     statsError: statsQuery.error,
-    
+
     continueLearning: continueLearningQuery.data,
     isLoadingContinueLearning: continueLearningQuery.isLoading,
     continueLearningError: continueLearningQuery.error,
 
     weeklyStudyHours: weeklyStudyHoursQuery.data ?? [],
     isLoadingWeeklyStudyHours: weeklyStudyHoursQuery.isLoading,
+
+    nextAssignment: nextAssignmentQuery.data,
+    isLoadingNextAssignment: nextAssignmentQuery.isLoading,
   };
 }

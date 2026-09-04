@@ -113,12 +113,55 @@ export class StudentService {
         .from("profiles")
         .update(updates)
         .eq("id", studentId);
-        
+
       if (error) throw error;
       return ok(undefined);
     } catch (err: unknown) {
       logger.error("StudentService updateProfile Error", err);
       return fail(new DatabaseError("Failed to update profile", String(err), undefined, err));
+    }
+  }
+
+  /** Real "Due Soon" data for the dashboard hero (previously a hardcoded "No pending
+   *  assignments" string regardless of the student's actual assignments). Returns the
+   *  soonest-due assignment across the student's active enrollments that has no
+   *  submission yet, plus the total pending count. */
+  async getNextPendingAssignment(studentId: string): Promise<Result<{ title: string; dueDate: string | null; pendingCount: number } | null, AppError>> {
+    try {
+      const { data: enrollments, error: enrollmentError } = await supabase
+        .from("enrollments")
+        .select("course_id")
+        .eq("student_id", studentId)
+        .eq("status", "active");
+      if (enrollmentError) throw enrollmentError;
+
+      const courseIds = (enrollments ?? []).map((e) => e.course_id);
+      if (courseIds.length === 0) return ok(null);
+
+      const { data: assignments, error: assignmentsError } = await supabase
+        .from("assignments")
+        .select("id, title, due_date")
+        .in("course_id", courseIds)
+        .order("due_date", { ascending: true, nullsFirst: false });
+      if (assignmentsError) throw assignmentsError;
+      if (!assignments || assignments.length === 0) return ok(null);
+
+      const { data: submissions, error: submissionsError } = await supabase
+        .from("assignment_submissions")
+        .select("assignment_id")
+        .eq("student_id", studentId)
+        .in("assignment_id", assignments.map((a) => a.id));
+      if (submissionsError) throw submissionsError;
+
+      const submittedIds = new Set((submissions ?? []).map((s) => s.assignment_id));
+      const pending = assignments.filter((a) => !submittedIds.has(a.id));
+      const soonest = pending[0];
+      if (!soonest) return ok(null);
+
+      return ok({ title: soonest.title, dueDate: soonest.due_date, pendingCount: pending.length });
+    } catch (err: unknown) {
+      logger.error("StudentService getNextPendingAssignment Error", err);
+      return fail(new UnexpectedError("An unexpected error occurred", String(err), undefined, err));
     }
   }
 }

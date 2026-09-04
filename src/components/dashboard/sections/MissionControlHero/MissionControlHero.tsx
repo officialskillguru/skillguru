@@ -124,13 +124,13 @@ export function MissionControlHero({
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-white/10 bg-white/10 p-4 opacity-60" title="Coming in a future release">
+          <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="text-xs font-semibold text-primary-foreground/70 uppercase">Learning Tasks</p>
-                <p className="mt-1 font-bold">Future Release</p>
+                <p className="text-xs font-semibold text-primary-foreground/70 uppercase">Due Soon</p>
+                <p className="mt-1 font-bold">You're all caught up!</p>
               </div>
-              <div className="rounded-xl bg-white/20 p-2 text-muted-foreground">
+              <div className="rounded-xl bg-white/20 p-2">
                 <CalendarIcon size={16} aria-hidden="true" />
               </div>
             </div>
