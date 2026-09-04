@@ -86,7 +86,7 @@ function BroadcastModal({ onClose }: { onClose: () => void }) {
               >
                 <option value="">All Users</option>
                 <option value="student">Students Only</option>
-                <option value="mentor">Mentors Only</option>
+                <option value="mentor">Teachers Only</option>
               </select>
             </div>
             <div>

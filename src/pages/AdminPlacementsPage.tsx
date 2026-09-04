@@ -392,7 +392,7 @@ function JobsTab() {
       {
         id: "owner",
         header: "Submitted by",
-        cell: ({ row }) => (row.original.created_by ? <span className="text-xs text-muted-foreground">Mentor</span> : <span className="text-xs text-muted-foreground">Admin</span>),
+        cell: ({ row }) => (row.original.created_by ? <span className="text-xs text-muted-foreground">Teacher</span> : <span className="text-xs text-muted-foreground">Admin</span>),
       },
       {
         id: "actions",

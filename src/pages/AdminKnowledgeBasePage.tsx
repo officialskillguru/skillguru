@@ -14,7 +14,7 @@ import type { KnowledgeDocument } from "@/services/knowledge-base.service";
 
 const CATEGORY_LABELS: Record<string, string> = {
   course: "Course",
-  mentor: "Mentor",
+  mentor: "Teacher",
   testimonial: "Testimonial",
   pricing: "Pricing",
   faq: "FAQ",

@@ -171,26 +171,26 @@ export default function AdminMentorsPage() {
   });
 
   const handleBulkStatus = (ids: string[], status: "active" | "suspended") => {
-    if (ids.length === 0) return toast.error("No mentors selected.");
+    if (ids.length === 0) return toast.error("No teachers selected.");
     bulkSetStatus.mutate(
       { mentorIds: ids, status },
-      { onSuccess: () => toast.success(`Updated ${ids.length} mentor${ids.length > 1 ? "s" : ""} to ${status}.`) }
+      { onSuccess: () => toast.success(`Updated ${ids.length} teacher${ids.length > 1 ? "s" : ""} to ${status}.`) }
     );
   };
 
   const handleBulkDelete = (ids: string[]) => {
-    if (ids.length === 0) return toast.error("No mentors selected.");
-    if (!window.confirm(`Delete ${ids.length} mentor${ids.length > 1 ? "s" : ""}? Accounts and history are kept and can be restored later.`)) return;
-    bulkDelete.mutate(ids, { onSuccess: () => toast.success(`Deleted ${ids.length} mentor${ids.length > 1 ? "s" : ""}.`) });
+    if (ids.length === 0) return toast.error("No teachers selected.");
+    if (!window.confirm(`Delete ${ids.length} teacher${ids.length > 1 ? "s" : ""}? Accounts and history are kept and can be restored later.`)) return;
+    bulkDelete.mutate(ids, { onSuccess: () => toast.success(`Deleted ${ids.length} teacher${ids.length > 1 ? "s" : ""}.`) });
   };
 
   const handleBulkRestore = (ids: string[]) => {
-    if (ids.length === 0) return toast.error("No mentors selected.");
-    bulkRestore.mutate(ids, { onSuccess: () => toast.success(`Restored ${ids.length} mentor${ids.length > 1 ? "s" : ""}.`) });
+    if (ids.length === 0) return toast.error("No teachers selected.");
+    bulkRestore.mutate(ids, { onSuccess: () => toast.success(`Restored ${ids.length} teacher${ids.length > 1 ? "s" : ""}.`) });
   };
 
   const handleOpenBulkNotify = (ids: string[]) => {
-    if (ids.length === 0) return toast.error("No mentors selected.");
+    if (ids.length === 0) return toast.error("No teachers selected.");
     setBulkNotifyTargetIds(ids);
     setBulkNotifyOpen(true);
   };
@@ -204,7 +204,7 @@ export default function AdminMentorsPage() {
       { mentorIds: bulkNotifyTargetIds, title: bulkNotifyTitle.trim(), body: bulkNotifyBody.trim() },
       {
         onSuccess: () => {
-          toast.success(`Notification sent to ${bulkNotifyTargetIds.length} mentor${bulkNotifyTargetIds.length > 1 ? "s" : ""}.`);
+          toast.success(`Notification sent to ${bulkNotifyTargetIds.length} teacher${bulkNotifyTargetIds.length > 1 ? "s" : ""}.`);
           setBulkNotifyOpen(false);
           setBulkNotifyTitle("");
           setBulkNotifyBody("");
@@ -217,7 +217,7 @@ export default function AdminMentorsPage() {
   const handleBulkReassign = () => {
     const courseIds = Array.from(bulkReassignSelectedCourseIds);
     if (courseIds.length === 0 || !bulkReassignTargetMentorId) {
-      toast.error("Select at least one course and a destination mentor.");
+      toast.error("Select at least one course and a destination teacher.");
       return;
     }
     bulkReassignCourses.mutate(
@@ -287,12 +287,12 @@ export default function AdminMentorsPage() {
 
   const handleExportPDF = () => {
     if (mentors.length === 0) return toast.error("No data to export.");
-    void exportToPDF(buildExportRows(), "mentors_export", "Mentors");
+    void exportToPDF(buildExportRows(), "mentors_export", "Teachers");
   };
 
   const handleForceReset = (mentorId: string, name: string | undefined) => {
     mutations.forcePasswordChange.mutate(mentorId, {
-      onSuccess: () => toast.success(`${name ?? "This mentor"} will be required to set a new password at next login.`),
+      onSuccess: () => toast.success(`${name ?? "This teacher"} will be required to set a new password at next login.`),
       onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to force a password reset."),
     });
   };
@@ -306,7 +306,7 @@ export default function AdminMentorsPage() {
       { id: mentorId, password: newPasswordInput },
       {
         onSuccess: () => {
-          toast.success(`Password updated for ${name ?? "this mentor"}. Share it with them directly — it will not be shown again.`);
+          toast.success(`Password updated for ${name ?? "this teacher"}. Share it with them directly — it will not be shown again.`);
           setNewPasswordInput("");
         },
         onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to set password."),
@@ -320,7 +320,7 @@ export default function AdminMentorsPage() {
       toast.error("Enter a valid email address.");
       return;
     }
-    if (!window.confirm(`Change ${name ?? "this mentor"}'s login email to ${trimmed}? They'll use it to sign in immediately — no confirmation email is sent.`)) return;
+    if (!window.confirm(`Change ${name ?? "this teacher"}'s login email to ${trimmed}? They'll use it to sign in immediately — no confirmation email is sent.`)) return;
     mutations.changeEmail.mutate(
       { id: mentorId, newEmail: trimmed },
       {
@@ -334,9 +334,9 @@ export default function AdminMentorsPage() {
   };
 
   const handleForceLogout = (mentorId: string, name: string | undefined) => {
-    if (!window.confirm(`Sign ${name ?? "this mentor"} out of every active session immediately?`)) return;
+    if (!window.confirm(`Sign ${name ?? "this teacher"} out of every active session immediately?`)) return;
     mutations.forceLogout.mutate(mentorId, {
-      onSuccess: () => toast.success(`${name ?? "Mentor"} has been signed out everywhere.`),
+      onSuccess: () => toast.success(`${name ?? "Teacher"} has been signed out everywhere.`),
       onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to force logout."),
     });
   };
@@ -344,7 +344,7 @@ export default function AdminMentorsPage() {
   const handleToggleLock = (mentor: Mentor) => {
     if (mentor.login_disabled) {
       mutations.unlock.mutate(mentor.id, {
-        onSuccess: () => toast.success(`${mentor.name ?? "Mentor"} account unlocked.`),
+        onSuccess: () => toast.success(`${mentor.name ?? "Teacher"} account unlocked.`),
         onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to unlock account."),
       });
     } else {
@@ -352,7 +352,7 @@ export default function AdminMentorsPage() {
         { id: mentor.id, reason: lockReasonInput || undefined },
         {
           onSuccess: () => {
-            toast.success(`${mentor.name ?? "Mentor"} account locked — they will be signed out on their next request.`);
+            toast.success(`${mentor.name ?? "Teacher"} account locked — they will be signed out on their next request.`);
             setLockReasonInput("");
           },
           onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to lock account."),
@@ -363,30 +363,30 @@ export default function AdminMentorsPage() {
 
   const handleToggleStatus = (mentor: Mentor) => {
     const nextStatus = mentor.status === "suspended" ? "active" : "suspended";
-    if (nextStatus === "suspended" && !window.confirm(`Suspend ${mentor.name ?? "this mentor"}? They will be signed out of the Mentor Dashboard immediately.`)) {
+    if (nextStatus === "suspended" && !window.confirm(`Suspend ${mentor.name ?? "this teacher"}? They will be signed out of their teaching dashboard immediately.`)) {
       return;
     }
     mutations.setStatus.mutate(
       { id: mentor.id, status: nextStatus },
       {
-        onSuccess: () => toast.success(nextStatus === "suspended" ? `${mentor.name ?? "Mentor"} suspended.` : `${mentor.name ?? "Mentor"} reactivated.`),
+        onSuccess: () => toast.success(nextStatus === "suspended" ? `${mentor.name ?? "Teacher"} suspended.` : `${mentor.name ?? "Teacher"} reactivated.`),
         onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to update status."),
       }
     );
   };
 
   const handleSoftDelete = (mentor: Mentor) => {
-    if (!window.confirm(`Delete ${mentor.name ?? "this mentor"}? Their account, courses, and history are kept and can be restored later.`)) return;
+    if (!window.confirm(`Delete ${mentor.name ?? "this teacher"}? Their account, courses, and history are kept and can be restored later.`)) return;
     mutations.softDelete.mutate(mentor.id, {
-      onSuccess: () => toast.success(`${mentor.name ?? "Mentor"} deleted. Restore anytime from "Show deleted".`),
-      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to delete mentor."),
+      onSuccess: () => toast.success(`${mentor.name ?? "Teacher"} deleted. Restore anytime from "Show deleted".`),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to delete teacher."),
     });
   };
 
   const handleRestore = (mentor: Mentor) => {
     mutations.restore.mutate(mentor.id, {
-      onSuccess: () => toast.success(`${mentor.name ?? "Mentor"} restored.`),
-      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to restore mentor."),
+      onSuccess: () => toast.success(`${mentor.name ?? "Teacher"} restored.`),
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to restore teacher."),
     });
   };
 
@@ -419,7 +419,7 @@ export default function AdminMentorsPage() {
         { id: selectedMentor.id, input: selectedMentor },
         {
           onSuccess: () => {
-            toast.success(`Mentor "${selectedMentor.name}" records updated.`);
+            toast.success(`Teacher "${selectedMentor.name}" records updated.`);
             setEditorOpen(false);
           },
           onError: (err) => toast.error(err instanceof Error ? err.message : String(err)),
@@ -433,7 +433,7 @@ export default function AdminMentorsPage() {
       };
       mutations.create.mutate(payload, {
         onSuccess: (result) => {
-          toast.success(`Mentor "${selectedMentor.name}" added successfully.`);
+          toast.success(`Teacher "${selectedMentor.name}" added successfully.`);
           setEditorOpen(false);
           setCreatedCredentials(result);
         },
@@ -442,31 +442,31 @@ export default function AdminMentorsPage() {
             const details = err.details as { edgeFunctionCode?: string; mentorId?: string } | undefined;
             if (details?.edgeFunctionCode === "ARCHIVED_MENTOR_EXISTS" && details.mentorId) {
               const archivedMentorId = details.mentorId;
-              toast.error("This email belongs to a deleted mentor.", {
-                description: "Restore the existing mentor instead of creating a duplicate account.",
+              toast.error("An account already exists with this email address.", {
+                description: "This belongs to a deactivated teacher — restore the existing account instead of creating a duplicate.",
                 action: {
-                  label: "Restore Mentor",
+                  label: "Restore Teacher",
                   onClick: () => {
                     mutations.restore.mutate(archivedMentorId, {
                       onSuccess: () => {
-                        toast.success("Mentor restored.");
+                        toast.success("Teacher restored.");
                         setEditorOpen(false);
                       },
-                      onError: (restoreErr) => toast.error(restoreErr instanceof Error ? restoreErr.message : "Failed to restore mentor."),
+                      onError: (restoreErr) => toast.error(restoreErr instanceof Error ? restoreErr.message : "Failed to restore teacher."),
                     });
                   },
                 },
               });
-              setEmailError("This email belongs to a deleted mentor — restore them instead.");
+              setEmailError("This email belongs to a deactivated teacher — restore them instead.");
               setActiveTab("Personal");
               return;
             }
-            toast.error("This email is already registered. Use a different email or open the existing account.");
-            setEmailError("This email is already registered.");
+            toast.error("An account already exists with this email address.");
+            setEmailError("An account already exists with this email address.");
             setActiveTab("Personal");
             return;
           }
-          toast.error(err instanceof Error ? err.message : "Unable to create mentor right now. Check your connection and try again.");
+          toast.error(err instanceof Error ? err.message : "Unable to save changes. Please check your connection and try again.");
         },
       });
     }
@@ -481,7 +481,7 @@ export default function AdminMentorsPage() {
             type="checkbox"
             checked={table.getIsAllPageRowsSelected()}
             onChange={table.getToggleAllPageRowsSelectedHandler()}
-            aria-label="Select all mentors"
+            aria-label="Select all teachers"
             className="rounded border-border"
           />
         ),
@@ -490,7 +490,7 @@ export default function AdminMentorsPage() {
             type="checkbox"
             checked={row.getIsSelected()}
             onChange={row.getToggleSelectedHandler()}
-            aria-label={`Select ${row.original.name ?? "mentor"}`}
+            aria-label={`Select ${row.original.name ?? "teacher"}`}
             className="rounded border-border"
           />
         ),
@@ -499,7 +499,7 @@ export default function AdminMentorsPage() {
       {
         id: "name",
         accessorFn: (row) => row.name ?? "",
-        header: "Mentor",
+        header: "Teacher",
         cell: ({ row }) => {
           const m = row.original;
           return (
@@ -560,7 +560,7 @@ export default function AdminMentorsPage() {
               <button
                 onClick={() => void handleForceReset(mentor.id, mentor.name)}
                 title="Force password reset at next login"
-                aria-label={`Force password reset for ${mentor.name ?? "mentor"}`}
+                aria-label={`Force password reset for ${mentor.name ?? "teacher"}`}
                 className="rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               >
                 <KeyRound className="size-4" aria-hidden="true" />
@@ -568,8 +568,8 @@ export default function AdminMentorsPage() {
               {mentor.deleted_at ? (
                 <button
                   onClick={() => void handleRestore(mentor)}
-                  title="Restore mentor"
-                  aria-label={`Restore ${mentor.name ?? "mentor"}`}
+                  title="Restore teacher"
+                  aria-label={`Restore ${mentor.name ?? "teacher"}`}
                   className="rounded-lg p-1.5 text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <RotateCcw className="size-4" aria-hidden="true" />
@@ -578,16 +578,16 @@ export default function AdminMentorsPage() {
                 <>
                   <button
                     onClick={() => void handleToggleStatus(mentor)}
-                    title={mentor.status === "suspended" ? "Reactivate mentor" : "Suspend mentor"}
-                    aria-label={`${mentor.status === "suspended" ? "Reactivate" : "Suspend"} ${mentor.name ?? "mentor"}`}
+                    title={mentor.status === "suspended" ? "Reactivate teacher" : "Suspend teacher"}
+                    aria-label={`${mentor.status === "suspended" ? "Reactivate" : "Suspend"} ${mentor.name ?? "teacher"}`}
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-amber-50 hover:text-amber-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     {mentor.status === "suspended" ? <CheckCircle2 className="size-4" aria-hidden="true" /> : <Ban className="size-4" aria-hidden="true" />}
                   </button>
                   <button
                     onClick={() => void handleSoftDelete(mentor)}
-                    title="Delete mentor"
-                    aria-label={`Delete ${mentor.name ?? "mentor"}`}
+                    title="Delete teacher"
+                    aria-label={`Delete ${mentor.name ?? "teacher"}`}
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Trash2 className="size-4" aria-hidden="true" />
@@ -607,9 +607,9 @@ export default function AdminMentorsPage() {
     <div className="space-y-6 pb-12">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-black tracking-tight text-foreground">Mentors</h1>
+          <h1 className="text-3xl font-black tracking-tight text-foreground">Teachers</h1>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Manage mentor accounts, review ratings, and provision new mentors.
+            Manage your teaching team, profiles, accounts, and course assignments.
           </p>
         </div>
         <div className="flex gap-2">
@@ -631,18 +631,18 @@ export default function AdminMentorsPage() {
             onClick={handleCreate}
             className="flex h-10 items-center gap-2 rounded-xl bg-primary px-4 text-xs font-black text-primary-foreground shadow-lg shadow-primary/15 hover:bg-primary/90 transition"
           >
-            <Plus className="size-4" aria-hidden="true" /> Add Mentor
+            <Plus className="size-4" aria-hidden="true" /> Add Teacher
           </button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <label htmlFor="admin-mentor-search" className="sr-only">Search mentors by name, email, headline, or bio</label>
+        <label htmlFor="admin-mentor-search" className="sr-only">Search teachers by name, email, headline, or bio</label>
         <input
           id="admin-mentor-search"
           value={search}
           onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-          placeholder="Search mentors by name, email, headline, or bio..."
+          placeholder="Search teachers by name, email, username..."
           className="h-10 w-full max-w-sm rounded-xl border border-border bg-card px-3.5 text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
         />
         <label htmlFor="admin-mentor-status-filter" className="sr-only">Filter by status</label>
@@ -669,8 +669,8 @@ export default function AdminMentorsPage() {
           exportFilename="mentors_export"
           isLoading={isLoading}
           emptyState={{
-            title: "No Mentors Found",
-            description: "Provision a mentor account to get started, or adjust your search and filters.",
+            title: search || statusFilter !== "all" ? "No teachers match your search." : "No teachers found",
+            description: "Add a teacher account to get started, or adjust your search and filters.",
           }}
           bulkActions={[
             { label: "Activate", onClick: (rows) => handleBulkStatus(rows.map((r) => r.id), "active") },
@@ -726,10 +726,14 @@ export default function AdminMentorsPage() {
                 <div>
                   <DialogPrimitive.Title asChild>
                     <h3 className="text-lg font-black text-foreground">
-                      {selectedMentor.id ? "Edit Mentor Profile" : "Onboard New Mentor"}
+                      {selectedMentor.id ? "Edit Teacher" : "Add New Teacher"}
                     </h3>
                   </DialogPrimitive.Title>
-                  <p className="text-xs font-semibold text-muted-foreground">Configure profile and account settings.</p>
+                  <p className="text-xs font-semibold text-muted-foreground">
+                    {selectedMentor.id
+                      ? "Update this teacher's profile and account settings."
+                      : "Create a teacher account and configure their professional profile."}
+                  </p>
                 </div>
                 <DialogPrimitive.Close asChild>
                   <button className="rounded-xl p-2 text-muted-foreground hover:bg-muted" aria-label="Close">
@@ -741,7 +745,7 @@ export default function AdminMentorsPage() {
               {(() => {
                 const editorTabs = ["Personal", "Professional", "Account", ...(selectedMentor.id ? ["Security", "CRM", "Courses", "Performance", "Documents"] : [])];
                 return (
-                  <div role="tablist" aria-label="Mentor editor sections" className="flex overflow-x-auto border-b border-border px-6">
+                  <div role="tablist" aria-label="Teacher editor sections" className="flex overflow-x-auto border-b border-border px-6">
                     {editorTabs.map((tab, i) => (
                       <button
                         key={tab}
@@ -881,7 +885,7 @@ export default function AdminMentorsPage() {
                             <option value="manual">Manual Credentials (Set Temporary Password)</option>
                           </select>
                           <p className="text-[10px] font-bold text-muted-foreground mt-1">
-                            No email provider is configured yet — credentials must be shared with the mentor directly after creation.
+                            No email provider is configured yet — credentials must be shared with the teacher directly after creation.
                           </p>
                         </div>
                         <div className="space-y-1 pt-4">
@@ -908,8 +912,8 @@ export default function AdminMentorsPage() {
                         <h4 className="text-xs font-black uppercase tracking-wider text-red-700 mb-1">Danger Zone</h4>
                         <p className="text-xs font-semibold text-red-700/70 mb-4">
                           {(selectedMentor as Mentor).deleted_at
-                            ? "This mentor account is deleted. Restore it to allow them to sign in again."
-                            : "Suspending immediately signs the mentor out of the Mentor Dashboard. Deleting keeps their courses and history intact and can be restored later."}
+                            ? "This teacher account is deactivated. Restore it to allow them to sign in again."
+                            : "Suspending immediately signs the teacher out of their teaching dashboard. Deleting keeps their courses and history intact and can be restored later."}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {(selectedMentor as Mentor).deleted_at ? (
@@ -918,7 +922,7 @@ export default function AdminMentorsPage() {
                               onClick={() => void handleRestore(selectedMentor as Mentor)}
                               className="flex items-center gap-1.5 rounded-lg bg-emerald-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-emerald-700"
                             >
-                              <RotateCcw className="size-3.5" aria-hidden="true" /> Restore Mentor
+                              <RotateCcw className="size-3.5" aria-hidden="true" /> Restore Teacher
                             </button>
                           ) : (
                             <>
@@ -928,14 +932,14 @@ export default function AdminMentorsPage() {
                                 className="flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-amber-800 hover:bg-amber-200"
                               >
                                 {(selectedMentor as Mentor).status === "suspended" ? <CheckCircle2 className="size-3.5" aria-hidden="true" /> : <Ban className="size-3.5" aria-hidden="true" />}
-                                {(selectedMentor as Mentor).status === "suspended" ? "Reactivate Mentor" : "Suspend Mentor"}
+                                {(selectedMentor as Mentor).status === "suspended" ? "Reactivate Teacher" : "Suspend Teacher"}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => void handleSoftDelete(selectedMentor as Mentor)}
                                 className="flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-[10px] font-black uppercase tracking-wider text-white hover:bg-red-700"
                               >
-                                <Trash2 className="size-3.5" aria-hidden="true" /> Delete Mentor
+                                <Trash2 className="size-3.5" aria-hidden="true" /> Delete Teacher
                               </button>
                             </>
                           )}
@@ -950,7 +954,7 @@ export default function AdminMentorsPage() {
                     <div className="rounded-xl border border-border p-4">
                       <h4 className="text-xs font-black uppercase tracking-wider text-foreground mb-1">Set New Password</h4>
                       <p className="text-xs font-semibold text-muted-foreground mb-3">
-                        Sets the mentor's password directly. No approval, OTP, or reset email is sent — share it with them yourself.
+                        Sets the teacher's password directly. No approval, OTP, or reset email is sent — share it with them yourself.
                       </p>
                       <div className="flex gap-2">
                         <input
@@ -1005,7 +1009,7 @@ export default function AdminMentorsPage() {
                     <div className="rounded-xl border border-border p-4">
                       <h4 className="text-xs font-black uppercase tracking-wider text-foreground mb-1">Sessions</h4>
                       <p className="text-xs font-semibold text-muted-foreground mb-3">
-                        Immediately invalidate every active session for this mentor.
+                        Immediately invalidate every active session for this teacher.
                       </p>
                       <button
                         type="button"
@@ -1035,7 +1039,7 @@ export default function AdminMentorsPage() {
                       <p className={["text-xs font-semibold mb-3", (selectedMentor as Mentor).login_disabled ? "text-red-700/70" : "text-muted-foreground"].join(" ")}>
                         {(selectedMentor as Mentor).login_disabled
                           ? `Locked${(selectedMentor as Mentor).locked_reason ? `: ${(selectedMentor as Mentor).locked_reason}` : ""}. This blocks login independent of the active/suspended status.`
-                          : "Blocks the mentor from logging in, independent of active/suspended status. Does not affect their courses or data."}
+                          : "Blocks the teacher from logging in, independent of active/suspended status. Does not affect their courses or data."}
                       </p>
                       {!(selectedMentor as Mentor).login_disabled && (
                         <input
@@ -1079,7 +1083,7 @@ export default function AdminMentorsPage() {
                 )}
 
                 {activeTab === "CRM" && selectedMentor.id && (
-                  <MentorCRMPanel mentorId={selectedMentor.id} mentorName={selectedMentor.name ?? "This mentor"} />
+                  <MentorCRMPanel mentorId={selectedMentor.id} mentorName={selectedMentor.name ?? "This teacher"} />
                 )}
 
                 {activeTab === "Courses" && selectedMentor.id && (
@@ -1109,7 +1113,7 @@ export default function AdminMentorsPage() {
                 >
                   {mutations.create.isPending || mutations.update.isPending
                     ? "Saving..."
-                    : selectedMentor.id ? "Save Changes" : "Create Mentor"}
+                    : selectedMentor.id ? "Save Changes" : "Create Teacher"}
                 </button>
               </div>
                 </motion.div>
@@ -1134,11 +1138,12 @@ export default function AdminMentorsPage() {
                   className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 shadow-2xl outline-none"
                 >
               <DialogPrimitive.Title asChild>
-                <h2 className="text-lg font-black text-foreground">Mentor Account Created</h2>
+                <h2 className="text-lg font-black text-foreground">Teacher Created Successfully</h2>
               </DialogPrimitive.Title>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">
                 There is no email delivery configured yet — share these credentials with{" "}
-                <span className="font-bold text-foreground">{createdCredentials.fullName}</span> directly. This password will not be shown again.
+                <span className="font-bold text-foreground">{createdCredentials.fullName}</span> directly.{" "}
+                <span className="font-bold text-foreground">Save these credentials now — the temporary password will not be shown again.</span>
               </p>
               <div className="mt-4 space-y-3">
                 <div>
@@ -1201,7 +1206,7 @@ export default function AdminMentorsPage() {
                   className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-card p-6 shadow-2xl outline-none"
                 >
               <DialogPrimitive.Title asChild>
-                <h2 className="text-lg font-black text-foreground">Notify {bulkNotifyTargetIds.length} Mentor{bulkNotifyTargetIds.length > 1 ? "s" : ""}</h2>
+                <h2 className="text-lg font-black text-foreground">Notify {bulkNotifyTargetIds.length} Teacher{bulkNotifyTargetIds.length > 1 ? "s" : ""}</h2>
               </DialogPrimitive.Title>
               <div className="mt-4 space-y-3">
                 <div className="space-y-1">
@@ -1265,7 +1270,7 @@ export default function AdminMentorsPage() {
                 <h2 className="text-lg font-black text-foreground">Assign / Remove / Reassign Courses</h2>
               </DialogPrimitive.Title>
               <p className="mt-1 text-xs font-semibold text-muted-foreground">
-                Select courses from any mentor and transfer them to a destination mentor, or choose "Unassigned" to remove them from their current mentor.
+                Select courses from any teacher and transfer them to a destination teacher, or choose "Unassigned" to remove them from their current teacher.
               </p>
               <label htmlFor="bulk-reassign-search" className="sr-only">Search courses by title</label>
               <input
@@ -1293,7 +1298,7 @@ export default function AdminMentorsPage() {
                     </label>
                   ))}
               </div>
-              <label htmlFor="bulk-reassign-target" className="sr-only">Destination mentor</label>
+              <label htmlFor="bulk-reassign-target" className="sr-only">Destination teacher</label>
               <select
                 id="bulk-reassign-target"
                 value={bulkReassignTargetMentorId}
@@ -1305,7 +1310,7 @@ export default function AdminMentorsPage() {
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
                 {unassignedMentorId ? (
-                  <option value={unassignedMentorId}>Unassigned (remove from mentor)</option>
+                  <option value={unassignedMentorId}>Unassigned (remove from teacher)</option>
                 ) : null}
               </select>
               <div className="mt-4 flex justify-end gap-3">

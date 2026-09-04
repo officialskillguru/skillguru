@@ -13,16 +13,16 @@ export function QuickActionsWidget() {
 
   const actions = [
     {
-      title: "Create Mentor Account",
-      description: "Add new mentor and assign role",
+      title: "Create Teacher Account",
+      description: "Add a new teacher and assign role",
       icon: UserPlus,
       iconColor: "text-blue-600",
       iconBg: "bg-blue-50",
       onClick: () => navigate("/admin/users/mentors"), // Ideally opens a modal
     },
     {
-      title: "Assign Course to Mentor",
-      description: "Give mentor access to manage course",
+      title: "Assign Course to Teacher",
+      description: "Give a teacher access to manage a course",
       icon: BookOpen,
       iconColor: "text-blue-600",
       iconBg: "bg-blue-50",
@@ -46,7 +46,7 @@ export function QuickActionsWidget() {
     },
     {
       title: "Send Announcement",
-      description: "Send message to students & mentors",
+      description: "Send message to students & teachers",
       icon: Megaphone,
       iconColor: "text-red-500",
       iconBg: "bg-red-50",

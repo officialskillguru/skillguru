@@ -508,7 +508,7 @@ export default function AdminCoursesPage() {
                     : [{ id: "basic", label: "Basic Info", locked: false }]),
                   { id: "curriculum", label: "Curriculum", locked: !selectedCourse.id },
                   { id: "seo", label: "SEO Settings", locked: false },
-                  { id: "mentors", label: "Mentors", locked: false },
+                  { id: "mentors", label: "Teachers", locked: false },
                 ].map((tb) => (
                   <button
                     key={tb.id}
@@ -662,9 +662,9 @@ export default function AdminCoursesPage() {
 
                 {editorTab === "mentors" && (
                   <div className="space-y-4">
-                    <label htmlFor="course-mentor" className="text-xs font-black text-muted-foreground">Assigned Mentor</label>
+                    <label htmlFor="course-mentor" className="text-xs font-black text-muted-foreground">Assigned Teacher</label>
                     <p className="text-[10px] font-bold text-muted-foreground">
-                      Each course has exactly one owning mentor (required by the schema) — pick who runs this course.
+                      Each course has exactly one owning teacher (required by the schema) — pick who runs this course.
                     </p>
                     <select
                       id="course-mentor"
@@ -746,7 +746,7 @@ export default function AdminCoursesPage() {
               disabled={rejectCourseMutation.isPending || !rejectReason.trim()}
               className="h-10 rounded-xl bg-destructive px-4 text-xs font-black text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
-              {rejectCourseMutation.isPending ? "Sending..." : "Send Back to Mentor"}
+              {rejectCourseMutation.isPending ? "Sending..." : "Send Back to Teacher"}
             </button>
           </DialogFooter>
         </DialogContent>

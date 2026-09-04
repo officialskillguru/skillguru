@@ -44,7 +44,7 @@ export function MentorCRMPanel({ mentorId, mentorName }: { mentorId: string; men
 
   return (
     <div className="space-y-4">
-      <div role="tablist" aria-label="Mentor CRM sections" className="flex gap-1 rounded-xl bg-muted p-1">
+      <div role="tablist" aria-label="Teacher CRM sections" className="flex gap-1 rounded-xl bg-muted p-1">
         {SUB_TABS.map((tab, i) => (
           <button
             key={tab}
@@ -108,7 +108,7 @@ function NotesTab({ mentorId, active }: { mentorId: string; active: boolean }) {
           id="mentor-note-input"
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          placeholder="Add an internal note about this mentor..."
+          placeholder="Add an internal note about this teacher..."
           rows={2}
           className="w-full flex-1 rounded-xl border border-border bg-muted px-3 py-2 text-sm outline-none focus:border-primary"
         />
@@ -348,7 +348,7 @@ function MeetingsTab({ mentorId, mentorName, active }: { mentorId: string; mento
           <select id="meeting-type-select" value={meetingType} onChange={(e) => setMeetingType(e.target.value as typeof meetingType)} className="w-full h-10 rounded-lg border border-border bg-muted px-3 text-sm outline-none focus:border-primary">
             <option value="internal">Internal Meeting</option>
             <option value="interview">Interview Meeting</option>
-            <option value="mentor">Mentor Meeting</option>
+            <option value="mentor">Teacher Meeting</option>
             <option value="student">Student Meeting</option>
           </select>
           <div className="grid grid-cols-2 gap-2">
@@ -453,15 +453,15 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
     if (!courseToAssign) return;
     assign.mutate(courseToAssign, {
       onSuccess: () => {
-        toast.success("Mentor assigned to course.");
+        toast.success("Teacher assigned to course.");
         setCourseToAssign("");
       },
       onError: (err) => {
         const message = err instanceof Error ? err.message : "Failed to assign to course.";
         if (message.includes("inactive/suspended")) {
-          toast.error("This mentor is inactive or suspended and can't be newly assigned to a course.");
+          toast.error("This teacher is inactive or suspended and can't be newly assigned to a course.");
         } else if (message.includes("duplicate key")) {
-          toast.error("This mentor is already assigned to that course.");
+          toast.error("This teacher is already assigned to that course.");
         } else {
           toast.error(message);
         }
@@ -470,9 +470,9 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
   };
 
   const handleRemove = (courseId: string, title: string) => {
-    if (!window.confirm(`Remove this mentor from "${title}"? This does not delete the course or its history.`)) return;
+    if (!window.confirm(`Remove this teacher from "${title}"? This does not delete the course or its history.`)) return;
     remove.mutate(courseId, {
-      onSuccess: () => toast.success("Mentor removed from course."),
+      onSuccess: () => toast.success("Teacher removed from course."),
       onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to remove course assignment."),
     });
   };
@@ -535,8 +535,8 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
                     type="button"
                     onClick={() => handleSetPrimary(c.id)}
                     disabled={setPrimary.isPending}
-                    title="Make primary instructor"
-                    aria-label={`Make primary instructor for ${c.title}`}
+                    title="Make primary teacher"
+                    aria-label={`Make primary teacher for ${c.title}`}
                     className="rounded-lg p-1.5 text-muted-foreground hover:bg-emerald-50 hover:text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   >
                     <Star className="size-3.5" aria-hidden="true" />
@@ -547,7 +547,7 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
                   onClick={() => handleRemove(c.id, c.title)}
                   disabled={remove.isPending}
                   title="Remove from course"
-                  aria-label={`Remove mentor from ${c.title}`}
+                  aria-label={`Remove teacher from ${c.title}`}
                   className="rounded-lg p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <X className="size-3.5" aria-hidden="true" />
@@ -594,12 +594,12 @@ export function MentorCoursesPanel({ mentorId, active }: { mentorId: string; act
             onClick={() => setTransferOpen(true)}
             className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-muted-foreground hover:text-foreground"
           >
-            <ArrowRightLeft className="size-3.5" aria-hidden="true" /> Bulk-transfer courses to another mentor…
+            <ArrowRightLeft className="size-3.5" aria-hidden="true" /> Bulk-transfer courses to another teacher…
           </button>
         ) : (
           <div className="space-y-2">
             <p className="text-[10px] font-bold text-muted-foreground">
-              For full ownership transfer (e.g. before deleting this mentor) — moves the selected courses' primary ownership to another mentor entirely.
+              For full ownership transfer (e.g. before deleting this teacher) — moves the selected courses' primary ownership to another teacher entirely.
             </p>
             <div className="max-h-40 space-y-1.5 overflow-y-auto">
               {(courses ?? []).map((c) => (

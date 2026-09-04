@@ -13,7 +13,7 @@ export function RecentMentorsWidget() {
     () => [
       {
         accessorKey: "name",
-        header: "Mentor",
+        header: "Teacher",
         cell: ({ row }) => (
           <div className="flex items-center gap-3">
             <div className="size-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-xs">
@@ -39,9 +39,9 @@ export function RecentMentorsWidget() {
   return (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-full">
       <div className="flex items-center justify-between p-5 border-b border-slate-100">
-        <h2 className="text-base font-bold text-slate-900 tracking-tight">Recently Registered Mentors</h2>
+        <h2 className="text-base font-bold text-slate-900 tracking-tight">Recently Registered Teachers</h2>
         <Link to="/admin/users/mentors" className="text-sm font-semibold text-blue-600 hover:text-blue-700">
-          View all mentors
+          View all teachers
         </Link>
       </div>
       <div className="p-0 flex-1">
@@ -52,7 +52,7 @@ export function RecentMentorsWidget() {
             ))}
           </div>
         ) : mentors.length === 0 ? (
-          <p className="p-5 text-sm text-slate-500">No mentors registered yet.</p>
+          <p className="p-5 text-sm text-slate-500">No teachers registered yet.</p>
         ) : (
           <div className="[&>div]:border-0 [&_th]:bg-white [&_th]:text-slate-500 [&_th]:text-xs [&_th]:uppercase [&_th]:tracking-wider [&_th]:font-bold [&_td]:py-4 [&_tr:last-child_td]:border-b-0">
             <DataTable columns={columns} data={mentors} hidePagination={true} hideToolbar={true} />

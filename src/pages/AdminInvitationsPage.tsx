@@ -55,7 +55,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               <UserPlus className="size-5 text-primary" aria-hidden="true" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-foreground">Invite Mentor</h2>
+              <h2 className="text-lg font-black text-foreground">Invite Teacher</h2>
               <p className="text-xs text-muted-foreground">They'll receive an email to set up their account.</p>
             </div>
           </div>
@@ -86,7 +86,7 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               value={form.email}
               onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-              placeholder="mentor@example.com"
+              placeholder="teacher@example.com"
             />
           </div>
           <div>
@@ -97,12 +97,12 @@ function InviteModal({ onClose }: { onClose: () => void }) {
               rows={3}
               value={form.message}
               onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
-              placeholder="We'd love to have you as a mentor on SkillGuru…"
+              placeholder="We'd love to have you as a teacher on SkillGuru…"
             />
           </div>
           <div role="status" className="rounded-xl border border-primary/20 bg-primary/5 p-4">
             <p className="text-xs text-foreground/80">
-              <strong>Note:</strong> An invitation email will be sent to the mentor. They'll be able to set their password and complete profile setup. Requires the <code>create-mentor-account</code> Edge Function to be deployed.
+              <strong>Note:</strong> An invitation email will be sent to the teacher. They'll be able to set their password and complete profile setup. Requires the <code>create-mentor-account</code> Edge Function to be deployed.
             </p>
           </div>
         </div>
@@ -171,7 +171,7 @@ export default function AdminInvitationsPage() {
       {
         id: "mentor",
         accessorFn: (row) => row.full_name,
-        header: "Mentor",
+        header: "Teacher",
         cell: ({ row }) => (
           <div>
             <p className="font-semibold text-foreground">{row.original.full_name}</p>
@@ -248,16 +248,16 @@ export default function AdminInvitationsPage() {
     <div className="space-y-6 pb-12">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-foreground">Mentor Invitations</h1>
+          <h1 className="text-3xl font-black text-foreground">Teacher Invitations</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Invite new mentors to the platform and track invitation status.
+            Invite new teachers to the platform and track invitation status.
           </p>
         </div>
         <button
           onClick={() => setShowInvite(true)}
           className="flex h-10 items-center gap-2 rounded-xl bg-primary px-5 text-sm font-black text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          <Plus className="size-4" aria-hidden="true" /> Invite Mentor
+          <Plus className="size-4" aria-hidden="true" /> Invite Teacher
         </button>
       </div>
 

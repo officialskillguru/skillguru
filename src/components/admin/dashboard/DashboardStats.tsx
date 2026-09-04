@@ -22,7 +22,7 @@ export function DashboardStats() {
     },
     {
       id: "mentors",
-      label: "Total Mentors",
+      label: "Total Teachers",
       value: data?.totalMentors,
       icon: Users,
       newThisMonth: data?.newThisMonth.mentors,
