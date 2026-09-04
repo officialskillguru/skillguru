@@ -44,16 +44,28 @@ function log(requestId: string, level: "info" | "error", event: string, extra: R
   else console.log(JSON.stringify(entry));
 }
 
-// Generic admin-on-any-user account actions (mentor OR student) - anything
-// that operates on the auth.users identity rather than a role-specific table
-// (mentor_profiles). This exists alongside admin-mentor-account (which stays
-// mentor_profiles-specific for lock/unlock) so student accounts get the same
-// no-email-dependency primitives without duplicating the mentor-only logic.
+// Generic admin-on-any-user account actions (mentor, student, counsellor, or any
+// future role) - anything that operates on the auth.users identity or the generic
+// profiles/user_settings tables rather than a role-specific table (mentor_profiles).
+// This exists alongside admin-mentor-account (which stays mentor_profiles-specific
+// for lock/unlock, since that table already carries login_disabled/locked_reason)
+// so roles without their own profile-extension table (student, counsellor) get the
+// same account-lifecycle primitives without duplicating role-specific logic.
+//
+// lock/unlock use user_settings.is_active as the generic "login blocked" flag.
+// soft_delete/restore use profiles.deleted_at, mirroring the mentor lifecycle
+// convention (admin_soft_delete_mentor) — a deleted account is hidden from admin
+// lists and actually can't log in (is_active is cleared + forced logout), not
+// just hidden while its session/credentials still work.
 const bodySchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("set_password"), userId: z.string().uuid(), password: z.string().min(8, "Password must be at least 8 characters") }),
   z.object({ action: z.literal("force_password_change"), userId: z.string().uuid() }),
   z.object({ action: z.literal("force_logout"), userId: z.string().uuid() }),
   z.object({ action: z.literal("change_email"), userId: z.string().uuid(), newEmail: z.string().email("Enter a valid email address") }),
+  z.object({ action: z.literal("lock"), userId: z.string().uuid(), reason: z.string().optional() }),
+  z.object({ action: z.literal("unlock"), userId: z.string().uuid() }),
+  z.object({ action: z.literal("soft_delete"), userId: z.string().uuid() }),
+  z.object({ action: z.literal("restore"), userId: z.string().uuid() }),
 ]);
 
 Deno.serve(async (req) => {
@@ -176,6 +188,89 @@ Deno.serve(async (req) => {
         });
         log(requestId, "info", "user_email_changed", { userId: body.userId, actorId: callerId });
         return createResponse(true, "OK", "Email updated", { userId: body.userId }, [], 200, requestId);
+      }
+
+      case "lock": {
+        const { error } = await serviceClient
+          .from("user_settings")
+          .update({ is_active: false })
+          .eq("user_id", body.userId);
+        if (error) throw new Error("Lock failed: " + error.message);
+
+        const { error: logoutError } = await callerClient.rpc("force_logout_user", { p_target_user_id: body.userId });
+        if (logoutError) log(requestId, "error", "lock_force_logout_failed", { userId: body.userId, error: logoutError.message });
+
+        await callerClient.rpc("log_audit_event", {
+          p_action: "user_locked",
+          p_entity_type: "profile",
+          p_entity_id: body.userId,
+          p_new_values: { reason: body.reason ?? null },
+        });
+        log(requestId, "info", "user_locked", { userId: body.userId, actorId: callerId });
+        return createResponse(true, "OK", "Account locked", { userId: body.userId }, [], 200, requestId);
+      }
+
+      case "unlock": {
+        const { error } = await serviceClient
+          .from("user_settings")
+          .update({ is_active: true })
+          .eq("user_id", body.userId);
+        if (error) throw new Error("Unlock failed: " + error.message);
+
+        await callerClient.rpc("log_audit_event", {
+          p_action: "user_unlocked",
+          p_entity_type: "profile",
+          p_entity_id: body.userId,
+        });
+        log(requestId, "info", "user_unlocked", { userId: body.userId, actorId: callerId });
+        return createResponse(true, "OK", "Account unlocked", { userId: body.userId }, [], 200, requestId);
+      }
+
+      case "soft_delete": {
+        const { error: settingsError } = await serviceClient
+          .from("user_settings")
+          .update({ is_active: false })
+          .eq("user_id", body.userId);
+        if (settingsError) throw new Error("Soft delete failed: " + settingsError.message);
+
+        const { error: profileError } = await serviceClient
+          .from("profiles")
+          .update({ deleted_at: new Date().toISOString() })
+          .eq("id", body.userId);
+        if (profileError) throw new Error("Soft delete failed: " + profileError.message);
+
+        const { error: logoutError } = await callerClient.rpc("force_logout_user", { p_target_user_id: body.userId });
+        if (logoutError) log(requestId, "error", "soft_delete_force_logout_failed", { userId: body.userId, error: logoutError.message });
+
+        await callerClient.rpc("log_audit_event", {
+          p_action: "user_soft_deleted",
+          p_entity_type: "profile",
+          p_entity_id: body.userId,
+        });
+        log(requestId, "info", "user_soft_deleted", { userId: body.userId, actorId: callerId });
+        return createResponse(true, "OK", "Account deleted", { userId: body.userId }, [], 200, requestId);
+      }
+
+      case "restore": {
+        const { error: profileError } = await serviceClient
+          .from("profiles")
+          .update({ deleted_at: null })
+          .eq("id", body.userId);
+        if (profileError) throw new Error("Restore failed: " + profileError.message);
+
+        const { error: settingsError } = await serviceClient
+          .from("user_settings")
+          .update({ is_active: true })
+          .eq("user_id", body.userId);
+        if (settingsError) throw new Error("Restore failed: " + settingsError.message);
+
+        await callerClient.rpc("log_audit_event", {
+          p_action: "user_restored",
+          p_entity_type: "profile",
+          p_entity_id: body.userId,
+        });
+        log(requestId, "info", "user_restored", { userId: body.userId, actorId: callerId });
+        return createResponse(true, "OK", "Account restored", { userId: body.userId }, [], 200, requestId);
       }
     }
   } catch (error) {

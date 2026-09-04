@@ -83,6 +83,7 @@ const AdminCoursesPage        = lazy(() => import("@/pages/AdminCoursesPage"));
 const AdminCategoriesPage     = lazy(() => import("@/pages/AdminCategoriesPage"));
 const AdminStudentsPage       = lazy(() => import("@/pages/AdminStudentsPage"));
 const AdminMentorsPage        = lazy(() => import("@/pages/AdminMentorsPage"));
+const AdminCounsellorsPage    = lazy(() => import("@/pages/AdminCounsellorsPage"));
 const AdminSuccessStoriesPage = lazy(() => import("@/pages/AdminSuccessStoriesPage"));
 const AdminPlacementsPage     = lazy(() => import("@/pages/AdminPlacementsPage"));
 const AdminCRMPage            = lazy(() => import("@/pages/AdminCRMPage"));
@@ -219,6 +220,7 @@ export const router = createBrowserRouter([
           // User Management
           { path: "users",                element: withSuspense(<AdminStudentsPage />) },
           { path: "users/mentors",        element: withSuspense(<AdminMentorsPage />) },
+          { path: "users/counsellors",    element: withSuspense(<AdminCounsellorsPage />) },
           { path: "users/admins",         element: withSuspense(<AdminRolePage />) },
           { path: "users/roles",          element: withSuspense(<AdminRolePage />) },
           { path: "users/invitations",    element: withSuspense(<AdminInvitationsPage />) },
