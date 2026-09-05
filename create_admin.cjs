@@ -32,14 +32,29 @@ async function main() {
     console.log("Created user:", userId);
     
     const { data: roleData } = await supabase.from('roles').select('id').eq('code', 'admin').single();
-    
+
     // Assign admin role (trigger assigned student, we add admin)
     const { error: assignError } = await supabase
       .from('user_roles')
       .upsert({ user_id: userId, role_id: roleData.id }, { onConflict: 'user_id,role_id' });
-      
+
     if (assignError) throw new Error(`Assign Error: ${assignError.message}`);
-    
+
+    // handle_new_user() unconditionally grants every new auth.users row the default
+    // 'student' role - revoke it now that the real role is assigned, or this admin
+    // would also show up in every student-scoped list/RLS check (same bug class
+    // fixed for create-mentor/create-counsellor in commit 770d53b).
+    const { data: studentRoleData } = await supabase.from('roles').select('id').eq('code', 'student').maybeSingle();
+    if (studentRoleData) {
+      const { error: revokeError } = await supabase
+        .from('user_roles')
+        .update({ revoked_at: new Date().toISOString() })
+        .eq('user_id', userId)
+        .eq('role_id', studentRoleData.id)
+        .is('revoked_at', null);
+      if (revokeError) console.error("Revoke Student Role Error:", revokeError.message);
+    }
+
     console.log("SUCCESS");
     console.log("USERNAME:", email);
     console.log("PASSWORD:", password);
