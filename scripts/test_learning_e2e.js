@@ -17,7 +17,7 @@ async function run() {
   // 1. Get or Create Mentor
   let { data: mentorRole } = await adminClient.from("roles").select("id").eq("code", "mentor").single();
   let mentorEmail = `mentor.${Date.now()}@example.com`;
-  let { data: mentorAuth } = await adminClient.auth.admin.createUser({ email: mentorEmail, password: "Password123!", email_confirm: true });
+  let { data: mentorAuth } = await adminClient.auth.admin.createUser({ email: mentorEmail, password: `Test@${Math.floor(Math.random() * 1_000_000)}Aa!`, email_confirm: true });
   await new Promise(r => setTimeout(r, 1000));
   await adminClient.from("user_roles").insert({ user_id: mentorAuth.user.id, role_id: mentorRole.id });
   const mentorId = mentorAuth.user.id;
@@ -26,7 +26,7 @@ async function run() {
   console.log("1. Created Mentor:", mentorId);
   // 2. Get or Create Student
   let studentEmail = `student.${Date.now()}@example.com`;
-  let { data: studentAuth } = await adminClient.auth.admin.createUser({ email: studentEmail, password: "Password123!", email_confirm: true });
+  let { data: studentAuth } = await adminClient.auth.admin.createUser({ email: studentEmail, password: `Test@${Math.floor(Math.random() * 1_000_000)}Aa!`, email_confirm: true });
   await new Promise(r => setTimeout(r, 1000));
   const studentId = studentAuth.user.id;
   console.log("2. Created Student:", studentId);

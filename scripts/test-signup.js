@@ -12,7 +12,7 @@ async function testSignup() {
   console.log("Testing Signup...");
   const { data, error } = await supabase.auth.signUp({
     email: `test_user_${Date.now()}@skillguru.com`,
-    password: "TestPassword123!",
+    password: `Test@${Math.floor(Math.random() * 1_000_000)}Aa!`,
   });
 
   if (error) {

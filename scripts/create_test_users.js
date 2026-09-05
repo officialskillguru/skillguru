@@ -12,7 +12,7 @@ const adminClient = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
 
 async function createRoleUser(roleStr) {
   const email = `test.${roleStr}.${Date.now()}@example.com`;
-  const password = "Password123!";
+  const password = `Test@${Math.floor(Math.random() * 1_000_000)}Aa!`;
   
   const { data: user } = await adminClient.auth.admin.createUser({
     email, password, email_confirm: true, user_metadata: { full_name: `Test ${roleStr}` }

@@ -16,7 +16,7 @@ async function runTest() {
   console.log("--- Starting Authentication End-to-End Verification ---");
 
   const email = `test.student.${Date.now()}@example.com`;
-  const password = "Password123!";
+  const password = `Test@${Math.floor(Math.random() * 1_000_000)}Aa!`;
 
   console.log(`\n1. Testing Student Signup (${email})...`);
   const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
