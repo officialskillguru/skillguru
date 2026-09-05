@@ -16,7 +16,7 @@ async function fetchRoleSummary(): Promise<RoleSummary[]> {
   const supabase = getExtendedSupabaseClient();
   const [{ data: roles, error: rolesError }, { data: userRoles, error: userRolesError }] = await Promise.all([
     supabase.from("roles").select("id, name, description"),
-    supabase.from("user_roles").select("role_id"),
+    supabase.from("user_roles").select("role_id").is("revoked_at", null),
   ]);
   if (rolesError) throw rolesError;
   if (userRolesError) throw userRolesError;
