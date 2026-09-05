@@ -1,5 +1,8 @@
 
+import { FunctionsHttpError } from "@supabase/supabase-js";
+
 import type { Tables, Updates } from "@/types/database";
+import { AppError, type ErrorCode } from "@/lib/errors";
 
 import {
   assertServiceResponse,
@@ -9,6 +12,18 @@ import {
   type ListParams,
   type PaginatedResult,
 } from "./_shared";
+
+// Maps the create-student Edge Function's response `code` to the shared
+// AppError taxonomy - see the identical pattern in mentors.service.ts's
+// createMentor() for why this exists (supabase-js only surfaces a generic
+// "Edge Function returned a non-2xx status code" on `error` otherwise).
+const EDGE_FUNCTION_CODE_MAP: Record<string, ErrorCode> = {
+  EMAIL_EXISTS: "CONFLICT",
+  VALIDATION_ERROR: "VALIDATION_ERROR",
+  UNAUTHORIZED: "UNAUTHORIZED",
+  FORBIDDEN: "FORBIDDEN",
+  NOT_FOUND: "NOT_FOUND",
+};
 
 export type Student = Tables<"profiles">;
 
@@ -127,9 +142,26 @@ export async function createStudent(input: CreateStudentInput): Promise<CreateSt
     body: payload,
   });
 
-  if (error) throw error;
+  if (error) {
+    let parsedMessage: string | undefined;
+    let parsedCode: string | undefined;
+    if (error instanceof FunctionsHttpError && error.context instanceof Response) {
+      try {
+        const body: unknown = await error.context.clone().json();
+        if (body && typeof body === "object") {
+          if ("message" in body && typeof body.message === "string") parsedMessage = body.message;
+          if ("code" in body && typeof body.code === "string") parsedCode = body.code;
+        }
+      } catch {
+        /* response body wasn't JSON - fall through to the generic error */
+      }
+    }
+    const message = parsedMessage || (error instanceof Error ? error.message : "Failed to create student");
+    const mappedCode = parsedCode ? EDGE_FUNCTION_CODE_MAP[parsedCode] : undefined;
+    throw new AppError(message, mappedCode ?? "INTERNAL_ERROR", { edgeFunctionCode: parsedCode });
+  }
   if (!data?.success || !data.data) {
-    throw new Error(data?.message || "Failed to create student");
+    throw new AppError(data?.message || "Failed to create student", "INTERNAL_ERROR");
   }
 
   return data.data;
