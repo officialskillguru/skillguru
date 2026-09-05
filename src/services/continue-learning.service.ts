@@ -38,14 +38,21 @@ export class ContinueLearningService {
       if (enrollmentError) return fail(new DatabaseError("Failed to fetch latest enrollment", String(enrollmentError), undefined, enrollmentError));
       if (!enrollmentData || !enrollmentData.course_id) return ok(null);
 
-      // Fetch course manually due to missing FK
+      // Fetch course manually due to missing FK. Uses maybeSingle(), not single():
+      // courses RLS only exposes published courses to students, so an enrollment
+      // created while a course was published can still exist (and still be
+      // "active") after the course is later moved back to draft/archived. That
+      // case must resolve to "nothing to continue" (ok(null)), not a hard
+      // DatabaseError - a real student's dashboard should never show a scary
+      // error state just because one course became temporarily unavailable.
       const { data: courseData, error: courseError } = await supabase
         .from("courses")
         .select("*")
         .eq("id", enrollmentData.course_id)
-        .single();
+        .maybeSingle();
 
-      if (courseError || !courseData) return fail(new DatabaseError("Failed to fetch course", String(courseError), undefined, courseError));
+      if (courseError) return fail(new DatabaseError("Failed to fetch course", String(courseError), undefined, courseError));
+      if (!courseData) return ok(null);
       const course = courseData;
 
       const { data: mentorProfile } = await supabase

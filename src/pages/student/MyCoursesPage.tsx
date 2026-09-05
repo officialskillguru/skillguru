@@ -1,4 +1,4 @@
-import { BookOpen } from "lucide-react";
+import { BookOpen, EyeOff } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useStudentCourses } from "@/hooks/student/useStudentCourses";
@@ -33,40 +33,54 @@ export default function MyCoursesPage() {
           </div>
         ) : coursesData?.data && coursesData.data.length > 0 ? (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {coursesData.data.map((enrollment) => (
-              <div key={enrollment.id} className="group relative rounded-2xl border border-border p-5 transition-shadow hover:shadow-md">
-                <CourseThumbnail fileId={enrollment.courses?.thumbnailFileId ?? null} title={enrollment.courses?.title ?? ""} />
-                <h3 className="mb-1 truncate font-bold text-foreground">{enrollment.courses?.title}</h3>
+            {coursesData.data.map((enrollment) =>
+              enrollment.courses ? (
+                <div key={enrollment.id} className="group relative rounded-2xl border border-border p-5 transition-shadow hover:shadow-md">
+                  <CourseThumbnail fileId={enrollment.courses.thumbnailFileId ?? null} title={enrollment.courses.title ?? ""} />
+                  <h3 className="mb-1 truncate font-bold text-foreground">{enrollment.courses.title}</h3>
 
-                <div className="mb-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{enrollment.status}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      role="progressbar"
-                      aria-valuenow={enrollment.progressPercentage}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-label={`${enrollment.courses?.title ?? "Course"} progress`}
-                      className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
-                    >
-                      <div className="h-full rounded-full bg-secondary" style={{ width: `${enrollment.progressPercentage}%` }} />
+                  <div className="mb-4">
+                    <div className="mb-2 flex items-center justify-between">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-muted-foreground">{enrollment.status}</p>
                     </div>
-                    <span className="text-xs font-bold text-muted-foreground">{enrollment.progressPercentage}%</span>
+                    <div className="flex items-center gap-3">
+                      <div
+                        role="progressbar"
+                        aria-valuenow={enrollment.progressPercentage}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`${enrollment.courses.title ?? "Course"} progress`}
+                        className="h-2 flex-1 overflow-hidden rounded-full bg-muted"
+                      >
+                        <div className="h-full rounded-full bg-secondary" style={{ width: `${enrollment.progressPercentage}%` }} />
+                      </div>
+                      <span className="text-xs font-bold text-muted-foreground">{enrollment.progressPercentage}%</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 border-t border-border pt-4">
+                    <Link
+                      to={`/dashboard/courses/${enrollment.courses.id}`}
+                      className="block w-full rounded-xl bg-primary px-4 py-2 text-center text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
+                    >
+                      Go to Course
+                    </Link>
                   </div>
                 </div>
-
-                <div className="mt-4 border-t border-border pt-4">
-                  <Link
-                    to={`/dashboard/courses/${enrollment.courses?.id}`}
-                    className="block w-full rounded-xl bg-primary px-4 py-2 text-center text-sm font-bold text-primary-foreground transition-colors hover:bg-primary/90"
-                  >
-                    Go to Course
-                  </Link>
+              ) : (
+                // The joined course row can be legitimately absent here: courses RLS only
+                // exposes published courses to students, so an enrollment created while a
+                // course was published still exists (and still counts toward "Enrolled")
+                // after the course is later moved back to draft/archived. Show an honest
+                // "unavailable" state instead of a card with a blank title and a dead link
+                // to `/dashboard/courses/undefined`.
+                <div key={enrollment.id} className="flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border p-5 text-center">
+                  <EyeOff className="size-8 text-muted-foreground" aria-hidden="true" />
+                  <p className="text-sm font-bold text-foreground">This course is currently unavailable.</p>
+                  <p className="text-xs text-muted-foreground">Your enrollment is safe — check back later or contact support.</p>
                 </div>
-              </div>
-            ))}
+              )
+            )}
           </div>
         ) : (
           <EmptyState
