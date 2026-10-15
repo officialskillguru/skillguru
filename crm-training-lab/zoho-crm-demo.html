@@ -1,0 +1,1999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CRM Training Simulator</title>
+<style>
+/* =========================================================
+   DESIGN TOKENS
+   ========================================================= */
+:root{
+  --side:#23395B; --side-2:#1b2d49; --side-ink:#c8d3e6; --side-active:#3468E8;
+  --primary:#3468E8; --primary-d:#2453c7; --bg:#F3F5F9; --card:#fff;
+  --ink:#1d2939; --mut:#56657c; --line:#e1e6ee; --line-2:#eef1f6;
+  --ok:#17693f; --warn:#8a5a00; --err:#b42a22;
+  --r:8px; --sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
+  --row:40px;
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body.comfortable{--row:50px}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--primary)}
+:focus-visible{outline:2px solid var(--primary);outline-offset:2px}
+.sidebar :focus-visible,.login-brand :focus-visible{outline-color:#fff}
+html{scroll-padding-top:72px}
+.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.skip{position:absolute;left:8px;top:-60px;background:#fff;color:var(--primary);padding:8px 12px;border-radius:6px;z-index:100;box-shadow:var(--sh)}
+.skip:focus{top:8px}
+svg.i{width:18px;height:18px;flex:none;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+svg.i.sm{width:15px;height:15px}
+
+/* =========================================================
+   LOGIN
+   ========================================================= */
+.login{display:grid;grid-template-columns:1.05fr 1fr;min-height:100vh}
+.login-brand{background:linear-gradient(150deg,#1b2d49 0%,#23395B 55%,#2d4f86 100%);color:#e8eef9;padding:56px 64px;display:flex;flex-direction:column;justify-content:center;gap:22px}
+.login-brand .logo{display:flex;align-items:center;gap:10px;font-weight:600;font-size:18px;color:#fff}
+.logo-mark{width:36px;height:36px;border-radius:9px;background:var(--primary);display:grid;place-items:center;color:#fff}
+.login-brand h2{font-size:32px;line-height:1.2;margin:8px 0 0;color:#fff;max-width:440px}
+.login-brand p{margin:0;max-width:440px;color:#c8d3e6}
+.feat{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:440px;margin-top:6px;padding:0;list-style:none}
+.feat li{display:flex;gap:10px;align-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 12px;font-size:13px}
+.disclaimer{font-size:12px;color:#c8d3e6;border-top:1px solid rgba(255,255,255,.14);padding-top:14px;max-width:440px}
+.login-form-wrap{display:grid;place-items:center;padding:40px 24px;background:#fff}
+.login-card{width:100%;max-width:380px}
+.login-card h1{font-size:24px;margin:0 0 4px}
+.login-card .sub{color:var(--mut);margin:0 0 24px}
+.fld{margin-bottom:14px}
+.fld label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}
+.inp{width:100%;height:38px;border:1px solid #7d8ba1;border-radius:6px;padding:0 11px;background:#fff}
+.inp:focus{border-color:var(--primary)}
+.inp:focus-visible{outline:2px solid var(--primary);outline-offset:0}
+.pw{position:relative}
+.pw .inp{padding-right:64px}
+.pw button{position:absolute;right:4px;top:4px;height:30px;border:0;background:none;color:var(--primary);font-weight:500;cursor:pointer;padding:0 10px;border-radius:5px}
+.login-err{background:#fde8e7;color:var(--err);border:1px solid #f5c2bf;border-radius:6px;padding:9px 11px;font-size:13px;margin-bottom:14px}
+.btn-block{width:100%;height:40px;justify-content:center}
+.hint{font-size:12px;color:var(--mut);margin-top:16px;background:var(--bg);border-radius:6px;padding:10px 12px}
+
+/* =========================================================
+   APP SHELL
+   ========================================================= */
+.app{display:flex;min-height:100vh}
+.sidebar{width:224px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:40}
+.brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;color:#fff;font-weight:600;font-size:15px;border-bottom:1px solid rgba(255,255,255,.08)}
+.brand .logo-mark{width:30px;height:30px;border-radius:8px}
+.sidebar nav{padding:10px 8px;flex:1}
+.sidebar ul{list-style:none;margin:0;padding:0}
+.nav-btn{display:flex;align-items:center;gap:11px;width:100%;border:0;background:none;color:inherit;padding:9px 12px;border-radius:7px;cursor:pointer;text-align:left;font-size:14px}
+.nav-btn:hover{background:rgba(255,255,255,.07);color:#fff}
+.nav-btn[aria-current="page"]{background:rgba(255,255,255,.12);color:#fff;box-shadow:inset 3px 0 0 #7fa3ff}
+.nav-sep{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#a9b8d3;padding:14px 12px 6px}
+.side-foot{padding:12px 16px;font-size:11px;color:#a9b8d3;border-top:1px solid rgba(255,255,255,.08)}
+.shell{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 20px;min-height:58px;flex-wrap:wrap}
+.topbar h1{font-size:19px;margin:0;font-weight:600;flex:none}
+.topbar h1:focus{outline:none}
+.spacer{flex:1}
+.gsearch{position:relative;width:min(360px,100%)}
+.gsearch .inp{height:36px;padding-left:34px;background:var(--bg);border-color:#7d8ba1}
+.gsearch>svg{position:absolute;left:10px;top:9px;color:var(--mut)}
+.gresults{position:absolute;top:40px;left:0;right:0;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.14);max-height:380px;overflow:auto;z-index:50;padding:4px}
+.gres{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;text-align:left;padding:8px 10px;border-radius:6px;cursor:pointer}
+.gres:hover,.gres:focus-visible{background:var(--bg)}
+.gres small{color:var(--mut);display:block}
+.gres-empty{padding:12px;color:var(--mut)}
+.icon-btn.menu-toggle{display:none}
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(16,24,40,.14);min-width:200px;padding:5px;z-index:60}
+.menu.left{left:0;right:auto}
+.menu button.mi{display:flex;align-items:center;gap:9px;width:100%;border:0;background:none;padding:8px 10px;border-radius:6px;cursor:pointer;text-align:left}
+.menu button.mi:hover,.menu button.mi:focus-visible{background:var(--bg)}
+.menu .mh{padding:8px 10px;border-bottom:1px solid var(--line-2);margin-bottom:4px}
+.menu .mh b{display:block}
+.menu .mh small{color:var(--mut)}
+.notif{width:320px;max-height:420px;overflow:auto}
+.notif .ni{padding:8px 10px;border-radius:6px;font-size:13px}
+.notif .ni+.ni{border-top:1px solid var(--line-2)}
+.dot{position:absolute;top:4px;right:4px;min-width:16px;height:16px;border-radius:8px;background:var(--err);color:#fff;font-size:10px;display:grid;place-items:center;padding:0 4px;font-weight:600}
+.avatar{width:34px;height:34px;border-radius:50%;background:#dbe6ff;color:#1f4fc4;display:grid;place-items:center;font-weight:600;font-size:13px;border:0;cursor:pointer}
+main{padding:18px 20px 40px;flex:1;min-width:0}
+main:focus{outline:none}
+.scrim{position:fixed;inset:0;background:rgba(16,24,40,.45);z-index:35}
+
+/* =========================================================
+   COMMON UI
+   ========================================================= */
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 13px;border-radius:6px;border:1px solid #7d8ba1;background:#fff;cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:#f6f8fb}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-d)}
+.btn.danger{background:var(--err);border-color:var(--err);color:#fff}
+.btn.danger:hover{filter:brightness(.93)}
+.btn.sm{height:28px;padding:0 9px;font-size:13px}
+.btn.ghost{border-color:transparent;background:none}
+.btn.ghost:hover{background:var(--bg)}
+.btn[aria-pressed="true"]{background:#e6efff;border-color:#a9c2f7;color:#1f4fc4}
+.icon-btn{position:relative;display:inline-grid;place-items:center;width:34px;height:34px;border:1px solid transparent;border-radius:6px;background:none;cursor:pointer;color:var(--mut)}
+.icon-btn:hover{background:var(--bg);color:var(--ink)}
+.icon-btn.bordered{border-color:#7d8ba1;background:#fff}
+.link{border:0;background:none;padding:0;color:var(--primary);cursor:pointer;font-weight:500;text-align:left}
+.link:hover{text-decoration:underline}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh)}
+.card-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line-2)}
+.card-h h2,.card-h h3{font-size:15px;margin:0;font-weight:600}
+.card-b{padding:14px 16px}
+.muted{color:var(--mut)}
+.small{font-size:12px}
+.row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:500;white-space:nowrap;line-height:1.6}
+.t-gray{background:#e9edf2;color:#344154}.t-blue{background:#e3ecff;color:#1f4fc4}.t-amber{background:#fff1cf;color:#7a4f00}
+.t-green{background:#dff5e8;color:#17693f}.t-red{background:#fde4e2;color:#a3261e}.t-purple{background:#ece6ff;color:#5434b8}
+.t-teal{background:#dcf3f3;color:#0d6464}.t-orange{background:#ffe8d6;color:#8f3f00}
+.tag{display:inline-block;border:1px solid #c9d8f5;background:#eef3ff;color:#1f3f8f;border-radius:5px;padding:2px 9px;font-size:12px}
+.chip{display:inline-grid;place-items:center;min-width:26px;height:22px;padding:0 6px;border:1px solid var(--line);border-radius:5px;font-size:11px;background:#fff;color:var(--ink)}
+.empty{text-align:center;padding:36px 16px;color:var(--mut)}
+.empty svg{width:34px;height:34px;color:#9aa8bd;margin-bottom:8px}
+.empty b{display:block;color:var(--ink);margin-bottom:4px}
+.x-btn{display:inline-grid;place-items:center;min-width:24px;min-height:24px;margin-left:2px}
+.err-text{color:var(--err);font-size:12px;margin-top:4px}
+.req{color:var(--err);margin-left:2px}
+
+/* Page header & toolbar */
+.page-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.page-h h2{font-size:18px;margin:0}
+.count{color:var(--mut);font-size:13px}
+.views{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}
+.views button{border:0;background:none;padding:9px 12px;cursor:pointer;color:var(--mut);white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500}
+.views button:hover{color:var(--ink)}
+.views button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--primary)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line-2)}
+.toolbar .search{position:relative;flex:1 1 220px;max-width:320px}
+.toolbar .search .inp{height:34px;padding-left:32px}
+.toolbar .search svg{position:absolute;left:9px;top:8px;color:var(--mut)}
+.sel{height:34px;border:1px solid #7d8ba1;border-radius:6px;background:#fff;padding:0 8px;max-width:100%}
+.seg{display:inline-flex;border:1px solid #7d8ba1;border-radius:6px;overflow:hidden}
+.seg button{border:0;background:#fff;height:32px;width:36px;display:grid;place-items:center;cursor:pointer;color:var(--mut)}
+.seg button+button{border-left:1px solid #7d8ba1}
+.seg button[aria-pressed="true"]{background:#e6efff;color:#1f4fc4}
+.filters{display:flex;gap:10px;flex-wrap:wrap;padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--line-2);align-items:flex-end}
+.filters label{display:block;font-size:12px;color:var(--mut);margin-bottom:3px}
+.bulkbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:8px 12px;background:#eef3ff;border-bottom:1px solid #d5e1fb;font-size:13px}
+.bulkbar .sel{height:30px}
+
+/* Tables */
+.tw{overflow-x:auto}
+table.dt{width:100%;border-collapse:collapse;min-width:760px}
+.dt th,.dt td{text-align:left;padding:0 12px;height:var(--row);border-bottom:1px solid var(--line-2);white-space:nowrap;vertical-align:middle}
+.dt th{font-size:12.5px;font-weight:600;color:#3d4b60;background:#fafbfd;height:38px;position:sticky;top:0}
+.dt tbody tr:hover{background:#f7f9fd}
+.dt tr.selected{background:#f0f5ff}
+.dt td.num,.dt th.num{text-align:right}
+.dt .cb{width:38px;padding-right:0}
+.dt input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);cursor:pointer}
+.acts{display:flex;gap:2px}
+.acts .icon-btn{width:30px;height:30px}
+.pager{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;font-size:13px;color:var(--mut)}
+.pager .row{gap:6px}
+.overdue{color:var(--err);font-weight:500}
+
+/* Kanban */
+.kanban{display:flex;gap:12px;overflow-x:auto;padding:12px;align-items:flex-start}
+.kcol{flex:0 0 250px;background:#eef1f6;border-radius:8px;border:2px solid transparent;display:flex;flex-direction:column;max-height:72vh}
+.kcol.over{border-color:var(--primary);background:#e6efff}
+.kcol-h{padding:10px 12px;font-weight:600;font-size:13px;display:flex;justify-content:space-between;gap:6px;border-top:3px solid var(--kc,#8aa0bf);border-radius:8px 8px 0 0;background:#fff}
+.kcol-h small{color:var(--mut);font-weight:400;display:block}
+.kcards{padding:8px;display:flex;flex-direction:column;gap:8px;overflow-y:auto;min-height:60px}
+.kcard{background:#fff;border:1px solid var(--line);border-radius:7px;padding:10px;box-shadow:var(--sh);cursor:grab}
+.kcard.dragging{opacity:.45}
+.kcard .sel{height:28px;width:100%;margin-top:8px;font-size:12px}
+.kcard p{margin:3px 0 0;font-size:12.5px;color:var(--mut)}
+
+/* Dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:14px}
+.kpi{padding:14px 16px}
+.kpi .v{font-size:24px;font-weight:600;margin-top:2px}
+.kpi .l{color:var(--mut);font-size:12.5px;display:flex;align-items:center;gap:6px}
+.kpi .f{font-size:11.5px;color:var(--mut);margin-top:4px}
+.dash{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}
+.c4{grid-column:span 4}.c6{grid-column:span 6}.c8{grid-column:span 8}.c12{grid-column:span 12}
+.bars{list-style:none;margin:0;padding:0}
+.bars li{display:grid;grid-template-columns:150px 1fr 90px;gap:10px;align-items:center;padding:5px 0;font-size:13px}
+.bt{height:10px;background:#eef1f6;border-radius:5px;overflow:hidden}
+.bf{display:block;height:100%;border-radius:5px;min-width:2px}
+.bv{text-align:right;color:var(--mut);font-variant-numeric:tabular-nums}
+.f-blue{background:#3468E8}.f-green{background:#2f9e63}.f-amber{background:#d69a1e}.f-red{background:#d4483f}.f-purple{background:#7b5ce0}.f-teal{background:#1f9a9a}.f-gray{background:#7d8ba1}.f-orange{background:#e07a2f}
+.feed{list-style:none;margin:0;padding:0}
+.feed li{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--line-2);align-items:flex-start}
+.feed li:last-child{border-bottom:0}
+.feed .ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;flex:none;background:#e9effb;color:#2a55c0}
+.mini{width:100%;border-collapse:collapse;font-size:13px}
+.mini th,.mini td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line-2);white-space:nowrap}
+.mini th{font-weight:600;color:#3d4b60;font-size:12px}
+
+/* Modal */
+dialog{border:0;padding:0;border-radius:10px;box-shadow:0 20px 50px rgba(16,24,40,.3);width:min(560px,calc(100vw - 24px));max-height:calc(100vh - 32px);color:var(--ink)}
+dialog.lg{width:min(780px,calc(100vw - 24px))}
+dialog::backdrop{background:rgba(16,24,40,.5)}
+dialog[open]{display:flex;flex-direction:column}
+.modal-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.modal-head h2{font-size:17px;margin:0}
+.modal-body{padding:16px 18px;overflow-y:auto;flex:1}
+.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+#confirm{width:min(440px,calc(100vw - 24px))}
+#confirm form{padding:20px 20px 0}
+#confirm h2{font-size:17px;margin:0 0 8px}
+#confirm p{margin:0 0 18px;color:#3d4b60}
+#confirm .modal-foot{margin:0 -20px;padding:12px 20px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px 16px}
+.form-grid .full{grid-column:1/-1}
+.form-grid label{display:block;font-size:13px;font-weight:500;margin-bottom:4px}
+.form-grid .inp,.form-grid select,.form-grid textarea{width:100%;border:1px solid #7d8ba1;border-radius:6px;background:#fff}
+.form-grid select{height:38px;padding:0 8px}
+.form-grid textarea{min-height:80px;padding:8px 11px;resize:vertical}
+[aria-invalid="true"]{border-color:var(--err)!important;outline-color:var(--err)}
+.form-note{font-size:12px;color:var(--mut);margin:0 0 12px}
+.dl{display:grid;grid-template-columns:repeat(2,1fr);gap:0 20px;margin:0}
+.dl div{padding:8px 0;border-bottom:1px solid var(--line-2)}
+.dl dt{font-size:12px;color:var(--mut)}
+.dl dd{margin:2px 0 0;word-break:break-word}
+.dl .full{grid-column:1/-1}
+.sec-t{font-size:13px;font-weight:600;margin:18px 0 8px;color:#3d4b60;text-transform:uppercase;letter-spacing:.04em}
+
+/* Toasts */
+.toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:calc(100vw - 32px)}
+.toast{display:flex;gap:9px;align-items:center;background:#1d2939;color:#fff;padding:10px 14px;border-radius:7px;box-shadow:0 8px 24px rgba(16,24,40,.25);font-size:13.5px;animation:tin .18s ease-out}
+.toast.error{background:#8f1f19}
+.toast.info{background:#23395B}
+@keyframes tin{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
+
+/* Account workspace */
+.acc-h{display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:14px 18px}
+.acc-av{width:56px;height:56px;border-radius:8px;background:#dbe6ff;color:#1f4fc4;display:grid;place-items:center;font-size:22px;font-weight:600;flex:none}
+.acc-title{flex:1 1 300px;min-width:0}
+.acc-title h2{font-size:22px;margin:0 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.acc-money{display:flex;gap:22px;flex-wrap:wrap}
+.acc-money div{border-left:1px solid var(--line);padding-left:16px}
+.acc-money b{font-size:18px;display:block}
+.acc-money small{color:var(--mut)}
+.acc-wrap{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;margin-top:14px}
+.ins{display:grid;grid-template-columns:2fr 1fr;gap:14px;padding:14px}
+.rings{display:flex;gap:18px;justify-content:space-around;flex-wrap:wrap;align-items:flex-end;padding:6px 0}
+.rings figure{margin:0;text-align:center}
+.rings figcaption{font-size:13px;margin-top:4px}
+.seg-list{list-style:none;padding:0;margin:0}
+.seg-list li{padding:5px 0 5px 16px;position:relative;font-size:13.5px}
+.seg-list li::before{content:"";position:absolute;left:2px;top:12px;width:6px;height:6px;border-radius:50%;background:#e9a23b}
+.trans{display:flex;align-items:center;gap:10px;margin:6px 0;flex-wrap:wrap}
+.trans .pill{background:#eef1f6;border-radius:5px;padding:5px 10px;font-size:13px}
+.recs{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rec{border:1px solid var(--line);border-radius:8px;padding:12px}
+.rec .prod{background:#f6f8fb;border-radius:6px;padding:9px 10px;margin:8px 0;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.rec .kv{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:6px}
+.rec .kv b{color:var(--ink);font-weight:500}
+.hl{border:1px solid var(--line);border-radius:7px;padding:10px 12px;margin-bottom:8px}
+.hl .ongo{color:#17693f;font-size:12px;font-weight:500}
+.closed-list{list-style:none;margin:0;padding:0}
+.closed-list li{display:flex;gap:9px;align-items:center;padding:6px 0;font-size:13px;border-bottom:1px solid var(--line-2)}
+.closed-list li:last-child{border-bottom:0}
+.won{color:#1f8a54}.lost{color:#c4342d}
+
+/* Settings */
+.set-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.demo-cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.demo-card{border:1px solid var(--line);border-radius:8px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.demo-card p{margin:0;font-size:12.5px;color:var(--mut);flex:1}
+.pill-list{display:flex;gap:6px;flex-wrap:wrap}
+.toggle{display:flex;gap:10px;align-items:center;padding:6px 0}
+.toggle input{width:16px;height:16px;accent-color:var(--primary)}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+@media (max-width:1150px){
+  .acc-wrap{grid-template-columns:1fr}
+  .c4{grid-column:span 6}.c8{grid-column:span 12}
+}
+@media (max-width:900px){
+  .login{grid-template-columns:1fr}
+  .login-brand{padding:32px 24px}
+  .login-brand h2{font-size:24px}
+  .sidebar{position:fixed;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .2s ease;box-shadow:4px 0 24px rgba(0,0,0,.25)}
+  .sidebar:not(.open){visibility:hidden}
+  .sidebar{transition:transform .2s ease,visibility 0s .2s}
+  .sidebar.open{transform:none;transition:transform .2s ease}
+  .icon-btn.menu-toggle{display:inline-grid}
+  .gsearch{order:5;width:100%}
+  .ins{grid-template-columns:1fr}
+  .recs{grid-template-columns:1fr}
+  .set-grid{grid-template-columns:1fr}
+  .c4,.c6,.c8{grid-column:span 12}
+}
+@media (max-width:600px){
+  main{padding:12px 12px 32px}
+  .topbar{padding:8px 12px}
+  .topbar h1{font-size:17px}
+  .feat{grid-template-columns:1fr}
+  .form-grid{grid-template-columns:1fr}
+  .dl{grid-template-columns:1fr}
+  .bars li{grid-template-columns:100px 1fr 70px}
+  .toolbar .search{max-width:none}
+  .acc-money div{border-left:0;padding-left:0}
+  .modal-foot .btn{flex:1;justify-content:center}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body class="compact">
+<a class="skip" id="skip-link" href="#login-main">Skip to main content</a>
+
+<!-- ======================= LOGIN ======================= -->
+<div id="login-screen" class="login">
+  <section class="login-brand" aria-label="About this application">
+    <div class="logo"><span class="logo-mark" id="logo-1"></span> CRM Training Simulator</div>
+    <h2>Customer Relationships, Simplified</h2>
+    <p>An interactive CRM training environment. Practise managing leads, contacts, accounts and deals with realistic sample data — no setup and no risk to real customer records.</p>
+    <ul class="feat" id="login-feats"></ul>
+    <p class="disclaimer">Training Simulator — Demo Environment. Records you create live only in this browser tab and reset when the page is refreshed.</p>
+  </section>
+  <main id="login-main" class="login-form-wrap" tabindex="-1">
+    <div class="login-card">
+      <h1>Welcome Back</h1>
+      <p class="sub">Sign in to your CRM workspace.</p>
+      <form id="login-form" novalidate>
+        <div id="login-err" class="login-err" role="alert" hidden></div>
+        <div class="fld">
+          <label for="login-email">Email</label>
+          <input class="inp" id="login-email" name="email" type="email" autocomplete="username" required aria-describedby="login-err">
+        </div>
+        <div class="fld">
+          <label for="login-pass">Password</label>
+          <div class="pw">
+            <input class="inp" id="login-pass" name="password" type="password" autocomplete="current-password" required aria-describedby="login-err">
+            <button type="button" id="pw-toggle" aria-pressed="false" aria-label="Show password">Show</button>
+          </div>
+        </div>
+        <button type="submit" class="btn primary btn-block">Sign In</button>
+      </form>
+      <p class="hint">Demo access: use the training credentials provided by your trainer. This is a demonstration login only — credentials are checked in the browser and do not provide real security.</p>
+    </div>
+  </main>
+</div>
+
+<!-- ======================= APP ======================= -->
+<div id="app" class="app" hidden>
+  <aside id="sidebar" class="sidebar" aria-label="Sidebar">
+    <div class="brand"><span class="logo-mark" id="logo-2"></span> CRM Trainer</div>
+    <nav aria-label="Modules"><ul id="nav-list"></ul></nav>
+    <div class="side-foot">Training Simulator · Demo data resets on refresh</div>
+  </aside>
+  <div id="scrim" class="scrim" hidden data-act="close-side"></div>
+  <div class="shell">
+    <header class="topbar">
+      <button class="icon-btn menu-toggle" data-act="toggle-side" aria-label="Open navigation" aria-expanded="false" aria-controls="sidebar" id="menu-toggle"></button>
+      <h1 id="page-title" tabindex="-1">Home</h1>
+      <div class="spacer"></div>
+      <div class="gsearch" role="search">
+        <label for="gsearch" class="sr-only">Search all records</label>
+        <span id="gs-icon"></span>
+        <input class="inp" id="gsearch" type="search" placeholder="Search records" autocomplete="off" aria-describedby="gs-help"><span id="gs-help" class="sr-only">Type at least 2 characters. Press Down Arrow to move into results.</span>
+        <div id="gresults" class="gresults" hidden></div>
+      </div>
+      <div class="menu-wrap">
+        <button class="btn primary" id="qc-btn" data-act="menu" data-menu="qc-menu" aria-controls="qc-menu" aria-expanded="false"><span id="qc-ic"></span><span>Create</span></button>
+        <div class="menu" id="qc-menu" hidden>
+          <button class="mi" data-act="create" data-mod="leads">Create Lead</button>
+          <button class="mi" data-act="create" data-mod="contacts">Create Contact</button>
+          <button class="mi" data-act="create" data-mod="accounts">Create Account</button>
+          <button class="mi" data-act="create" data-mod="deals">Create Deal</button>
+          <button class="mi" data-act="create" data-mod="activities">Create Task</button>
+          <button class="mi" data-act="create" data-mod="campaigns">Create Campaign</button>
+        </div>
+      </div>
+      <div class="menu-wrap">
+        <button class="icon-btn" id="notif-btn" data-act="menu" data-menu="notif-menu" aria-controls="notif-menu" aria-expanded="false" aria-label="Notifications"></button>
+        <div class="menu notif" id="notif-menu" hidden></div>
+      </div>
+      <div class="menu-wrap">
+        <button class="avatar" data-act="menu" data-menu="user-menu" aria-controls="user-menu" aria-expanded="false" aria-label="User menu for Training User">TU</button>
+        <div class="menu" id="user-menu" hidden>
+          <div class="mh"><b>Training User</b><small id="user-email"></small></div>
+          <button class="mi" data-act="nav" data-mod="settings">Settings</button>
+          <button class="mi" data-act="nav" data-mod="activities">My activities</button>
+          <button class="mi" data-act="logout" id="logout-btn">Log out</button>
+        </div>
+      </div>
+    </header>
+    <main id="main" tabindex="-1"></main>
+  </div>
+</div>
+
+<dialog id="modal" aria-labelledby="modal-title"></dialog>
+<dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-msg"></dialog>
+<div id="toasts" class="toasts" aria-live="polite" role="status"></div>
+<div id="sr-status" class="sr-only" role="status" aria-live="polite"></div>
+
+<script>
+'use strict';
+/* =========================================================
+   1. CONSTANTS & CONFIGURATION
+   ========================================================= */
+// Demo-only credentials. Checked in the browser — NOT real security.
+const AUTH = { email: 'training@hrremedyindia.com', password: 'Ryf645@$tty' };
+const CURRENT_USER = 'Training User';
+
+const OWNERS = ['Training User', 'Bob Ross', 'Tim Roberts', 'Richard Mc', 'Amelia Burrows', 'Priya Sharma'];
+const LEAD_STATUSES = ['Not Contacted', 'Attempted to Contact', 'Contact in Future', 'Contacted', 'Qualified', 'Converted', 'Lost Lead'];
+const LEAD_SOURCES = ['Website', 'Google Ads', 'Facebook Ads', 'Referral', 'LinkedIn', 'Campaign', 'Trade Show', 'Other'];
+const INDUSTRIES = ['Technology', 'Manufacturing', 'Financial Services', 'Healthcare', 'Education', 'Retail', 'Logistics', 'Storage Equipment', 'Consulting', 'Real Estate'];
+const ACCOUNT_TYPES = ['Customer', 'Prospect', 'Partner', 'Reseller', 'Vendor'];
+const STAGES = [
+  { n: 'Qualification', p: 10, tone: 'amber' }, { n: 'Needs Analysis', p: 20, tone: 'teal' },
+  { n: 'Value Proposition', p: 40, tone: 'blue' }, { n: 'Proposal / Price Quote', p: 60, tone: 'purple' },
+  { n: 'Negotiation', p: 80, tone: 'orange' }, { n: 'Closed Won', p: 100, tone: 'green' }, { n: 'Closed Lost', p: 0, tone: 'red' }];
+const STAGE_NAMES = STAGES.map(s => s.n);
+const ACT_TYPES = ['Task', 'Call', 'Meeting', 'Note'];
+const ACT_STATUSES = ['Not Started', 'In Progress', 'Completed', 'Deferred'];
+const PRIORITIES = ['High', 'Normal', 'Low'];
+const CAMP_TYPES = ['Email', 'Webinar', 'Trade Show', 'Advertisement', 'Social Media', 'Referral Program'];
+const CAMP_STATUSES = ['Planning', 'Active', 'Inactive', 'Completed'];
+const DEPARTMENTS = ['Sales', 'Marketing', 'Finance', 'Operations', 'IT', 'Procurement', 'Executive'];
+const PRODUCTS = ['Zylker ABM', 'Zylker Mail', 'Zylker Desk', 'Zylker Analytics', 'Zylker Books'];
+const PRODUCT_PRICE = { 'Zylker ABM': 24000, 'Zylker Mail': 9000, 'Zylker Desk': 15000, 'Zylker Analytics': 21000, 'Zylker Books': 7000 };
+
+const TONES = {
+  'Not Contacted': 'gray', 'Attempted to Contact': 'blue', 'Contact in Future': 'amber', 'Contacted': 'green',
+  'Qualified': 'purple', 'Converted': 'teal', 'Lost Lead': 'red',
+  'Not Started': 'gray', 'In Progress': 'blue', 'Completed': 'green', 'Deferred': 'amber',
+  'High': 'red', 'Normal': 'blue', 'Low': 'gray',
+  'Planning': 'amber', 'Active': 'green', 'Inactive': 'gray',
+  'Customer': 'green', 'Prospect': 'blue', 'Partner': 'purple', 'Reseller': 'teal', 'Vendor': 'amber',
+  'Task': 'blue', 'Call': 'green', 'Meeting': 'purple', 'Note': 'amber'
+};
+STAGES.forEach(s => { TONES[s.n] = s.tone; });
+
+const KCOLOR = { gray: '#7d8ba1', blue: '#3468E8', amber: '#d69a1e', green: '#2f9e63', red: '#d4483f', purple: '#7b5ce0', teal: '#1f9a9a', orange: '#e07a2f' };
+const SETTINGS = { perPage: 10, dateFmt: 'mdy', density: 'compact' };
+
+/* =========================================================
+   2. UTILITIES
+   ========================================================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+function esc(v) {
+  return String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+const pad = n => String(n).padStart(2, '0');
+const isoDate = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+function addDays(n, base = new Date()) { const d = new Date(base); d.setDate(d.getDate() + n); return d; }
+const todayISO = () => isoDate(new Date());
+function toDate(v) { if (!v) return null; const d = v.length === 10 ? new Date(v + 'T00:00:00') : new Date(v); return isNaN(d) ? null : d; }
+function fmtDate(v) {
+  const d = toDate(v); if (!d) return '—';
+  if (SETTINGS.dateFmt === 'dmy') return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
+  if (SETTINGS.dateFmt === 'iso') return isoDate(d);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtDateTime(v) {
+  const d = toDate(v); if (!d) return '—';
+  return fmtDate(v) + ' ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+const money = n => '$' + Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const money0 = n => '$' + Math.round(Number(n || 0)).toLocaleString('en-US');
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const initials = s => String(s || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+const badge = (v, tone) => v ? `<span class="badge t-${tone || TONES[v] || 'gray'}">${esc(v)}</span>` : '<span class="muted">—</span>';
+const dash = v => (v === '' || v == null) ? '<span class="muted">—</span>' : esc(v);
+const isOpenDeal = d => d.stage !== 'Closed Won' && d.stage !== 'Closed Lost';
+const fullName = r => [r.firstName, r.lastName].filter(Boolean).join(' ') || '(no name)';
+
+// Deterministic pseudo-random generator so the demo data is identical on every refresh.
+function rng(seed) {
+  return function () {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+
+const ICONS = {
+  logo: '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
+  home: '<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>',
+  leads: '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  contacts: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  accounts: '<path d="M3 21h18"/><path d="M5 21V7l7-4 7 4v14"/><path d="M9 9h1M14 9h1M9 13h1M14 13h1M9 17h1M14 17h1"/>',
+  deals: '<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+  activities: '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
+  campaigns: '<path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 8a5 5 0 0 1 0 8"/><path d="M19 5a9 9 0 0 1 0 14"/>',
+  reports: '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+  analytics: '<path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>',
+  settings: '<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  search: '<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  bell: '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  menu: '<line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  filter: '<polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>',
+  sort: '<path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/>',
+  refresh: '<polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>',
+  download: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  edit: '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  trash: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>',
+  eye: '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>',
+  x: '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  chevL: '<polyline points="15 18 9 12 15 6"/>', chevR: '<polyline points="9 18 15 12 9 6"/>',
+  list: '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  kanban: '<rect x="3" y="3" width="5" height="18" rx="1"/><rect x="10" y="3" width="5" height="12" rx="1"/><rect x="17" y="3" width="4" height="8" rx="1"/>',
+  mail: '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
+  phone: '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.91.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  note: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>',
+  up: '<path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>',
+  down: '<path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>',
+  check: '<polyline points="20 6 9 17 4 12"/>',
+  zap: '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  arrow: '<line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>',
+  back: '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
+  convert: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  info: '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+  lock: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>'
+};
+const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICONS[n] || ''}</svg>`;
+
+/* =========================================================
+   3. CENTRAL IN-MEMORY DATA STORE
+   (never written to localStorage / sessionStorage / cookies)
+   ========================================================= */
+const DB = { leads: [], contacts: [], accounts: [], deals: [], activities: [], campaigns: [] };
+const PREFIX = { leads: 'L', contacts: 'C', accounts: 'A', deals: 'D', activities: 'T', campaigns: 'M' };
+const SEQ = { leads: 1000, contacts: 2000, accounts: 3000, deals: 4000, activities: 5000, campaigns: 6000 };
+let AUTHED = false;
+
+function newId(col) {
+  let id;
+  do { id = PREFIX[col] + '-' + (++SEQ[col]); } while (DB[col].some(r => r.id === id));
+  return id;
+}
+function findById(col, id) { return DB[col].find(r => r.id === id) || null; }
+function createRecord(col, data) {
+  const now = new Date().toISOString();
+  const rec = { ...data, id: newId(col), createdAt: now, updatedAt: now };
+  DB[col].unshift(rec);
+  return rec;
+}
+function updateRecord(col, id, patch) {
+  const r = findById(col, id);
+  if (!r) throw new Error('Record not found');
+  Object.assign(r, patch, { id: r.id, createdAt: r.createdAt, updatedAt: new Date().toISOString() });
+  return r;
+}
+function deleteRecord(col, id) {
+  const i = DB[col].findIndex(r => r.id === id);
+  if (i < 0) return false;
+  DB[col].splice(i, 1);
+  cleanupRefs(col, id);
+  Object.values(UI.lists).forEach(s => s.sel.delete(id));
+  return true;
+}
+// Keep relationships consistent after a delete.
+function cleanupRefs(col, id) {
+  if (col === 'accounts') {
+    DB.contacts.forEach(c => { if (c.accountId === id) c.accountId = ''; });
+    DB.deals.forEach(d => { if (d.accountId === id) d.accountId = ''; });
+  }
+  if (col === 'contacts') DB.deals.forEach(d => { if (d.contactId === id) d.contactId = ''; });
+  if (col === 'campaigns') DB.leads.forEach(l => { if (l.campaignId === id) l.campaignId = ''; });
+  DB.activities.forEach(a => { if (a.rel === col + ':' + id) a.rel = ''; });
+}
+const accountName = id => (findById('accounts', id) || {}).name || '';
+const contactName = id => { const c = findById('contacts', id); return c ? fullName(c) : ''; };
+function recordName(col, r) {
+  if (!r) return '';
+  if (col === 'leads' || col === 'contacts') return fullName(r);
+  if (col === 'activities') return r.subject;
+  return r.name;
+}
+function relInfo(rel) {
+  if (!rel) return null;
+  const [col, id] = rel.split(':');
+  const r = DB[col] && findById(col, id);
+  if (!r) return null;
+  return { col, id, name: recordName(col, r), label: MODS[col].singular };
+}
+function metrics() {
+  const open = DB.deals.filter(isOpenDeal), won = DB.deals.filter(d => d.stage === 'Closed Won'), lost = DB.deals.filter(d => d.stage === 'Closed Lost');
+  const t = todayISO();
+  return {
+    leads: DB.leads.length, contacts: DB.contacts.length, accounts: DB.accounts.length, deals: DB.deals.length,
+    openDeals: open.length, pipeline: open.reduce((s, d) => s + Number(d.amount || 0), 0),
+    wonCount: won.length, lostCount: lost.length, closedRevenue: won.reduce((s, d) => s + Number(d.amount || 0), 0),
+    converted: DB.leads.filter(l => l.status === 'Converted').length,
+    actsDone: DB.activities.filter(a => a.status === 'Completed').length,
+    actsUpcoming: DB.activities.filter(a => a.status !== 'Completed' && a.due >= t).length,
+    actsOverdue: DB.activities.filter(a => a.status !== 'Completed' && a.due && a.due < t).length
+  };
+}
+
+/* =========================================================
+   4. DEMO DATASET (built once at page load)
+   ========================================================= */
+function seedData() {
+  const R = rng(20261015);
+  const pick = a => a[Math.floor(R() * a.length)];
+  const rint = (a, b) => a + Math.floor(R() * (b - a + 1));
+  const stamp = daysAgo => { const d = addDays(-daysAgo); d.setHours(rint(8, 18), rint(0, 59), 0, 0); return d.toISOString(); };
+  const phone = () => `+1 (555) ${rint(200, 989)}-${rint(1000, 9999)}`;
+  const STREETS = ['Market Street', 'Lake Avenue', 'Oak Boulevard', 'Commerce Drive', 'Park Lane', 'Harbor Road'];
+
+  // ---- Campaigns
+  [['Q4 Product Launch Webinar', 'Webinar', 'Active', -20, 25, 12000, 90000, 38000],
+   ['Spring Trade Show 2026', 'Trade Show', 'Completed', -200, -190, 30000, 150000, 162000],
+   ['LinkedIn Lead Gen — Manufacturing', 'Social Media', 'Active', -35, 30, 8000, 60000, 21000],
+   ['Customer Referral Program', 'Referral Program', 'Active', -90, 90, 5000, 80000, 47000],
+   ['Holiday Email Nurture', 'Email', 'Planning', 20, 70, 3000, 40000, 0],
+   ['Search Ads — Analytics Suite', 'Advertisement', 'Inactive', -120, -60, 15000, 70000, 52000]
+  ].forEach(([name, type, status, s, e, budget, exp, act], i) => {
+    const c = stamp(rint(60, 220));
+    DB.campaigns.push({ id: newId('campaigns'), name, type, status, startDate: isoDate(addDays(s)), endDate: isoDate(addDays(e)),
+      budget, expectedRevenue: exp, actualRevenue: act, owner: OWNERS[i % OWNERS.length],
+      notes: `${type} campaign used for the training dataset.`, createdAt: c, updatedAt: c });
+  });
+
+  // ---- Accounts
+  const ACC = [
+    ['Campbell Industries', 'Manufacturing', 'Customer', 'Chicago', 'IL', 'USA', 97500000, 1200, ['Champion', 'Large enterprise', 'Happy customer'], [['Moderately Engaged', 'Highly Engaged'], ['About to Sleep', 'Loyal Customer']]],
+    ['Radiance Solutions', 'Storage Equipment', 'Customer', 'Austin', 'TX', 'USA', 5500000, 140, ['Mid-market'], [['Prospect', 'Customer']]],
+    ['Excalibur Tech', 'Technology', 'Prospect', 'San Jose', 'CA', 'USA', 40000000, 620, ['Evaluating'], []],
+    ['Genesis Enterprises', 'Consulting', 'Partner', 'Boston', 'MA', 'USA', 8500000, 90, ['Channel partner'], [['Prospect', 'Partner']]],
+    ['InnovaTech', 'Financial Services', 'Customer', 'New York', 'NY', 'USA', 46000000, 700, ['Large enterprise'], [['Highly Engaged', 'Moderately Engaged']]],
+    ['Lyra Systems', 'Technology', 'Prospect', 'Seattle', 'WA', 'USA', 10000000, 160, [], []],
+    ['Horizon Innovations', 'Manufacturing', 'Customer', 'Detroit', 'MI', 'USA', 47500000, 900, ['Happy customer'], [['Moderately Engaged', 'Highly Engaged']]],
+    ['Monarch Corp', 'Education', 'Customer', 'Denver', 'CO', 'USA', 41500000, 520, [], []],
+    ['ApexTech', 'Technology', 'Reseller', 'Toronto', 'ON', 'Canada', 2500000, 45, ['Reseller'], []],
+    ['Ventura Systems', 'Logistics', 'Prospect', 'Atlanta', 'GA', 'USA', 17500000, 300, [], []],
+    ['Nexus Solutions', 'Healthcare', 'Customer', 'Phoenix', 'AZ', 'USA', 8500000, 110, [], [['Loyal Customer', 'About to Churn']]],
+    ['Triton Group', 'Retail', 'Vendor', 'Miami', 'FL', 'USA', 42000000, 850, [], []],
+    ['Cosmos Enterprises', 'Education', 'Prospect', 'London', '', 'United Kingdom', 35000000, 410, [], []]
+  ];
+  ACC.forEach(([name, industry, type, city, state, country, revenue, employees, tags, transitions], i) => {
+    const slug = name.toLowerCase().replace(/[^a-z]/g, '');
+    const c = stamp(rint(90, 400));
+    DB.accounts.push({ id: newId('accounts'), name, industry, type, phone: phone(), website: `www.${slug}.com`, revenue, employees,
+      billing: `${rint(10, 980)} ${pick(STREETS)}`, city, state, country, owner: OWNERS[i % OWNERS.length],
+      description: `${name} is a ${type.toLowerCase()} in the ${industry.toLowerCase()} sector.`, tags, transitions, createdAt: c, updatedAt: c });
+  });
+  const A = DB.accounts;
+
+  // ---- Contacts
+  [['Greg', 'Howard', 'VP Operations', 'Operations', 0], ['Chloe', 'Hart', 'IT Director', 'IT', 0], ['Robert', 'Green', 'Procurement Lead', 'Procurement', 1],
+   ['Kris', 'Marrier', 'CFO', 'Finance', 2], ['Amelia', 'Stone', 'Marketing Manager', 'Marketing', 3], ['Krishna', 'Das', 'Head of Logistics', 'Operations', 4],
+   ['Ethan', 'Moore', 'CTO', 'IT', 5], ['Olivia', 'Bennett', 'Plant Manager', 'Operations', 6], ['Noah', 'Clarke', 'Dean of Admissions', 'Executive', 7],
+   ['Sophia', 'Reyes', 'Channel Manager', 'Sales', 8], ['Liam', 'Foster', 'Operations Analyst', 'Operations', 9], ['Ava', 'Patel', 'Practice Director', 'Executive', 10],
+   ['Mason', 'Wright', 'Buyer', 'Procurement', 11], ['Isabella', 'King', 'Head of IT', 'IT', 12], ['Lucas', 'Turner', 'Finance Controller', 'Finance', 0],
+   ['Mia', 'Collins', 'Sales Director', 'Sales', 4]
+  ].forEach(([firstName, lastName, title, department, ai], i) => {
+    const acc = A[ai], dom = acc.website.replace('www.', ''), c = stamp(rint(20, 300));
+    DB.contacts.push({ id: newId('contacts'), firstName, lastName, accountId: acc.id, email: `${firstName}.${lastName}@${dom}`.toLowerCase(),
+      phone: phone(), mobile: phone(), title, department, source: pick(LEAD_SOURCES), owner: acc.owner,
+      address: `${acc.billing}, ${acc.city}`, notes: '', createdAt: c, updatedAt: c });
+  });
+  const contactOf = acc => DB.contacts.find(c => c.accountId === acc.id);
+
+  // ---- Deals: [accountIdx, productIdx, stage, amount, closeOffsetDays, createdDaysAgo]
+  [[0, 0, 'Closed Won', 24500, -120, 200], [0, 1, 'Closed Won', 9800, -80, 150], [0, 2, 'Closed Won', 15200, -40, 110], [0, 4, 'Closed Won', 7400, -15, 70],
+   [0, 3, 'Negotiation', 21000, 12, 30], [0, 1, 'Proposal / Price Quote', 8600, 25, 18], [1, 0, 'Closed Won', 23000, -60, 140], [1, 2, 'Value Proposition', 14000, 35, 21],
+   [2, 3, 'Qualification', 30000, 60, 8], [3, 1, 'Closed Lost', 9500, -30, 90], [4, 0, 'Closed Won', 26500, -25, 100], [4, 3, 'Negotiation', 22000, 9, 40],
+   [5, 2, 'Needs Analysis', 12500, 45, 12], [6, 4, 'Closed Won', 7000, -50, 120], [6, 0, 'Proposal / Price Quote', 25000, 20, 26], [7, 1, 'Value Proposition', 8800, 30, 15],
+   [9, 2, 'Qualification', 16000, 75, 4], [10, 3, 'Closed Lost', 19500, -10, 75], [11, 4, 'Needs Analysis', 6800, 40, 10], [12, 0, 'Negotiation', 27500, 14, 33]
+  ].forEach(([ai, pi, stage, amount, close, ago]) => {
+    const acc = A[ai], ct = contactOf(acc), c = stamp(ago), st = STAGES.find(s => s.n === stage);
+    DB.deals.push({ id: newId('deals'), name: `${acc.name.split(' ')[0]} - ${PRODUCTS[pi]}`, accountId: acc.id, contactId: ct ? ct.id : '',
+      amount, stage, probability: st.p, closingDate: isoDate(addDays(close)), source: pick(LEAD_SOURCES), owner: acc.owner,
+      description: `${PRODUCTS[pi]} opportunity for ${acc.name}.`, createdAt: c, updatedAt: stamp(Math.max(0, ago - rint(1, 10))) });
+  });
+
+  // ---- Leads
+  const FIRST = ['Daniel', 'Grace', 'Henry', 'Zoe', 'Samuel', 'Lily', 'Owen', 'Hannah', 'Leo', 'Nora', 'Isaac', 'Ella', 'Caleb', 'Aria', 'Julian', 'Layla', 'Aaron', 'Ruby',
+    'Miles', 'Stella', 'Ryan', 'Violet', 'Adrian', 'Hazel', 'Nathan', 'Aurora', 'Dylan', 'Ivy', 'Gavin', 'Clara', 'Ian', 'Naomi', 'Evan', 'Lucy', 'Felix', 'Maya'];
+  const LAST = ['Brooks', 'Price', 'Sanders', 'Ward', 'Hughes', 'Bryant', 'Long', 'Ross', 'Hayes', 'Myers', 'Ford', 'Graham', 'Wallace', 'Cole', 'West', 'Jordan', 'Owens',
+    'Reynolds', 'Fisher', 'Ellis', 'Harrison', 'Gibson', 'McDonald', 'Cruz', 'Marshall', 'Ortiz', 'Gomez', 'Murray', 'Freeman', 'Wells', 'Webb', 'Simpson', 'Stevens', 'Tucker', 'Porter', 'Hunter'];
+  const COMP = [['Brightline Labs', 'Technology'], ['Northwind Traders', 'Retail'], ['BlueOcean Analytics', 'Technology'], ['Summit Freight', 'Logistics'],
+    ['Crescent Health', 'Healthcare'], ['Pinnacle Realty', 'Real Estate'], ['Ironclad Storage', 'Storage Equipment'], ['Evergreen Academy', 'Education'],
+    ['Quantum Finance', 'Financial Services'], ['Atlas Manufacturing', 'Manufacturing'], ['Keystone Advisors', 'Consulting'], ['Silverline Retail', 'Retail'],
+    ['Orbit Systems', 'Technology'], ['Harborview Clinics', 'Healthcare'], ['Redwood Logistics', 'Logistics'], ['Meridian Bank', 'Financial Services'],
+    ['Granite Works', 'Manufacturing'], ['Beacon Learning', 'Education']];
+  const CYCLE = ['Not Contacted', 'Attempted to Contact', 'Contacted', 'Qualified', 'Not Contacted', 'Contact in Future', 'Converted', 'Lost Lead', 'Contacted', 'Not Contacted', 'Qualified', 'Attempted to Contact'];
+  const TITLES = ['Operations Manager', 'IT Manager', 'Director of Sales', 'Procurement Officer', 'CEO', 'Office Manager', 'Head of Marketing', 'CFO'];
+  const CITIES = ['Chicago', 'Dallas', 'San Diego', 'Portland', 'Nashville', 'Columbus', 'Charlotte', 'Minneapolis', 'Tampa', 'Pittsburgh'];
+  for (let i = 0; i < 36; i++) {
+    const [company, industry] = COMP[i % COMP.length], first = FIRST[i], last = LAST[i];
+    const dom = company.toLowerCase().replace(/[^a-z]/g, '') + '.com';
+    const source = LEAD_SOURCES[(i * 3) % LEAD_SOURCES.length];
+    const c = stamp(i < 4 ? i : rint(2, 62));
+    DB.leads.push({ id: newId('leads'), firstName: first, lastName: last, company, title: pick(TITLES), email: `${first}.${last}@${dom}`.toLowerCase(),
+      phone: phone(), mobile: R() > .4 ? phone() : '', industry, source, campaignId: source === 'Campaign' ? pick(DB.campaigns).id : '',
+      status: CYCLE[i % CYCLE.length], owner: i % 3 === 0 ? CURRENT_USER : pick(OWNERS), city: pick(CITIES),
+      description: i % 4 === 0 ? 'Asked for a product demo and pricing sheet.' : '', createdAt: c, updatedAt: c });
+  }
+
+  // ---- Activities
+  const SUBJ = {
+    Task: ['Send proposal', 'Prepare quote', 'Share case study', 'Update contract draft', 'Follow up on pricing'],
+    Call: ['Discovery call', 'Follow-up call', 'Check-in call', 'Renewal call', 'Qualification call'],
+    Meeting: ['Product demo', 'Quarterly business review', 'Onsite workshop', 'Contract negotiation', 'Kick-off meeting'],
+    Note: ['Budget approved for Q1', 'Prefers email communication', 'Decision maker is the CFO', 'Interested in analytics add-on', 'Competitor evaluation underway']
+  };
+  const campbellRels = ['accounts:' + A[0].id, 'deals:' + DB.deals[4].id, 'contacts:' + DB.contacts[0].id, 'deals:' + DB.deals[5].id, 'accounts:' + A[0].id];
+  for (let i = 0; i < 26; i++) {
+    const type = ACT_TYPES[i % 4];
+    let rel;
+    if (i < campbellRels.length) rel = campbellRels[i];
+    else { const col = pick(['leads', 'contacts', 'accounts', 'deals']); rel = col + ':' + pick(DB[col]).id; }
+    const off = [-9, -6, -4, -2, -1, 0, 1, 2, 3, 5, 7, 10, 14][i % 13];
+    let status = off < 0 ? (i % 3 === 0 ? 'Not Started' : 'Completed') : pick(['Not Started', 'In Progress', 'Not Started']);
+    if (type === 'Note') status = 'Completed';
+    const ri = relInfoRaw(rel);
+    const c = stamp(Math.max(0, -off + rint(1, 6)));
+    DB.activities.push({ id: newId('activities'), subject: `${SUBJ[type][i % 5]}${ri ? ' — ' + ri : ''}`, type, rel, assigned: i % 3 === 0 ? CURRENT_USER : pick(OWNERS),
+      due: isoDate(addDays(off)), priority: PRIORITIES[i % 3], status, description: type === 'Note' ? SUBJ.Note[i % 5] + '.' : '', createdAt: c, updatedAt: c });
+  }
+  function relInfoRaw(rel) { const [col, id] = rel.split(':'); const r = DB[col].find(x => x.id === id); return r ? recordName(col, r) : ''; }
+
+  // Newest first for sensible default ordering.
+  Object.values(DB).forEach(arr => arr.sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
+}
+
+/* =========================================================
+   5. MODULE DEFINITIONS (schema-driven lists, forms, details)
+   ========================================================= */
+const ownerOpts = () => OWNERS;
+const accountOpts = () => DB.accounts.slice().sort((a, b) => a.name.localeCompare(b.name)).map(a => ({ v: a.id, l: a.name }));
+const contactOpts = () => DB.contacts.slice().sort((a, b) => fullName(a).localeCompare(fullName(b))).map(c => ({ v: c.id, l: fullName(c) + (c.accountId ? ' · ' + accountName(c.accountId) : '') }));
+const campaignOpts = () => DB.campaigns.map(c => ({ v: c.id, l: c.name }));
+const viewLink = (col, r) => `<button class="link" data-act="view" data-mod="${col}" data-id="${esc(r.id)}">${esc(recordName(col, r))}</button>`;
+const accLink = id => { const a = findById('accounts', id); return a ? `<button class="link" data-act="view" data-mod="accounts" data-id="${esc(a.id)}">${esc(a.name)}</button>` : '<span class="muted">—</span>'; };
+const conLink = id => { const c = findById('contacts', id); return c ? viewLink('contacts', c) : '<span class="muted">—</span>'; };
+const relLink = rel => { const r = relInfo(rel); return r ? `<button class="link" data-act="view" data-mod="${r.col}" data-id="${esc(r.id)}">${esc(r.name)}</button> <span class="muted small">(${esc(r.label)})</span>` : '<span class="muted">—</span>'; };
+const dueCell = a => { const od = a.status !== 'Completed' && a.due && a.due < todayISO(); return od ? `<span class="overdue">${fmtDate(a.due)} · Overdue</span>` : fmtDate(a.due); };
+const mail = v => v ? `<a href="mailto:${esc(v)}">${esc(v)}</a>` : '<span class="muted">—</span>';
+const statusSort = list => r => list.indexOf(r);
+
+const MODS = {
+  leads: {
+    label: 'Leads', singular: 'Lead', icon: 'leads', owner: 'owner', defaultSort: 'createdAt',
+    defaults: () => ({ status: 'Not Contacted', owner: CURRENT_USER, source: 'Website' }),
+    fields: [
+      { k: 'firstName', label: 'First Name', req: true }, { k: 'lastName', label: 'Last Name', req: true },
+      { k: 'company', label: 'Company', req: true }, { k: 'title', label: 'Job Title' },
+      { k: 'email', label: 'Email', type: 'email' }, { k: 'phone', label: 'Phone', type: 'tel' },
+      { k: 'mobile', label: 'Mobile', type: 'tel' }, { k: 'industry', label: 'Industry', type: 'select', options: () => INDUSTRIES, blank: true },
+      { k: 'source', label: 'Lead Source', type: 'select', options: () => LEAD_SOURCES, req: true },
+      { k: 'campaignId', label: 'Campaign', type: 'select', options: campaignOpts, blank: true },
+      { k: 'status', label: 'Lead Status', type: 'select', options: () => LEAD_STATUSES, req: true },
+      { k: 'owner', label: 'Lead Owner', type: 'select', options: ownerOpts, req: true },
+      { k: 'city', label: 'City' },
+      { k: 'description', label: 'Description / Notes', type: 'textarea', full: true }],
+    columns: [
+      { label: 'Lead Name', html: r => viewLink('leads', r) }, { label: 'Company', html: r => esc(r.company) },
+      { label: 'Lead Status', html: r => badge(r.status) }, { label: 'Lead Source', html: r => dash(r.source) },
+      { label: 'Email', html: r => mail(r.email) }, { label: 'Phone', html: r => dash(r.phone) },
+      { label: 'Industry', html: r => dash(r.industry) }, { label: 'Lead Owner', html: r => esc(r.owner) },
+      { label: 'Created Time', html: r => fmtDateTime(r.createdAt) }],
+    views: [
+      { id: 'all', label: 'All Leads' }, { id: 'mine', label: 'My Leads', test: r => r.owner === CURRENT_USER },
+      { id: 'nc', label: 'Not Contacted', test: r => r.status === 'Not Contacted' }, { id: 'c', label: 'Contacted', test: r => r.status === 'Contacted' },
+      { id: 'q', label: 'Qualified', test: r => r.status === 'Qualified' }, { id: 'cv', label: 'Converted Leads', test: r => r.status === 'Converted' },
+      { id: 'l', label: 'Lost Leads', test: r => r.status === 'Lost Lead' }],
+    filters: [{ k: 'status', label: 'Lead Status', options: () => LEAD_STATUSES }, { k: 'source', label: 'Lead Source', options: () => LEAD_SOURCES },
+      { k: 'owner', label: 'Owner', options: ownerOpts }, { k: 'industry', label: 'Industry', options: () => INDUSTRIES }],
+    sorts: [{ k: 'createdAt', label: 'Created Time', v: r => r.createdAt }, { k: 'name', label: 'Lead Name', v: r => fullName(r).toLowerCase() },
+      { k: 'company', label: 'Company', v: r => (r.company || '').toLowerCase() }, { k: 'status', label: 'Lead Status', v: r => LEAD_STATUSES.indexOf(r.status) }],
+    search: r => [fullName(r), r.company, r.email, r.phone, r.mobile, r.industry].join(' '),
+    bulk: { status: { k: 'status', options: () => LEAD_STATUSES, label: 'Change status' } },
+    kanban: { field: 'status', groups: () => LEAD_STATUSES, card: r => `${viewLink('leads', r)}<p>${esc(r.company)}</p><p>${esc(r.owner)} · ${esc(r.source || '')}</p>` },
+    csv: [['Lead ID', r => r.id], ['First Name', r => r.firstName], ['Last Name', r => r.lastName], ['Company', r => r.company], ['Job Title', r => r.title],
+      ['Email', r => r.email], ['Phone', r => r.phone], ['Mobile', r => r.mobile], ['Industry', r => r.industry], ['Lead Source', r => r.source],
+      ['Lead Status', r => r.status], ['Lead Owner', r => r.owner], ['City', r => r.city], ['Created Time', r => r.createdAt]],
+    duplicate: (d, id) => DB.leads.find(l => l.id !== id && ((d.email && l.email.toLowerCase() === d.email.toLowerCase()) || (d.phone && digits(l.phone) === digits(d.phone)))),
+    details: r => [['Lead ID', esc(r.id)], ['Lead Status', badge(r.status)], ['Company', esc(r.company)], ['Job Title', dash(r.title)], ['Email', mail(r.email)],
+      ['Phone', dash(r.phone)], ['Mobile', dash(r.mobile)], ['Industry', dash(r.industry)], ['Lead Source', dash(r.source)],
+      ['Campaign', r.campaignId && findById('campaigns', r.campaignId) ? viewLink('campaigns', findById('campaigns', r.campaignId)) : '<span class="muted">—</span>'],
+      ['Lead Owner', esc(r.owner)], ['City', dash(r.city)], ['Created Time', fmtDateTime(r.createdAt)], ['Modified Time', fmtDateTime(r.updatedAt)],
+      ['Description / Notes', dash(r.description), true]]
+  },
+
+  contacts: {
+    label: 'Contacts', singular: 'Contact', icon: 'contacts', owner: 'owner', defaultSort: 'createdAt',
+    defaults: () => ({ owner: CURRENT_USER }),
+    fields: [
+      { k: 'firstName', label: 'First Name', req: true }, { k: 'lastName', label: 'Last Name', req: true },
+      { k: 'accountId', label: 'Account Name', type: 'select', options: accountOpts, blank: true }, { k: 'email', label: 'Email', type: 'email' },
+      { k: 'phone', label: 'Phone', type: 'tel' }, { k: 'mobile', label: 'Mobile', type: 'tel' }, { k: 'title', label: 'Job Title' },
+      { k: 'department', label: 'Department', type: 'select', options: () => DEPARTMENTS, blank: true },
+      { k: 'source', label: 'Lead Source', type: 'select', options: () => LEAD_SOURCES, blank: true },
+      { k: 'owner', label: 'Contact Owner', type: 'select', options: ownerOpts, req: true },
+      { k: 'address', label: 'Mailing Address', full: true }, { k: 'notes', label: 'Notes', type: 'textarea', full: true }],
+    columns: [
+      { label: 'Contact Name', html: r => viewLink('contacts', r) }, { label: 'Account Name', html: r => accLink(r.accountId) },
+      { label: 'Email', html: r => mail(r.email) }, { label: 'Phone', html: r => dash(r.phone) }, { label: 'Job Title', html: r => dash(r.title) },
+      { label: 'Department', html: r => dash(r.department) }, { label: 'Contact Owner', html: r => esc(r.owner) }],
+    views: [{ id: 'all', label: 'All Contacts' }, { id: 'mine', label: 'My Contacts', test: r => r.owner === CURRENT_USER }],
+    filters: [{ k: 'accountId', label: 'Account', options: accountOpts }, { k: 'department', label: 'Department', options: () => DEPARTMENTS },
+      { k: 'owner', label: 'Owner', options: ownerOpts }, { k: 'source', label: 'Lead Source', options: () => LEAD_SOURCES }],
+    sorts: [{ k: 'createdAt', label: 'Created Time', v: r => r.createdAt }, { k: 'name', label: 'Contact Name', v: r => fullName(r).toLowerCase() },
+      { k: 'account', label: 'Account Name', v: r => accountName(r.accountId).toLowerCase() }, { k: 'title', label: 'Job Title', v: r => (r.title || '').toLowerCase() }],
+    search: r => [fullName(r), accountName(r.accountId), r.email, r.phone, r.title, r.department].join(' '),
+    csv: [['Contact ID', r => r.id], ['First Name', r => r.firstName], ['Last Name', r => r.lastName], ['Account', r => accountName(r.accountId)],
+      ['Email', r => r.email], ['Phone', r => r.phone], ['Job Title', r => r.title], ['Department', r => r.department], ['Owner', r => r.owner]],
+    duplicate: (d, id) => d.email && DB.contacts.find(c => c.id !== id && c.email && c.email.toLowerCase() === d.email.toLowerCase()),
+    details: r => [['Contact ID', esc(r.id)], ['Account Name', r.accountId && findById('accounts', r.accountId) ? accLink(r.accountId) : '<span class="muted">No linked account</span>'],
+      ['Email', mail(r.email)], ['Phone', dash(r.phone)], ['Mobile', dash(r.mobile)], ['Job Title', dash(r.title)], ['Department', dash(r.department)],
+      ['Lead Source', dash(r.source)], ['Contact Owner', esc(r.owner)], ['Created Time', fmtDateTime(r.createdAt)],
+      ['Mailing Address', dash(r.address), true], ['Notes', dash(r.notes), true]],
+    related: r => relatedDealsTable(DB.deals.filter(d => d.contactId === r.id))
+  },
+
+  accounts: {
+    label: 'Accounts', singular: 'Account', icon: 'accounts', owner: 'owner', defaultSort: 'name', defaultDir: 'asc',
+    defaults: () => ({ owner: CURRENT_USER, type: 'Prospect', country: 'USA' }),
+    fields: [
+      { k: 'name', label: 'Account Name', req: true }, { k: 'industry', label: 'Industry', type: 'select', options: () => INDUSTRIES, blank: true },
+      { k: 'type', label: 'Account Type', type: 'select', options: () => ACCOUNT_TYPES, req: true }, { k: 'phone', label: 'Phone', type: 'tel' },
+      { k: 'website', label: 'Website', type: 'url' }, { k: 'revenue', label: 'Annual Revenue ($)', type: 'number' },
+      { k: 'employees', label: 'Employee Count', type: 'number', int: true }, { k: 'owner', label: 'Account Owner', type: 'select', options: ownerOpts, req: true },
+      { k: 'billing', label: 'Billing Address', full: true }, { k: 'city', label: 'City' }, { k: 'state', label: 'State' }, { k: 'country', label: 'Country' },
+      { k: 'description', label: 'Description', type: 'textarea', full: true }],
+    columns: [
+      { label: 'Account Name', html: r => viewLink('accounts', r) }, { label: 'Account Owner', html: r => esc(r.owner) },
+      { label: 'Industry', html: r => dash(r.industry) }, { label: 'Account Type', html: r => badge(r.type) }, { label: 'Phone', html: r => dash(r.phone) },
+      { label: 'Website', html: r => dash(r.website) }, { label: 'City', html: r => dash(r.city) },
+      { label: 'Annual Revenue', cls: 'num', html: r => r.revenue === '' || r.revenue == null ? '<span class="muted">—</span>' : money0(r.revenue) },
+      { label: 'Employees', cls: 'num', html: r => r.employees === '' || r.employees == null ? '<span class="muted">—</span>' : Number(r.employees).toLocaleString('en-US') }],
+    views: [{ id: 'all', label: 'All Accounts' }, { id: 'mine', label: 'My Accounts', test: r => r.owner === CURRENT_USER },
+      { id: 'cust', label: 'Customers', test: r => r.type === 'Customer' }, { id: 'pros', label: 'Prospects', test: r => r.type === 'Prospect' }],
+    filters: [{ k: 'industry', label: 'Industry', options: () => INDUSTRIES }, { k: 'type', label: 'Account Type', options: () => ACCOUNT_TYPES },
+      { k: 'owner', label: 'Owner', options: ownerOpts }],
+    sorts: [{ k: 'name', label: 'Account Name', v: r => r.name.toLowerCase() }, { k: 'revenue', label: 'Annual Revenue', v: r => Number(r.revenue || 0) },
+      { k: 'employees', label: 'Employees', v: r => Number(r.employees || 0) }, { k: 'createdAt', label: 'Created Time', v: r => r.createdAt }],
+    search: r => [r.name, r.industry, r.type, r.phone, r.website, r.city, r.owner].join(' '),
+    csv: [['Account ID', r => r.id], ['Account Name', r => r.name], ['Owner', r => r.owner], ['Industry', r => r.industry], ['Type', r => r.type],
+      ['Phone', r => r.phone], ['Website', r => r.website], ['City', r => r.city], ['Country', r => r.country], ['Annual Revenue', r => r.revenue], ['Employees', r => r.employees]],
+    validate: (d, id) => DB.accounts.some(a => a.id !== id && a.name.trim().toLowerCase() === d.name.toLowerCase()) ? { name: 'An account with this name already exists.' } : {}
+  },
+
+  deals: {
+    label: 'Deals', singular: 'Deal', icon: 'deals', owner: 'owner', defaultSort: 'closingDate', defaultDir: 'asc',
+    defaults: () => ({ owner: CURRENT_USER, stage: 'Qualification', probability: 10, closingDate: isoDate(addDays(30)) }),
+    fields: [
+      { k: 'name', label: 'Deal Name', req: true }, { k: 'accountId', label: 'Account', type: 'select', options: accountOpts, req: true },
+      { k: 'contactId', label: 'Contact', type: 'select', options: contactOpts, blank: true }, { k: 'amount', label: 'Amount ($)', type: 'number', req: true },
+      { k: 'stage', label: 'Stage', type: 'select', options: () => STAGE_NAMES, req: true }, { k: 'probability', label: 'Probability (%)', type: 'number', int: true, max: 100 },
+      { k: 'closingDate', label: 'Expected Closing Date', type: 'date', req: true }, { k: 'source', label: 'Lead Source', type: 'select', options: () => LEAD_SOURCES, blank: true },
+      { k: 'owner', label: 'Deal Owner', type: 'select', options: ownerOpts, req: true }, { k: 'description', label: 'Description', type: 'textarea', full: true }],
+    columns: [
+      { label: 'Deal Name', html: r => viewLink('deals', r) }, { label: 'Account Name', html: r => accLink(r.accountId) },
+      { label: 'Contact Name', html: r => conLink(r.contactId) }, { label: 'Amount', cls: 'num', html: r => money(r.amount) },
+      { label: 'Stage', html: r => badge(r.stage) }, { label: 'Probability', cls: 'num', html: r => (r.probability ?? 0) + '%' },
+      { label: 'Expected Closing', html: r => fmtDate(r.closingDate) }, { label: 'Deal Owner', html: r => esc(r.owner) },
+      { label: 'Created Date', html: r => fmtDate(r.createdAt) }],
+    views: [{ id: 'all', label: 'All Deals' }, { id: 'mine', label: 'My Deals', test: r => r.owner === CURRENT_USER },
+      { id: 'open', label: 'Open Deals', test: isOpenDeal }, { id: 'won', label: 'Closed Won', test: r => r.stage === 'Closed Won' },
+      { id: 'lost', label: 'Closed Lost', test: r => r.stage === 'Closed Lost' }],
+    filters: [{ k: 'stage', label: 'Stage', options: () => STAGE_NAMES }, { k: 'owner', label: 'Owner', options: ownerOpts },
+      { k: 'accountId', label: 'Account', options: accountOpts }, { k: 'source', label: 'Lead Source', options: () => LEAD_SOURCES }],
+    sorts: [{ k: 'closingDate', label: 'Closing Date', v: r => r.closingDate || '' }, { k: 'amount', label: 'Amount', v: r => Number(r.amount || 0) },
+      { k: 'name', label: 'Deal Name', v: r => r.name.toLowerCase() }, { k: 'stage', label: 'Stage', v: r => STAGE_NAMES.indexOf(r.stage) },
+      { k: 'createdAt', label: 'Created Date', v: r => r.createdAt }],
+    search: r => [r.name, accountName(r.accountId), contactName(r.contactId), r.stage, r.owner].join(' '),
+    bulk: { status: { k: 'stage', options: () => STAGE_NAMES, label: 'Change stage' } },
+    kanban: { field: 'stage', groups: () => STAGE_NAMES, sum: true,
+      card: r => `${viewLink('deals', r)}<p>${esc(accountName(r.accountId) || 'No account')}</p><p><b style="color:var(--ink)">${money(r.amount)}</b> · ${fmtDate(r.closingDate)}</p><p>${esc(r.owner)}</p>` },
+    csv: [['Deal ID', r => r.id], ['Deal Name', r => r.name], ['Account', r => accountName(r.accountId)], ['Contact', r => contactName(r.contactId)],
+      ['Amount', r => r.amount], ['Stage', r => r.stage], ['Probability', r => r.probability], ['Expected Closing Date', r => r.closingDate], ['Owner', r => r.owner]],
+    validate: d => {
+      const e = {};
+      const c = d.contactId && findById('contacts', d.contactId);
+      if (c && d.accountId && c.accountId && c.accountId !== d.accountId) e.contactId = 'This contact belongs to a different account.';
+      return e;
+    },
+    beforeSave: d => { if (d.probability === '') d.probability = (STAGES.find(s => s.n === d.stage) || {}).p ?? 0; },
+    details: r => [['Deal ID', esc(r.id)], ['Stage', badge(r.stage)], ['Account', accLink(r.accountId)], ['Contact', conLink(r.contactId)],
+      ['Amount', money(r.amount)], ['Probability', (r.probability ?? 0) + '%'], ['Expected Closing Date', fmtDate(r.closingDate)],
+      ['Lead Source', dash(r.source)], ['Deal Owner', esc(r.owner)], ['Created Date', fmtDateTime(r.createdAt)], ['Description', dash(r.description), true]]
+  },
+
+  activities: {
+    label: 'Activities', singular: 'Activity', icon: 'activities', owner: 'assigned', defaultSort: 'due', defaultDir: 'asc',
+    defaults: () => ({ assigned: CURRENT_USER, type: 'Task', status: 'Not Started', priority: 'Normal', due: todayISO() }),
+    fields: [
+      { k: 'subject', label: 'Subject', req: true, full: true }, { k: 'type', label: 'Activity Type', type: 'select', options: () => ACT_TYPES, req: true },
+      { k: 'rel', label: 'Related To', type: 'related' }, { k: 'assigned', label: 'Assigned To', type: 'select', options: ownerOpts, req: true },
+      { k: 'due', label: 'Due Date', type: 'date', req: true }, { k: 'priority', label: 'Priority', type: 'select', options: () => PRIORITIES, req: true },
+      { k: 'status', label: 'Status', type: 'select', options: () => ACT_STATUSES, req: true }, { k: 'description', label: 'Description', type: 'textarea', full: true }],
+    columns: [
+      { label: 'Subject', html: r => viewLink('activities', r) }, { label: 'Type', html: r => badge(r.type) }, { label: 'Related Record', html: r => relLink(r.rel) },
+      { label: 'Assigned To', html: r => esc(r.assigned) }, { label: 'Due Date', html: dueCell }, { label: 'Priority', html: r => badge(r.priority) },
+      { label: 'Status', html: r => badge(r.status) }],
+    views: [{ id: 'all', label: 'All Activities' }, { id: 'open', label: 'Open', test: r => r.status !== 'Completed' },
+      { id: 'overdue', label: 'Overdue', test: r => r.status !== 'Completed' && r.due < todayISO() },
+      { id: 'upcoming', label: 'Upcoming', test: r => r.status !== 'Completed' && r.due >= todayISO() },
+      { id: 'done', label: 'Completed', test: r => r.status === 'Completed' }, { id: 'mine', label: 'My Activities', test: r => r.assigned === CURRENT_USER }],
+    filters: [{ k: 'type', label: 'Activity Type', options: () => ACT_TYPES }, { k: 'status', label: 'Status', options: () => ACT_STATUSES },
+      { k: 'priority', label: 'Priority', options: () => PRIORITIES }, { k: 'assigned', label: 'Assigned To', options: ownerOpts }],
+    sorts: [{ k: 'due', label: 'Due Date', v: r => r.due || '' }, { k: 'priority', label: 'Priority', v: r => PRIORITIES.indexOf(r.priority) },
+      { k: 'subject', label: 'Subject', v: r => r.subject.toLowerCase() }, { k: 'createdAt', label: 'Created Time', v: r => r.createdAt }],
+    search: r => [r.subject, r.type, (relInfo(r.rel) || {}).name, r.assigned, r.status].join(' '),
+    bulk: { status: { k: 'status', options: () => ACT_STATUSES, label: 'Change status' } },
+    rowActions: r => r.status !== 'Completed' ? `<button class="icon-btn" data-act="complete" data-id="${esc(r.id)}" aria-label="Mark ${esc(r.subject)} as completed" title="Mark completed">${icon('check')}</button>` : '',
+    csv: [['Activity ID', r => r.id], ['Subject', r => r.subject], ['Type', r => r.type], ['Related To', r => (relInfo(r.rel) || {}).name || ''],
+      ['Assigned To', r => r.assigned], ['Due Date', r => r.due], ['Priority', r => r.priority], ['Status', r => r.status]],
+    details: r => [['Type', badge(r.type)], ['Status', badge(r.status)], ['Related To', relLink(r.rel)], ['Assigned To', esc(r.assigned)],
+      ['Due Date', dueCell(r)], ['Priority', badge(r.priority)], ['Created Time', fmtDateTime(r.createdAt)], ['Activity ID', esc(r.id)],
+      ['Description', dash(r.description), true]]
+  },
+
+  campaigns: {
+    label: 'Campaigns', singular: 'Campaign', icon: 'campaigns', owner: 'owner', defaultSort: 'startDate',
+    defaults: () => ({ owner: CURRENT_USER, status: 'Planning', type: 'Email', startDate: todayISO(), endDate: isoDate(addDays(30)) }),
+    fields: [
+      { k: 'name', label: 'Campaign Name', req: true, full: true }, { k: 'type', label: 'Campaign Type', type: 'select', options: () => CAMP_TYPES, req: true },
+      { k: 'status', label: 'Status', type: 'select', options: () => CAMP_STATUSES, req: true }, { k: 'startDate', label: 'Start Date', type: 'date', req: true },
+      { k: 'endDate', label: 'End Date', type: 'date', req: true }, { k: 'budget', label: 'Budget ($)', type: 'number' },
+      { k: 'expectedRevenue', label: 'Expected Revenue ($)', type: 'number' }, { k: 'actualRevenue', label: 'Actual Revenue ($)', type: 'number' },
+      { k: 'owner', label: 'Campaign Owner', type: 'select', options: ownerOpts, req: true }, { k: 'notes', label: 'Notes', type: 'textarea', full: true }],
+    columns: [
+      { label: 'Campaign Name', html: r => viewLink('campaigns', r) }, { label: 'Type', html: r => esc(r.type) }, { label: 'Status', html: r => badge(r.status) },
+      { label: 'Start Date', html: r => fmtDate(r.startDate) }, { label: 'End Date', html: r => fmtDate(r.endDate) },
+      { label: 'Budget', cls: 'num', html: r => money0(r.budget) }, { label: 'Expected Revenue', cls: 'num', html: r => money0(r.expectedRevenue) },
+      { label: 'Actual Revenue', cls: 'num', html: r => money0(r.actualRevenue) }, { label: 'Leads', cls: 'num', html: r => DB.leads.filter(l => l.campaignId === r.id).length }],
+    views: [{ id: 'all', label: 'All Campaigns' }, { id: 'active', label: 'Active', test: r => r.status === 'Active' },
+      { id: 'planning', label: 'Planning', test: r => r.status === 'Planning' }, { id: 'done', label: 'Completed', test: r => r.status === 'Completed' }],
+    filters: [{ k: 'status', label: 'Status', options: () => CAMP_STATUSES }, { k: 'type', label: 'Type', options: () => CAMP_TYPES }],
+    sorts: [{ k: 'startDate', label: 'Start Date', v: r => r.startDate || '' }, { k: 'name', label: 'Campaign Name', v: r => r.name.toLowerCase() },
+      { k: 'budget', label: 'Budget', v: r => Number(r.budget || 0) }, { k: 'actualRevenue', label: 'Actual Revenue', v: r => Number(r.actualRevenue || 0) }],
+    search: r => [r.name, r.type, r.status, r.owner].join(' '),
+    csv: [['Campaign ID', r => r.id], ['Name', r => r.name], ['Type', r => r.type], ['Status', r => r.status], ['Start', r => r.startDate], ['End', r => r.endDate],
+      ['Budget', r => r.budget], ['Expected Revenue', r => r.expectedRevenue], ['Actual Revenue', r => r.actualRevenue]],
+    validate: d => (d.startDate && d.endDate && d.endDate < d.startDate) ? { endDate: 'End date cannot be before the start date.' } : {},
+    details: r => [['Type', esc(r.type)], ['Status', badge(r.status)], ['Start Date', fmtDate(r.startDate)], ['End Date', fmtDate(r.endDate)],
+      ['Budget', money(r.budget)], ['Expected Revenue', money(r.expectedRevenue)], ['Actual Revenue', money(r.actualRevenue)],
+      ['ROI (actual vs budget)', Number(r.budget) ? Math.round((Number(r.actualRevenue || 0) - Number(r.budget)) / Number(r.budget) * 100) + '%' : '—'],
+      ['Campaign Owner', esc(r.owner)], ['Campaign ID', esc(r.id)], ['Notes', dash(r.notes), true]],
+    related: r => {
+      const leads = DB.leads.filter(l => l.campaignId === r.id);
+      return `<h3 class="sec-t">Related leads (${leads.length})</h3>` + (leads.length ? `<div class="tw"><table class="mini"><thead><tr><th scope="col">Lead</th><th scope="col">Company</th><th scope="col">Status</th></tr></thead><tbody>${leads.map(l => `<tr><td>${viewLink('leads', l)}</td><td>${esc(l.company)}</td><td>${badge(l.status)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No leads are linked to this campaign. Set a lead\'s Campaign field to link it.</p>');
+    }
+  }
+};
+const digits = s => String(s || '').replace(/\D/g, '');
+
+/* =========================================================
+   6. UI STATE
+   ========================================================= */
+const UI = { module: 'home', accountId: null, accTab: 'insights', sideTab: 'highlights', lists: {}, reportOpen: null };
+function LS(mod) {
+  if (!UI.lists[mod]) {
+    const c = MODS[mod];
+    UI.lists[mod] = { q: '', view: 'all', filters: {}, sort: c.defaultSort, dir: c.defaultDir || 'desc', page: 1, per: SETTINGS.perPage, layout: 'table', sel: new Set(), showFilters: false };
+  }
+  return UI.lists[mod];
+}
+
+/* =========================================================
+   7. SHARED UI HELPERS (toast, modal, confirm, csv, menus)
+   ========================================================= */
+function toast(msg, type = 'success') {
+  const t = document.createElement('div');
+  t.className = 'toast ' + type;
+  t.innerHTML = icon(type === 'error' ? 'info' : 'check', 'sm') + '<span></span>';
+  t.querySelector('span').textContent = msg;
+  const region = $('#toasts'), host = toastHost();
+  if (region.parentElement !== host) host.appendChild(region);
+  region.appendChild(t);
+  setTimeout(() => t.remove(), type === 'error' ? 5000 : 3200);
+}
+
+function toastHost() { return $('#confirm').open ? $('#confirm') : $('#modal').open ? $('#modal') : document.body; }
+function returnToasts() { const r = $('#toasts'), h = toastHost(); if (r.parentElement !== h) h.appendChild(r); }
+let modalReturn = null;
+function openModal({ title, body, footer = '', size = '' }) {
+  const d = $('#modal');
+  if (!d.open) modalReturn = document.activeElement;
+  d.className = size;
+  if ($('#toasts').parentElement === d) document.body.appendChild($('#toasts'));
+  d.innerHTML = `<div class="modal-head"><h2 id="modal-title">${esc(title)}</h2><button type="button" class="icon-btn" data-act="modal-close" aria-label="Close dialog">${icon('x')}</button></div>
+    <div class="modal-body">${body}</div>${footer ? `<div class="modal-foot">${footer}</div>` : ''}`;
+  if (!d.open) d.showModal();
+  const first = d.querySelector('.modal-body input:not([type=hidden]), .modal-body select, .modal-body textarea');
+  (first || d.querySelector('.modal-head .icon-btn')).focus();
+}
+function closeModal() { const d = $('#modal'); if (d.open) d.close(); }
+$('#confirm').addEventListener('close', returnToasts);
+$('#modal').addEventListener('close', () => {
+  returnToasts();
+  $('#modal').innerHTML = '';
+  if (modalReturn && document.body.contains(modalReturn)) modalReturn.focus();
+  else $('#page-title').focus();
+  modalReturn = null;
+});
+
+function confirmBox({ title, message, ok = 'Delete', danger = true }) {
+  return new Promise(resolve => {
+    const d = $('#confirm');
+    if ($('#toasts').parentElement === d) document.body.appendChild($('#toasts'));
+    d.innerHTML = `<form method="dialog"><h2 id="confirm-title">${esc(title)}</h2><p id="confirm-msg">${esc(message)}</p>
+      <div class="modal-foot"><button class="btn" value="no">Cancel</button><button class="btn ${danger ? 'danger' : 'primary'}" value="yes">${esc(ok)}</button></div></form>`;
+    d.returnValue = '';
+    const ret = document.activeElement;
+    d.addEventListener('close', function h() {
+      d.removeEventListener('close', h);
+      if (ret && document.body.contains(ret)) ret.focus();
+      resolve(d.returnValue === 'yes');
+    });
+    d.showModal();
+    d.querySelector('button[value=no]').focus();
+  });
+}
+
+function toCSV(headers, rows) {
+  const cell = v => {
+    let s = String(v ?? '');
+    if (/^[=+\-@]/.test(s)) s = "'" + s; // guard against spreadsheet formula injection
+    return '"' + s.replace(/"/g, '""') + '"';
+  };
+  return [headers, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
+}
+function downloadCSV(name, csv) {
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('CSV exported: ' + name);
+}
+
+function closeMenus() {
+  $$('.menu').forEach(m => {
+    if (!m.hidden) { m.hidden = true; const b = document.querySelector(`[data-menu="${m.id}"]`); if (b) b.setAttribute('aria-expanded', 'false'); }
+  });
+}
+function toggleMenu(btn) {
+  const m = document.getElementById(btn.dataset.menu);
+  const willOpen = m.hidden;
+  closeMenus();
+  if (!willOpen) return;
+  if (m.id === 'notif-menu') m.innerHTML = notificationsHTML();
+  m.hidden = false;
+  btn.setAttribute('aria-expanded', 'true');
+  const f = m.querySelector('button, a, input'); if (f) f.focus();
+}
+
+function emptyState(title, text, ic = 'info') {
+  return `<div class="empty">${icon(ic)}<b>${esc(title)}</b><span>${esc(text)}</span></div>`;
+}
+
+/* =========================================================
+   8. RENDERING — SHELL
+   ========================================================= */
+const NAV = [['home', 'Home'], ['leads', 'Leads'], ['contacts', 'Contacts'], ['accounts', 'Accounts'], ['deals', 'Deals'], ['activities', 'Activities'],
+  ['campaigns', 'Campaigns'], ['reports', 'Reports'], ['analytics', 'Analytics'], ['settings', 'Settings']];
+function buildShell() {
+  $('#nav-list').innerHTML = NAV.map(([id, label], i) =>
+    (i === 7 ? '<li class="nav-sep" aria-hidden="true">Insights</li>' : '') +
+    `<li><button class="nav-btn" data-act="nav" data-mod="${id}">${icon(id)}<span>${label}</span></button></li>`).join('');
+  $('#logo-2').innerHTML = icon('logo');
+  $('#menu-toggle').innerHTML = icon('menu');
+  $('#gs-icon').outerHTML = icon('search', 'sm');
+  $('#qc-ic').outerHTML = icon('plus', 'sm');
+  $('#user-email').textContent = AUTH.email;
+}
+function updateShell() {
+  const title = UI.module === 'accounts' && UI.accountId ? (findById('accounts', UI.accountId) || {}).name || 'Account' : (NAV.find(n => n[0] === UI.module) || [, 'Home'])[1];
+  $('#page-title').textContent = title;
+  document.title = title + ' · CRM Training Simulator';
+  $$('.nav-btn').forEach(b => b.dataset.mod === UI.module ? b.setAttribute('aria-current', 'page') : b.removeAttribute('aria-current'));
+  const od = metrics().actsOverdue;
+  $('#notif-btn').innerHTML = icon('bell') + (od ? `<span class="dot" aria-hidden="true">${od}</span>` : '');
+  $('#notif-btn').setAttribute('aria-label', od ? `Notifications, ${od} overdue activities` : 'Notifications');
+}
+function notificationsHTML() {
+  const t = todayISO();
+  const od = DB.activities.filter(a => a.status !== 'Completed' && a.due < t).sort((a, b) => a.due.localeCompare(b.due));
+  const td = DB.activities.filter(a => a.status !== 'Completed' && a.due === t);
+  const item = a => `<div class="ni"><button class="link" data-act="view" data-mod="activities" data-id="${esc(a.id)}">${esc(a.subject)}</button><div class="small muted">${esc(a.type)} · due ${fmtDate(a.due)} · ${esc(a.assigned)}</div></div>`;
+  return `<div class="mh"><b>Notifications</b><small>${od.length} overdue · ${td.length} due today</small></div>` +
+    (od.length + td.length ? od.slice(0, 6).map(item).join('') + td.slice(0, 4).map(item).join('') : '<div class="ni muted">You\'re all caught up.</div>') +
+    `<button class="mi" data-act="goto-view" data-mod="activities" data-view="overdue">View all overdue activities</button>`;
+}
+
+function announce(msg) { const r = $('#sr-status'); r.textContent = ''; setTimeout(() => { r.textContent = msg; }, 60); }
+function captureFocus() {
+  const a = document.activeElement;
+  if (!a || !a.id || !$('#app').contains(a)) return null;
+  return { id: a.id, s: a.selectionStart, e: a.selectionEnd };
+}
+function restoreFocus(f) {
+  if (!f) return;
+  const el = document.getElementById(f.id);
+  if (!el) return;
+  el.focus();
+  try { if (f.s != null) el.setSelectionRange(f.s, f.e); } catch (_) { /* not a text input */ }
+}
+
+function render() {
+  if (!AUTHED) return;
+  const f = captureFocus();
+  updateShell();
+  let html;
+  switch (UI.module) {
+    case 'home': html = renderHome(); break;
+    case 'reports': html = renderReports(); break;
+    case 'analytics': html = renderAnalytics(); break;
+    case 'settings': html = renderSettings(); break;
+    case 'accounts': html = UI.accountId && findById('accounts', UI.accountId) ? renderAccount(UI.accountId) : (UI.accountId = null, renderList('accounts')); break;
+    default: html = renderList(UI.module);
+  }
+  $('#main').innerHTML = html;
+  restoreFocus(f);
+  if (document.activeElement === document.body && !document.querySelector('dialog[open]')) $('#page-title').focus();
+  if (UI.lastStatus && UI.lastStatus !== UI.prevStatus) announce(UI.lastStatus);
+  UI.prevStatus = UI.lastStatus; UI.lastStatus = '';
+}
+function go(mod, opts = {}) {
+  UI.module = mod; UI.accountId = opts.accountId || null;
+  if (opts.accountId) { UI.accTab = 'insights'; UI.sideTab = 'highlights'; }
+  closeSidebar(); closeMenus(); hideGlobal();
+  render();
+  window.scrollTo(0, 0);
+  $('#page-title').focus();
+}
+
+/* =========================================================
+   9. RENDERING — GENERIC LIST / KANBAN
+   ========================================================= */
+function getRows(mod) {
+  const c = MODS[mod], s = LS(mod);
+  let rows = DB[mod].slice();
+  const v = c.views && c.views.find(x => x.id === s.view);
+  if (v && v.test) rows = rows.filter(v.test);
+  const q = s.q.trim().toLowerCase();
+  if (q) rows = rows.filter(r => c.search(r).toLowerCase().includes(q));
+  Object.entries(s.filters).forEach(([k, val]) => { if (val) rows = rows.filter(r => String(r[k] ?? '') === val); });
+  const so = c.sorts.find(x => x.k === s.sort) || c.sorts[0];
+  const dir = s.dir === 'asc' ? 1 : -1;
+  rows.sort((a, b) => { const x = so.v(a), y = so.v(b); return (x < y ? -1 : x > y ? 1 : 0) * dir; });
+  return rows;
+}
+const optList = (opts, cur, blankLabel) => (blankLabel != null ? `<option value="">${esc(blankLabel)}</option>` : '') +
+  opts.map(o => { const v = typeof o === 'string' ? o : o.v, l = typeof o === 'string' ? o : o.l; return `<option value="${esc(v)}" ${String(cur) === String(v) ? 'selected' : ''}>${esc(l)}</option>`; }).join('');
+
+function renderList(mod) {
+  const c = MODS[mod], s = LS(mod), all = getRows(mod), total = all.length;
+  const pages = Math.max(1, Math.ceil(total / s.per));
+  if (s.page > pages) s.page = pages;
+  const start = (s.page - 1) * s.per, rows = all.slice(start, start + s.per);
+  const activeFilters = Object.values(s.filters).filter(Boolean).length;
+  const kanban = c.kanban && s.layout === 'kanban';
+  // keep selection to records that still exist
+  [...s.sel].forEach(id => { if (!findById(mod, id)) s.sel.delete(id); });
+
+  UI.lastStatus = `${total} matching ${total === 1 ? 'record' : 'records'}${kanban ? '' : `, page ${s.page} of ${pages}`}${s.sel.size ? `, ${s.sel.size} selected` : ''}`;
+  const views = c.views ? `<div class="views" role="tablist" aria-label="${esc(c.label)} views">${c.views.map(v =>
+    `<button role="tab" id="v-${mod}-${v.id}" aria-controls="lp-${mod}" aria-selected="${s.view === v.id}" tabindex="${s.view === v.id ? 0 : -1}" data-act="list-view" data-mod="${mod}" data-view="${v.id}">${esc(v.label)} <span class="count">(${v.test ? DB[mod].filter(v.test).length : DB[mod].length})</span></button>`).join('')}</div>` : '';
+
+  const toolbar = `<div class="toolbar">
+    <div class="search">${icon('search', 'sm')}<label class="sr-only" for="q-${mod}">Search ${esc(c.label)}</label>
+      <input class="inp" id="q-${mod}" type="search" data-input="list-q" data-mod="${mod}" placeholder="Search ${esc(c.label.toLowerCase())}" value="${esc(s.q)}"></div>
+    <button class="btn" id="ft-${mod}" data-act="toggle-filters" data-mod="${mod}" aria-expanded="${s.showFilters}" aria-controls="fp-${mod}">${icon('filter', 'sm')} Filter${activeFilters ? ` (${activeFilters})` : ''}</button>
+    <label class="sr-only" for="so-${mod}">Sort by</label>
+    <select class="sel" id="so-${mod}" data-change="list-sort" data-mod="${mod}">${c.sorts.map(o => `<option value="${o.k}" ${s.sort === o.k ? 'selected' : ''}>Sort: ${esc(o.label)}</option>`).join('')}</select>
+    <button class="icon-btn bordered" id="sd-${mod}" data-act="list-dir" data-mod="${mod}" aria-label="Sort direction: ${s.dir === 'asc' ? 'ascending' : 'descending'}. Activate to reverse." title="Reverse sort order">${icon('sort', 'sm')}</button>
+    <button class="icon-btn bordered" id="rf-${mod}" data-act="list-refresh" data-mod="${mod}" aria-label="Refresh list" title="Refresh">${icon('refresh', 'sm')}</button>
+    ${c.kanban ? `<div class="seg" role="group" aria-label="Layout"><button id="lt-${mod}" data-act="layout" data-mod="${mod}" data-layout="table" aria-pressed="${!kanban}" aria-label="Table view" title="Table view">${icon('list', 'sm')}</button><button id="lk-${mod}" data-act="layout" data-mod="${mod}" data-layout="kanban" aria-pressed="${kanban}" aria-label="Kanban view" title="Kanban view">${icon('kanban', 'sm')}</button></div>` : ''}
+    <div class="spacer"></div>
+    ${kanban ? '' : `<label class="sr-only" for="pp-${mod}">Records per page</label><select class="sel" id="pp-${mod}" data-change="list-per" data-mod="${mod}">${[10, 25, 50, 100].map(n => `<option value="${n}" ${s.per === n ? 'selected' : ''}>${n} per page</option>`).join('')}</select>`}
+    <button class="btn" data-act="export" data-mod="${mod}">${icon('download', 'sm')} Export</button>
+  </div>`;
+
+  const filters = s.showFilters ? `<div class="filters" id="fp-${mod}" role="group" aria-label="Filters">${c.filters.map(f =>
+    `<div><label for="fl-${mod}-${f.k}">${esc(f.label)}</label><select class="sel" id="fl-${mod}-${f.k}" data-change="list-filter" data-mod="${mod}" data-k="${f.k}">${optList(f.options(), s.filters[f.k] || '', 'Any')}</select></div>`).join('')}
+    <button class="btn sm ghost" data-act="clear-filters" data-mod="${mod}" ${activeFilters ? '' : 'disabled'}>Clear filters</button></div>` : '';
+
+  const bulk = s.sel.size && !kanban ? `<div class="bulkbar" role="region" aria-label="Bulk actions"><b>${s.sel.size} selected</b>
+    <label class="sr-only" for="bo-${mod}">Assign owner</label><select class="sel" id="bo-${mod}">${optList(OWNERS, '')}</select>
+    <button class="btn sm" data-act="bulk-owner" data-mod="${mod}">Assign owner</button>
+    ${c.bulk && c.bulk.status ? `<label class="sr-only" for="bs-${mod}">${esc(c.bulk.status.label)}</label><select class="sel" id="bs-${mod}">${optList(c.bulk.status.options(), '')}</select><button class="btn sm" data-act="bulk-status" data-mod="${mod}">${esc(c.bulk.status.label)}</button>` : ''}
+    <button class="btn sm danger" data-act="bulk-delete" data-mod="${mod}">${icon('trash', 'sm')} Delete selected</button>
+    <button class="btn sm ghost" data-act="bulk-clear" data-mod="${mod}">Clear selection</button></div>` : '';
+
+  let bodyHTML;
+  if (kanban) bodyHTML = renderKanban(mod, all);
+  else if (!rows.length) bodyHTML = emptyState(DB[mod].length ? 'No records match' : `No ${c.label.toLowerCase()} yet`,
+    DB[mod].length ? 'Try a different search, view or filter.' : `Create your first ${c.singular.toLowerCase()} to get started.`, 'search');
+  else {
+    const allSel = rows.every(r => s.sel.has(r.id));
+    bodyHTML = `<div class="tw"><table class="dt"><caption class="sr-only">${esc(c.label)} — page ${s.page} of ${pages}</caption><thead><tr>
+      <th class="cb" scope="col"><input type="checkbox" id="sa-${mod}" data-change="sel-all" data-mod="${mod}" ${allSel ? 'checked' : ''} aria-label="Select all ${esc(c.label.toLowerCase())} on this page"></th>
+      ${c.columns.map(col => `<th scope="col" class="${col.cls || ''}">${esc(col.label)}</th>`).join('')}<th scope="col">Actions</th></tr></thead>
+      <tbody>${rows.map(r => {
+        const nm = esc(recordName(mod, r));
+        return `<tr class="${s.sel.has(r.id) ? 'selected' : ''}"><td class="cb"><input type="checkbox" id="cb-${esc(r.id)}" data-change="sel" data-mod="${mod}" data-id="${esc(r.id)}" ${s.sel.has(r.id) ? 'checked' : ''} aria-label="Select ${nm}"></td>
+        ${c.columns.map(col => `<td class="${col.cls || ''}">${col.html(r)}</td>`).join('')}
+        <td><div class="acts">${c.rowActions ? c.rowActions(r) : ''}
+          <button class="icon-btn" data-act="view" data-mod="${mod}" data-id="${esc(r.id)}" aria-label="View ${nm}" title="View">${icon('eye', 'sm')}</button>
+          <button class="icon-btn" data-act="edit" data-mod="${mod}" data-id="${esc(r.id)}" aria-label="Edit ${nm}" title="Edit">${icon('edit', 'sm')}</button>
+          <button class="icon-btn" data-act="delete" data-mod="${mod}" data-id="${esc(r.id)}" aria-label="Delete ${nm}" title="Delete">${icon('trash', 'sm')}</button></div></td></tr>`;
+      }).join('')}</tbody></table></div>`;
+  }
+
+  const pager = kanban || !total ? (kanban ? `<div class="pager"><span>${total} ${total === 1 ? 'record' : 'records'} · drag cards between columns or use the stage menu on each card</span></div>` : '') :
+    `<nav class="pager" aria-label="${esc(c.label)} pagination"><span>Showing ${start + 1}–${Math.min(start + s.per, total)} of ${total} matching records</span>
+    <div class="row"><button class="btn sm" id="pg-prev-${mod}" data-act="page" data-mod="${mod}" data-dir="-1" ${s.page <= 1 ? 'disabled' : ''} aria-label="Previous page">${icon('chevL', 'sm')} Previous</button>
+    <span>Page ${s.page} of ${pages}</span>
+    <button class="btn sm" id="pg-next-${mod}" data-act="page" data-mod="${mod}" data-dir="1" ${s.page >= pages ? 'disabled' : ''} aria-label="Next page">Next ${icon('chevR', 'sm')}</button></div></nav>`;
+
+  return `<div class="page-h"><h2>${esc(c.label)}</h2><span class="count">Total records: ${DB[mod].length}</span><div class="spacer"></div>
+    <button class="btn primary" data-act="create" data-mod="${mod}">${icon('plus', 'sm')} Create ${esc(c.singular)}</button></div>
+    ${views}<div class="card" id="lp-${mod}" ${c.views ? `role="tabpanel" aria-labelledby="v-${mod}-${s.view}"` : ''}>${toolbar}${filters}${bulk}${bodyHTML}${pager}</div>`;
+}
+
+function renderKanban(mod, rows) {
+  const k = MODS[mod].kanban;
+  return `<div class="kanban">${k.groups().map(g => {
+    const items = rows.filter(r => r[k.field] === g);
+    const sum = k.sum ? items.reduce((s, r) => s + Number(r.amount || 0), 0) : null;
+    const tone = TONES[g] || 'gray';
+    return `<section class="kcol" data-drop="${esc(g)}" data-mod="${mod}" aria-label="${esc(g)}, ${items.length} records" >
+      <div class="kcol-h" style="border-top-color:${KCOLOR[tone] || KCOLOR.gray}"><span>${esc(g)}<small>${items.length} ${items.length === 1 ? 'record' : 'records'}${sum != null ? ' · ' + money0(sum) : ''}</small></span></div>
+      <div class="kcards">${items.map(r => `<article class="kcard" draggable="true" data-drag-id="${esc(r.id)}">${k.card(r)}
+        <label class="sr-only" for="km-${esc(r.id)}">Move ${esc(recordName(mod, r))} to</label>
+        <select class="sel" id="km-${esc(r.id)}" data-change="kmove" data-mod="${mod}" data-id="${esc(r.id)}">${optList(k.groups(), g)}</select></article>`).join('') || '<p class="muted small" style="text-align:center;margin:8px 0">Drop here</p>'}</div></section>`;
+  }).join('')}</div>`;
+}
+
+/* =========================================================
+   10. FORMS
+   ========================================================= */
+function relatedOptions(cur) {
+  const grp = (col, label) => `<optgroup label="${label}">${DB[col].map(r => { const v = col + ':' + r.id; return `<option value="${esc(v)}" ${cur === v ? 'selected' : ''}>${esc(recordName(col, r))}</option>`; }).join('')}</optgroup>`;
+  return `<option value="">— None —</option>${grp('leads', 'Leads')}${grp('contacts', 'Contacts')}${grp('accounts', 'Accounts')}${grp('deals', 'Deals')}`;
+}
+function fieldHTML(f, val) {
+  const id = 'f_' + f.k, v = val ?? '';
+  const aria = `aria-describedby="e_${f.k}" ${f.req ? 'aria-required="true"' : ''}`;
+  let input;
+  if (f.type === 'select') {
+    let opts = f.options();
+    const vals = opts.map(o => typeof o === 'string' ? o : o.v);
+    if (v !== '' && !vals.includes(v)) opts = [...opts, typeof opts[0] === 'object' ? { v, l: v } : v];
+    input = `<select id="${id}" name="${f.k}" ${aria}>${optList(opts, v, f.blank || v === '' && !f.req ? '— None —' : (v === '' ? 'Select…' : null))}</select>`;
+  } else if (f.type === 'related') {
+    input = `<select id="${id}" name="${f.k}" ${aria}>${relatedOptions(v)}</select>`;
+  } else if (f.type === 'textarea') {
+    input = `<textarea id="${id}" name="${f.k}" ${aria}>${esc(v)}</textarea>`;
+  } else {
+    const type = f.type === 'number' ? 'number' : f.type === 'date' ? 'date' : f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text';
+    const extra = f.type === 'number' ? `min="0" step="${f.int ? 1 : 'any'}" ${f.max ? `max="${f.max}"` : ''} inputmode="${f.int ? 'numeric' : 'decimal'}"` : '';
+    const ac = f.type === 'email' ? 'autocomplete="off"' : '';
+    input = `<input class="inp" id="${id}" name="${f.k}" type="${type}" value="${esc(v)}" ${extra} ${ac} ${aria}>`;
+  }
+  return `<div class="${f.full ? 'full' : ''}"><label for="${id}">${esc(f.label)}${f.req ? '<span class="req" aria-hidden="true">*</span>' : ''}</label>${input}<div class="err-text" id="e_${f.k}"></div></div>`;
+}
+function openForm(mod, id = null, preset = {}) {
+  const c = MODS[mod], rec = id ? findById(mod, id) : null;
+  if (id && !rec) return toast('That record no longer exists.', 'error');
+  closeMenus();
+  const vals = rec ? { ...rec } : { ...c.defaults(), ...preset };
+  openModal({
+    title: (rec ? 'Edit ' : 'Create ') + c.singular, size: 'lg',
+    body: `<form id="rec-form" novalidate data-mod="${mod}" data-id="${esc(id || '')}"><p class="form-note">Fields marked <span class="req" aria-hidden="true">*</span> are required.</p>
+      <div class="form-grid">${c.fields.map(f => fieldHTML(f, vals[f.k])).join('')}</div></form>`,
+    footer: `<button type="button" class="btn" data-act="modal-close">Cancel</button><button type="submit" form="rec-form" class="btn primary">${rec ? 'Save changes' : 'Save'}</button>`
+  });
+  if (mod === 'deals') wireDealForm($('#rec-form'), rec);
+}
+function wireDealForm(form, rec) {
+  const acc = form.elements.accountId, con = form.elements.contactId, st = form.elements.stage, pr = form.elements.probability;
+  const fill = () => {
+    const cur = con.value;
+    const list = DB.contacts.filter(c => !acc.value || c.accountId === acc.value);
+    con.innerHTML = `<option value="">— None —</option>` + list.map(c => `<option value="${esc(c.id)}" ${c.id === cur ? 'selected' : ''}>${esc(fullName(c))}</option>`).join('');
+  };
+  acc.addEventListener('change', fill);
+  st.addEventListener('change', () => { const s = STAGES.find(x => x.n === st.value); if (s) pr.value = s.p; });
+  if (acc.value) fill();
+}
+function validateField(f, v) {
+  if (f.req && (v === '' || v == null)) return `${f.label} is required.`;
+  if (v === '' || v == null) return '';
+  if (f.type === 'email' && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return 'Enter a valid email address, e.g. name@company.com.';
+  if (f.type === 'tel' && !/^[+()\-.\s\d]{6,20}$/.test(v)) return 'Enter a valid phone number (digits, spaces, + ( ) - only).';
+  if (f.type === 'number') {
+    if (isNaN(v)) return `${f.label} must be a number.`;
+    if (v < 0) return `${f.label} cannot be negative.`;
+    if (f.int && !Number.isInteger(v)) return `${f.label} must be a whole number.`;
+    if (f.max != null && v > f.max) return `${f.label} cannot exceed ${f.max}.`;
+  }
+  if (f.type === 'url' && !/^(https?:\/\/)?[\w-]+(\.[\w-]+)+(\/\S*)?$/i.test(v)) return 'Enter a valid website, e.g. www.example.com.';
+  if (f.type === 'date' && isNaN(new Date(v))) return 'Enter a valid date.';
+  return '';
+}
+async function saveForm(form) {
+  const mod = form.dataset.mod, id = form.dataset.id || null, c = MODS[mod];
+  const data = {}, errs = {};
+  c.fields.forEach(f => {
+    let v = form.elements[f.k].value.trim();
+    if (f.type === 'number' && v !== '') v = Number(v);
+    data[f.k] = v;
+    const e = validateField(f, v); if (e) errs[f.k] = e;
+  });
+  if (c.validate) Object.entries(c.validate(data, id)).forEach(([k, e]) => { if (!errs[k]) errs[k] = e; });
+  c.fields.forEach(f => {
+    const el = form.elements[f.k], box = $('#e_' + f.k, form);
+    if (errs[f.k]) { el.setAttribute('aria-invalid', 'true'); box.textContent = errs[f.k]; }
+    else { el.removeAttribute('aria-invalid'); box.textContent = ''; }
+  });
+  const bad = c.fields.find(f => errs[f.k]);
+  if (bad) { form.elements[bad.k].focus(); toast(`Please fix ${Object.keys(errs).length} field${Object.keys(errs).length > 1 ? 's' : ''} before saving.`, 'error'); return; }
+  if (c.duplicate) {
+    const dup = c.duplicate(data, id);
+    if (dup) {
+      const ok = await confirmBox({ title: 'Possible duplicate', ok: 'Save anyway', danger: false,
+        message: `${recordName(mod, dup)} (${dup.id}) already uses this email or phone number. Do you still want to save this ${c.singular.toLowerCase()}?` });
+      if (!ok) return;
+    }
+  }
+  if (c.beforeSave) c.beforeSave(data, id);
+  if (id) {
+    if (!findById(mod, id)) { closeModal(); return toast('That record was deleted before it could be saved.', 'error'); }
+    updateRecord(mod, id, data);
+    toast(`${c.singular} updated successfully.`);
+  } else {
+    const r = createRecord(mod, data);
+    LS(mod).page = 1;
+    toast(`${c.singular} "${recordName(mod, r)}" created successfully.`);
+  }
+  closeModal();
+  render();
+}
+
+/* =========================================================
+   11. RECORD DETAILS & ACTIONS
+   ========================================================= */
+function activitiesFor(col, id) {
+  const key = col + ':' + id;
+  return DB.activities.filter(a => a.rel === key).sort((a, b) => (b.due || '').localeCompare(a.due || ''));
+}
+function activityList(list, preset) {
+  return `<div class="row" style="justify-content:space-between;margin:18px 0 8px"><h3 class="sec-t" style="margin:0">Activities (${list.length})</h3>
+    <button class="btn sm" data-act="create" data-mod="activities" data-rel="${esc(preset)}">${icon('plus', 'sm')} Add activity</button></div>` +
+    (list.length ? `<ul class="feed">${list.map(a => `<li><span class="ic">${icon(a.type === 'Call' ? 'phone' : a.type === 'Meeting' ? 'calendar' : a.type === 'Note' ? 'note' : 'activities', 'sm')}</span>
+      <div style="flex:1;min-width:0"><button class="link" data-act="view" data-mod="activities" data-id="${esc(a.id)}">${esc(a.subject)}</button>
+      <div class="small muted">${esc(a.type)} · ${dueCell(a)} · ${esc(a.assigned)}</div></div>${badge(a.status)}</li>`).join('')}</ul>` : '<p class="muted">No activities linked to this record yet.</p>');
+}
+function relatedDealsTable(deals) {
+  return `<h3 class="sec-t">Deals (${deals.length})</h3>` + (deals.length ? `<div class="tw"><table class="mini"><thead><tr><th scope="col">Deal</th><th scope="col">Stage</th><th scope="col">Amount</th><th scope="col">Closing</th></tr></thead><tbody>
+    ${deals.map(d => `<tr><td>${viewLink('deals', d)}</td><td>${badge(d.stage)}</td><td>${money(d.amount)}</td><td>${fmtDate(d.closingDate)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No deals linked.</p>');
+}
+function openDetails(mod, id) {
+  if (mod === 'accounts') { closeModal(); return go('accounts', { accountId: id }); }
+  const c = MODS[mod], r = findById(mod, id);
+  if (!r) return toast('That record no longer exists.', 'error');
+  closeMenus(); hideGlobal();
+  const dl = c.details(r).map(([l, v, full]) => `<div class="${full ? 'full' : ''}"><dt>${esc(l)}</dt><dd>${v}</dd></div>`).join('');
+  let quick = '';
+  if (mod === 'leads') quick = `<div class="row" style="margin-bottom:12px"><label for="qs-status">Lead Status</label><select class="sel" id="qs-status" data-change="quick" data-mod="leads" data-id="${esc(id)}" data-k="status">${optList(LEAD_STATUSES, r.status)}</select>
+    ${r.status !== 'Converted' ? `<button class="btn sm" data-act="convert" data-id="${esc(id)}">${icon('convert', 'sm')} Convert lead</button>` : '<span class="small muted">This lead has been converted.</span>'}</div>`;
+  if (mod === 'deals') quick = `<div class="row" style="margin-bottom:12px"><label for="qs-stage">Stage</label><select class="sel" id="qs-stage" data-change="quick" data-mod="deals" data-id="${esc(id)}" data-k="stage">${optList(STAGE_NAMES, r.stage)}</select></div>`;
+  if (mod === 'activities' && r.status !== 'Completed') quick = `<div class="row" style="margin-bottom:12px"><button class="btn sm primary" data-act="complete" data-id="${esc(id)}">${icon('check', 'sm')} Mark as completed</button></div>`;
+  const related = (c.related ? c.related(r) : '') + (mod !== 'activities' && mod !== 'campaigns' ? activityList(activitiesFor(mod, id), mod + ':' + id) : '');
+  openModal({
+    title: recordName(mod, r), size: 'lg',
+    body: `${quick}<dl class="dl">${dl}</dl>${related}`,
+    footer: `<button type="button" class="btn danger" data-act="delete" data-mod="${mod}" data-id="${esc(id)}">${icon('trash', 'sm')} Delete</button>
+      <div class="spacer"></div><button type="button" class="btn" data-act="modal-close">Close</button>
+      <button type="button" class="btn primary" data-act="edit" data-mod="${mod}" data-id="${esc(id)}">${icon('edit', 'sm')} Edit</button>`
+  });
+}
+async function removeRecord(mod, id) {
+  const c = MODS[mod], r = findById(mod, id);
+  if (!r) return;
+  let extra = '';
+  if (mod === 'accounts') {
+    const nc = DB.contacts.filter(x => x.accountId === id).length, nd = DB.deals.filter(x => x.accountId === id).length;
+    if (nc || nd) extra = ` ${nc} contact(s) and ${nd} deal(s) will stay but will no longer be linked to an account.`;
+  }
+  const ok = await confirmBox({ title: `Delete ${c.singular.toLowerCase()}?`, message: `"${recordName(mod, r)}" will be removed from this session. This cannot be undone.${extra}` });
+  if (!ok) return;
+  deleteRecord(mod, id);
+  closeModal();
+  if (mod === 'accounts' && UI.accountId === id) UI.accountId = null;
+  toast(`${c.singular} deleted successfully.`);
+  render();
+}
+function quickUpdate(mod, id, k, v) {
+  const patch = { [k]: v };
+  if (mod === 'deals' && k === 'stage') patch.probability = (STAGES.find(s => s.n === v) || {}).p ?? 0;
+  updateRecord(mod, id, patch);
+  toast(mod === 'deals' ? `Deal stage updated to ${v}.` : `${MODS[mod].singular} ${k === 'status' ? 'status' : k} updated to ${v}.`);
+}
+async function convertLead(id) {
+  const l = findById('leads', id);
+  if (!l) return;
+  const existing = DB.accounts.find(a => a.name.trim().toLowerCase() === (l.company || '').trim().toLowerCase());
+  const ok = await confirmBox({ title: 'Convert lead?', ok: 'Convert', danger: false,
+    message: `${fullName(l)} will become a contact${existing ? ` under the existing account "${existing.name}"` : ` and a new account "${l.company}" will be created`}. The lead status will change to Converted.` });
+  if (!ok) return;
+  const acc = existing || createRecord('accounts', { name: l.company, industry: l.industry, type: 'Prospect', phone: l.phone, website: '', revenue: '', employees: '',
+    billing: '', city: l.city, state: '', country: '', owner: l.owner, description: `Created from lead ${l.id}.`, tags: [], transitions: [] });
+  createRecord('contacts', { firstName: l.firstName, lastName: l.lastName, accountId: acc.id, email: l.email, phone: l.phone, mobile: l.mobile, title: l.title,
+    department: '', source: l.source, owner: l.owner, address: l.city, notes: `Converted from lead ${l.id}. ${l.description || ''}`.trim() });
+  updateRecord('leads', id, { status: 'Converted' });
+  closeModal();
+  toast(`Lead converted. Contact created under ${acc.name}.`);
+  render();
+}
+function moveCard(mod, id, val) {
+  const k = MODS[mod].kanban, r = findById(mod, id);
+  if (!r || r[k.field] === val) return;
+  quickUpdate(mod, id, k.field, val);
+  render();
+}
+
+/* =========================================================
+   12. GLOBAL SEARCH
+   ========================================================= */
+function globalSearch(q) {
+  q = q.trim().toLowerCase();
+  if (q.length < 2) return [];
+  const out = [];
+  ['leads', 'contacts', 'accounts', 'deals', 'campaigns'].forEach(col => {
+    DB[col].forEach(r => { if (MODS[col].search(r).toLowerCase().includes(q)) out.push({ col, r }); });
+  });
+  return out.slice(0, 25);
+}
+function showGlobal() {
+  const inp = $('#gsearch'), box = $('#gresults'), q = inp.value;
+  if (q.trim().length < 2) return hideGlobal();
+  const res = globalSearch(q);
+  const sub = ({ col, r }) => col === 'leads' ? r.company : col === 'contacts' ? accountName(r.accountId) : col === 'accounts' ? r.industry : col === 'deals' ? `${money(r.amount)} · ${r.stage}` : r.status;
+  box.innerHTML = res.length ? res.map(x => `<button class="gres" data-act="view" data-mod="${x.col}" data-id="${esc(x.r.id)}">${icon(MODS[x.col].icon, 'sm')}<span><span>${esc(recordName(x.col, x.r))}</span><small>${esc(MODS[x.col].singular)} · ${esc(sub(x) || '')}</small></span></button>`).join('')
+    : `<div class="gres-empty">No records match “${esc(q)}”.</div>`;
+  box.hidden = false;
+  announce(res.length ? `${res.length} result${res.length > 1 ? 's' : ''} found` : 'No results');
+}
+function hideGlobal() { $('#gresults').hidden = true; }
+
+/* =========================================================
+   13. HOME DASHBOARD
+   ========================================================= */
+function bars(items, tone = 'blue') {
+  const max = Math.max(1, ...items.map(i => i.value));
+  return `<ul class="bars">${items.map(i => `<li><span>${esc(i.label)}</span><span class="bt" aria-hidden="true"><span class="bf f-${i.tone || tone}" style="width:${(i.value / max * 100).toFixed(1)}%"></span></span><span class="bv">${esc(i.display ?? i.value)}</span></li>`).join('')}</ul>`;
+}
+function kpi(label, value, ic, foot = '') {
+  return `<div class="card kpi"><div class="l">${icon(ic, 'sm')}${esc(label)}</div><div class="v">${esc(value)}</div>${foot ? `<div class="f">${esc(foot)}</div>` : ''}</div>`;
+}
+function leadsBySource() {
+  const src = [...new Set([...LEAD_SOURCES, ...DB.leads.map(l => l.source).filter(Boolean)])];
+  return src.map(s => ({ label: s, value: DB.leads.filter(l => l.source === s).length }));
+}
+function renderHome() {
+  const m = metrics();
+  const pipe = STAGES.map(s => { const d = DB.deals.filter(x => x.stage === s.n); return { label: s.n, value: d.reduce((a, x) => a + Number(x.amount || 0), 0), display: `${d.length} · ${money0(d.reduce((a, x) => a + Number(x.amount || 0), 0))}`, tone: s.tone === 'teal' ? 'teal' : s.tone }; });
+  const recentActs = DB.activities.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
+  const recentLeads = DB.leads.slice().sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 6);
+  const recentDeals = DB.deals.slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6);
+  return `<div class="page-h"><h2>Welcome back, Training User</h2><span class="count">Here's what's happening in your CRM today, ${fmtDate(todayISO())}.</span></div>
+  <div class="kpis">
+    ${kpi('Total Leads', m.leads, 'leads')}${kpi('Total Contacts', m.contacts, 'contacts')}${kpi('Total Accounts', m.accounts, 'accounts')}
+    ${kpi('Total Deals', m.deals, 'deals')}${kpi('Open Deals', m.openDeals, 'zap', 'Not Closed Won / Lost')}
+    ${kpi('Open Pipeline Value', money0(m.pipeline), 'reports', 'Sum of open deal amounts')}${kpi('Closed Revenue', money0(m.closedRevenue), 'check', 'Sum of Closed Won deals')}
+  </div>
+  <div class="dash">
+    <section class="card c8"><div class="card-h"><h3>Sales Pipeline</h3><button class="btn sm ghost" data-act="goto-kanban">Open pipeline ${icon('arrow', 'sm')}</button></div><div class="card-b">${bars(pipe)}</div></section>
+    <section class="card c4"><div class="card-h"><h3>Lead Status Overview</h3></div><div class="card-b">${bars(LEAD_STATUSES.map(s => ({ label: s, value: DB.leads.filter(l => l.status === s).length, tone: TONES[s] === 'gray' ? 'gray' : TONES[s] })))}</div></section>
+    <section class="card c4"><div class="card-h"><h3>Lead Source Overview</h3></div><div class="card-b">${bars(leadsBySource(), 'purple')}</div></section>
+    <section class="card c4"><div class="card-h"><h3>Recent Activities</h3><button class="btn sm ghost" data-act="nav" data-mod="activities">View all</button></div><div class="card-b">
+      ${recentActs.length ? `<ul class="feed">${recentActs.map(a => `<li><span class="ic">${icon(a.type === 'Call' ? 'phone' : a.type === 'Meeting' ? 'calendar' : a.type === 'Note' ? 'note' : 'activities', 'sm')}</span><div style="min-width:0;flex:1"><button class="link" data-act="view" data-mod="activities" data-id="${esc(a.id)}">${esc(a.subject)}</button><div class="small muted">${esc(a.type)} · ${dueCell(a)}</div></div></li>`).join('')}</ul>` : emptyState('No activities', 'Create a task, call or meeting.')}</div></section>
+    <section class="card c4"><div class="card-h"><h3>Recent Leads</h3><button class="btn sm ghost" data-act="nav" data-mod="leads">View all</button></div><div class="card-b tw">
+      ${recentLeads.length ? `<table class="mini"><thead><tr><th scope="col">Lead</th><th scope="col">Company</th><th scope="col">Status</th></tr></thead><tbody>${recentLeads.map(l => `<tr><td>${viewLink('leads', l)}</td><td>${esc(l.company)}</td><td>${badge(l.status)}</td></tr>`).join('')}</tbody></table>` : emptyState('No leads', 'Create a lead to get started.')}</div></section>
+    <section class="card c12"><div class="card-h"><h3>Recent Deals</h3><button class="btn sm ghost" data-act="nav" data-mod="deals">View all</button></div><div class="card-b tw">
+      ${recentDeals.length ? `<table class="mini"><thead><tr><th scope="col">Deal Name</th><th scope="col">Account</th><th scope="col">Amount</th><th scope="col">Stage</th><th scope="col">Owner</th><th scope="col">Expected Closing</th></tr></thead><tbody>${recentDeals.map(d => `<tr><td>${viewLink('deals', d)}</td><td>${accLink(d.accountId)}</td><td>${money(d.amount)}</td><td>${badge(d.stage)}</td><td>${esc(d.owner)}</td><td>${fmtDate(d.closingDate)}</td></tr>`).join('')}</tbody></table>` : emptyState('No deals', 'Create a deal to build your pipeline.')}</div></section>
+  </div>`;
+}
+
+/* =========================================================
+   14. ACCOUNT WORKSPACE (Insights view)
+   ========================================================= */
+function accountData(a) {
+  const deals = DB.deals.filter(d => d.accountId === a.id);
+  const contacts = DB.contacts.filter(c => c.accountId === a.id);
+  const keys = new Set(['accounts:' + a.id, ...deals.map(d => 'deals:' + d.id), ...contacts.map(c => 'contacts:' + c.id)]);
+  const acts = DB.activities.filter(x => keys.has(x.rel));
+  const won = deals.filter(d => d.stage === 'Closed Won'), lost = deals.filter(d => d.stage === 'Closed Lost'), open = deals.filter(isOpenDeal);
+  const wonRev = won.reduce((s, d) => s + Number(d.amount || 0), 0), openRev = open.reduce((s, d) => s + Number(d.amount || 0), 0);
+  const since = isoDate(addDays(-45));
+  const recent = acts.filter(x => (x.due || '') >= since || x.createdAt.slice(0, 10) >= since).length;
+  const value = clamp(Math.round(20 + Math.min(45, wonRev / 1500) + Math.min(35, Number(a.revenue || 0) / 1.5e6)), 0, 100);
+  const intent = clamp(Math.round(15 + open.length * 20 + Math.min(25, openRev / 2000)), 0, 100);
+  const engagement = clamp(Math.round(10 + recent * 12 + contacts.length * 6), 0, 100);
+  const overall = Math.round((value + intent + engagement) / 3);
+  const engLabel = engagement >= 70 ? 'Highly Engaged' : engagement >= 40 ? 'Moderately Engaged' : 'Low Engagement';
+  const segments = [];
+  if (value >= 70) segments.push('High Value');
+  if (won.length && PRODUCTS.some(p => !won.some(d => d.name.includes(p)))) segments.push('Cross-Sell Opportunity');
+  if (engagement >= 70) segments.push('Highly Engaged');
+  if ((open.length && recent === 0) || lost.length > won.length) segments.push('At-Risk Account');
+  if (!deals.length) segments.push('New Relationship');
+  return { deals, contacts, acts, won, lost, open, wonRev, openRev, value, intent, engagement, overall, engLabel, segments };
+}
+function ring(value, size, color, label, big) {
+  const r = (size - 12) / 2, c = 2 * Math.PI * r, off = c * (1 - value / 100), h = size / 2;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" role="img" aria-label="${esc(label)}: ${value} out of 100">
+    <circle cx="${h}" cy="${h}" r="${r}" fill="none" stroke="#e8eef9" stroke-width="${big ? 11 : 8}"/>
+    <circle cx="${h}" cy="${h}" r="${r}" fill="none" stroke="${color}" stroke-width="${big ? 11 : 8}" stroke-linecap="round" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" transform="rotate(-90 ${h} ${h})"/>
+    <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="${big ? 16 : 13}" font-weight="600" fill="#1d2939">${value}${big ? '/100' : ''}</text></svg>`;
+}
+function renderAccount(id) {
+  const a = findById('accounts', id), D = accountData(a);
+  const tags = [...(a.tags || []), a.type, a.industry, D.engLabel, ...D.segments.filter(s => s === 'Cross-Sell Opportunity')].filter(Boolean);
+  const TABS = [['insights', 'Insights'], ['email', 'Email'], ['activities', 'Activities'], ['deals', 'Deals'], ['campaigns', 'Campaigns'], ['contacts', 'Contacts'], ['voice', 'Voice of the Customer']];
+  const tabs = `<div class="views" role="tablist" aria-label="Account sections" style="padding:0 12px;margin:0">${TABS.map(([k, l]) =>
+    `<button role="tab" id="at-${k}" aria-selected="${UI.accTab === k}" aria-controls="ap-panel" tabindex="${UI.accTab === k ? 0 : -1}" data-act="acc-tab" data-tab="${k}">${l}${k === 'deals' ? ` (${D.deals.length})` : k === 'contacts' ? ` (${D.contacts.length})` : k === 'activities' ? ` (${D.acts.length})` : ''}</button>`).join('')}</div>`;
+  return `<div class="card"><div class="acc-h">
+      <button class="icon-btn" data-act="nav" data-mod="accounts" aria-label="Back to accounts list">${icon('back')}</button>
+      <div class="acc-av" aria-hidden="true">${esc(initials(a.name).slice(0, 1))}</div>
+      <div class="acc-title"><h2>${esc(a.name)} <button class="icon-btn" data-act="edit" data-mod="accounts" data-id="${esc(a.id)}" aria-label="Edit account ${esc(a.name)}">${icon('edit', 'sm')}</button></h2>
+        <div class="row">${tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</div>
+        <div class="small muted" style="margin-top:6px">Owner: ${esc(a.owner)} · ${esc([a.city, a.country].filter(Boolean).join(', ') || 'No location')} · ${esc(a.website || 'No website')}</div></div>
+      <div class="acc-money"><div><b>${money(D.wonRev)}</b><small>Revenue generated (${D.won.length} won ${D.won.length === 1 ? 'deal' : 'deals'})</small></div>
+        <div><b>${money(D.openRev)}</b><small>Revenue in pipeline (${D.open.length} open)</small></div></div>
+      <div class="row"><button class="btn" data-act="enrich">${icon('zap', 'sm')} Enrich data</button><button class="btn danger" data-act="delete" data-mod="accounts" data-id="${esc(a.id)}">${icon('trash', 'sm')} Delete</button></div>
+    </div>${tabs}</div>
+    <div class="acc-wrap"><div id="ap-panel" role="tabpanel" aria-labelledby="at-${UI.accTab}">${accountTab(a, D)}</div>
+    <aside class="card" aria-label="Account highlights">${accountSide(a, D)}</aside></div>`;
+}
+function accountTab(a, D) {
+  const add = (mod, label, preset) => `<div class="card-h"><h3>${label}</h3><button class="btn sm" data-act="create" data-mod="${mod}" ${preset}>${icon('plus', 'sm')} Add</button></div>`;
+  switch (UI.accTab) {
+    case 'email': return `<div class="card">${emptyState('Email is not connected', 'This training simulator does not send or receive real email. Use the Activities tab to log calls, meetings and notes.', 'mail')}</div>`;
+    case 'voice': return `<div class="card">${emptyState('No survey responses', 'Voice of the Customer is a demonstration area — no customer surveys or feedback exist in this dataset.', 'info')}</div>`;
+    case 'activities': return `<div class="card">${add('activities', 'Activities', `data-rel="accounts:${esc(a.id)}"`)}<div class="card-b">${D.acts.length ? `<div class="tw"><table class="mini"><thead><tr><th scope="col">Subject</th><th scope="col">Type</th><th scope="col">Related</th><th scope="col">Due</th><th scope="col">Status</th></tr></thead><tbody>${D.acts.map(x => `<tr><td>${viewLink('activities', x)}</td><td>${badge(x.type)}</td><td>${relLink(x.rel)}</td><td>${dueCell(x)}</td><td>${badge(x.status)}</td></tr>`).join('')}</tbody></table></div>` : emptyState('No activities', 'Log a call, meeting, task or note for this account.')}</div></div>`;
+    case 'deals': return `<div class="card">${add('deals', 'Deals', `data-account="${esc(a.id)}"`)}<div class="card-b">${D.deals.length ? `<div class="tw"><table class="mini"><thead><tr><th scope="col">Deal</th><th scope="col">Contact</th><th scope="col">Amount</th><th scope="col">Stage</th><th scope="col">Closing</th></tr></thead><tbody>${D.deals.map(d => `<tr><td>${viewLink('deals', d)}</td><td>${conLink(d.contactId)}</td><td>${money(d.amount)}</td><td>${badge(d.stage)}</td><td>${fmtDate(d.closingDate)}</td></tr>`).join('')}</tbody></table></div>` : emptyState('No deals yet', 'This account has no deals. Add one to start tracking revenue.')}</div></div>`;
+    case 'contacts': return `<div class="card">${add('contacts', 'Contacts', `data-account="${esc(a.id)}"`)}<div class="card-b">${D.contacts.length ? `<div class="tw"><table class="mini"><thead><tr><th scope="col">Name</th><th scope="col">Title</th><th scope="col">Email</th><th scope="col">Phone</th></tr></thead><tbody>${D.contacts.map(c => `<tr><td>${viewLink('contacts', c)}</td><td>${dash(c.title)}</td><td>${mail(c.email)}</td><td>${dash(c.phone)}</td></tr>`).join('')}</tbody></table></div>` : emptyState('No contacts', 'Add the people you work with at this account.')}</div></div>`;
+    case 'campaigns': {
+      const leads = DB.leads.filter(l => l.campaignId && (l.company || '').toLowerCase() === a.name.toLowerCase());
+      const camps = [...new Set(leads.map(l => l.campaignId))].map(cid => findById('campaigns', cid)).filter(Boolean);
+      return `<div class="card"><div class="card-h"><h3>Campaigns</h3></div>${camps.length ? `<div class="card-b"><table class="mini"><thead><tr><th scope="col">Campaign</th><th scope="col">Status</th></tr></thead><tbody>${camps.map(c => `<tr><td>${viewLink('campaigns', c)}</td><td>${badge(c.status)}</td></tr>`).join('')}</tbody></table></div>` : emptyState('No campaign touchpoints', 'No leads from this company are linked to a campaign in the demo dataset.', 'campaigns')}</div>`;
+    }
+    default: return insightsHTML(a, D);
+  }
+}
+function insightsHTML(a, D) {
+  const closed = [...D.won, ...D.lost].sort((x, y) => (y.closingDate || '').localeCompare(x.closingDate || '')).slice(0, 5);
+  const ownedProducts = D.won.map(d => PRODUCTS.find(p => d.name.includes(p))).filter(Boolean);
+  const recs = PRODUCTS.filter(p => !ownedProducts.includes(p)).slice(0, 3).map((p, i) => {
+    const wonElsewhere = DB.deals.filter(d => d.stage === 'Closed Won' && d.name.includes(p) && d.accountId !== a.id);
+    const avg = wonElsewhere.length ? wonElsewhere.reduce((s, d) => s + Number(d.amount), 0) / wonElsewhere.length : PRODUCT_PRICE[p];
+    const prob = clamp(Math.round(D.engagement * 0.4 + D.intent * 0.3 + 12 - i * 8), 5, 95);
+    const refs = [...new Set(wonElsewhere.map(d => d.accountId))].map(x => findById('accounts', x)).filter(Boolean).slice(0, 3);
+    return { p, type: i === 0 && ownedProducts.length ? 'Next buy' : 'Cross-Sell', prob, avg, refs };
+  });
+  const transitions = a.transitions || [];
+  return `<div class="card ins">
+    <section><h3 style="margin:0 0 2px">Account Score</h3><p class="small muted" style="margin:0 0 6px">Demo score from won revenue, annual revenue, open pipeline, contacts and recent activities.</p>
+      <div class="rings"><figure>${ring(D.overall, 120, '#3468E8', 'Overall score', true)}<figcaption>Overall Score</figcaption></figure>
+      <figure>${ring(D.value, 76, '#7b8cf2', 'Value')}<figcaption>Value</figcaption></figure>
+      <figure>${ring(D.intent, 76, '#f0a142', 'Intent')}<figcaption>Intent</figcaption></figure>
+      <figure>${ring(D.engagement, 76, '#e57ad6', 'Engagement')}<figcaption>Engagement</figcaption></figure></div></section>
+    <section><h3 style="margin:0 0 6px">Segments</h3>${D.segments.length ? `<ul class="seg-list">${D.segments.map(s => `<li>${esc(s)}</li>`).join('')}</ul>` : '<p class="muted">No segments apply.</p>'}</section>
+    <section><h3 style="margin:0 0 6px">Major Transition</h3>
+      ${transitions.length ? transitions.map(([f, t]) => `<div class="trans"><span class="pill">${esc(f)}</span><span class="won">${icon('arrow', 'sm')}</span><span class="pill">${esc(t)}</span></div>`).join('') : '<p class="muted">No recorded transitions for this account.</p>'}
+      <div class="small muted" style="margin-top:8px">Current engagement: <b style="color:var(--ink)">${esc(D.engLabel)}</b></div></section>
+    <section><h3 style="margin:0 0 6px">Latest 5 Closed Deals</h3>${closed.length ? `<ul class="closed-list">${closed.map(d => `<li><span class="${d.stage === 'Closed Won' ? 'won' : 'lost'}" title="${esc(d.stage)}">${icon(d.stage === 'Closed Won' ? 'up' : 'down', 'sm')}</span><span class="sr-only">${esc(d.stage)}:</span><span style="flex:1;min-width:0">${viewLink('deals', d)}<div class="small muted">${money(d.amount)} · ${fmtDate(d.closingDate)}</div></span></li>`).join('')}</ul>` : '<p class="muted">This account has no closed deals yet.</p>'}</section>
+    <section style="grid-column:1/-1"><h3 style="margin:0 0 4px">Top recommendations</h3><p class="small muted" style="margin:0 0 10px">Demo recommendations based on products this account has not bought, its engagement and wins at similar accounts.</p>
+      ${recs.length ? `<div class="recs">${recs.map(r => `<div class="rec"><b>${esc(r.type)}</b><div class="prod"><span><b>${esc(r.p)}</b><div class="small muted">${D.won.length ? 'Not yet purchased' : 'Suggested starter product'}</div></span><span class="chip" aria-hidden="true">Zy</span></div>
+        <div class="kv"><span>Purchase probability</span><b>${r.prob}%</b></div><div class="kv"><span>Potential revenue</span><b>${money0(r.avg)}</b></div>
+        <div class="kv" style="align-items:center"><span>Reference accounts</span><span class="row" style="gap:4px">${r.refs.length ? r.refs.map(x => `<span class="chip" title="${esc(x.name)}" aria-hidden="true">${esc(x.name.slice(0, 2))}</span><span class="sr-only">${esc(x.name)}</span>`).join('') : '<span class="small">—</span>'}</span></div></div>`).join('')}</div>` : '<p class="muted">This account already owns every product in the demo catalogue.</p>'}</section>
+  </div>`;
+}
+function accountSide(a, D) {
+  const T = [['highlights', 'Highlights'], ['timeline', 'Timeline'], ['notes', 'Notes']];
+  let body;
+  if (UI.sideTab === 'timeline') {
+    const ev = [...D.acts.map(x => ({ at: x.createdAt, t: `${x.type}: ${x.subject}`, s: x.status })), ...D.deals.map(d => ({ at: d.createdAt, t: `Deal created: ${d.name}`, s: d.stage })),
+      { at: a.createdAt, t: 'Account created', s: '' }].sort((x, y) => y.at.localeCompare(x.at));
+    body = `<ul class="feed">${ev.map(e => `<li><span class="ic">${icon('calendar', 'sm')}</span><div><div>${esc(e.t)}</div><div class="small muted">${fmtDateTime(e.at)}${e.s ? ' · ' + esc(e.s) : ''}</div></div></li>`).join('')}</ul>`;
+  } else if (UI.sideTab === 'notes') {
+    const notes = D.acts.filter(x => x.type === 'Note').sort((x, y) => y.createdAt.localeCompare(x.createdAt));
+    body = `<form id="note-form" data-id="${esc(a.id)}"><label for="note-text" class="small muted">Add a note to this account</label>
+      <textarea id="note-text" class="inp" style="height:80px;padding:8px;margin:4px 0 8px" required></textarea><button class="btn sm primary" type="submit">Save note</button></form>
+      <div class="err-text" id="note-err" role="alert"></div>
+      ${notes.length ? `<ul class="feed" style="margin-top:10px">${notes.map(n => `<li><span class="ic">${icon('note', 'sm')}</span><div><div>${esc(n.description || n.subject)}</div><div class="small muted">${fmtDateTime(n.createdAt)} · ${esc(n.assigned)}</div></div></li>`).join('')}</ul>` : '<p class="muted small">No notes yet.</p>'}`;
+  } else {
+    body = D.open.length ? D.open.sort((x, y) => (x.closingDate || '').localeCompare(y.closingDate || '')).map(d => `<div class="hl"><div class="row" style="justify-content:space-between"><span class="ongo">Ongoing · ${esc(d.stage)}</span><span class="chip" title="${esc(d.owner)}" aria-hidden="true">${esc(initials(d.owner))}</span><span class="sr-only">Owner ${esc(d.owner)}</span></div>
+      <div style="margin:4px 0">${viewLink('deals', d)} — ${money(d.amount)}</div><div class="small muted">Closing ${fmtDate(d.closingDate)}</div></div>`).join('') : '<p class="muted small">No open deals for this account.</p>';
+  }
+  return `<div class="views" role="tablist" aria-label="Account side panel" style="padding:0 10px;margin:0">${T.map(([k, l]) => `<button role="tab" id="st-${k}" aria-selected="${UI.sideTab === k}" tabindex="${UI.sideTab === k ? 0 : -1}" data-act="side-tab" data-tab="${k}">${l}</button>`).join('')}</div>
+    <div class="card-b" role="tabpanel" aria-labelledby="st-${UI.sideTab}">${body}</div>`;
+}
+
+/* =========================================================
+   15. REPORTS & ANALYTICS
+   ========================================================= */
+function reportDefs() {
+  const sum = arr => arr.reduce((s, d) => s + Number(d.amount || 0), 0);
+  const inds = [...new Set(DB.accounts.map(a => a.industry || 'Unspecified'))].sort();
+  return [
+    { id: 'ls', title: 'Leads by Status', col: 'Leads', rows: LEAD_STATUSES.map(s => [s, DB.leads.filter(l => l.status === s).length]) },
+    { id: 'lsrc', title: 'Leads by Source', col: 'Leads', rows: leadsBySource().map(x => [x.label, x.value]) },
+    { id: 'ds', title: 'Deals by Stage', col: 'Deals', rows: STAGE_NAMES.map(s => [s, DB.deals.filter(d => d.stage === s).length]) },
+    { id: 'rs', title: 'Revenue by Deal Stage', col: 'Amount', money: true, rows: STAGE_NAMES.map(s => [s, sum(DB.deals.filter(d => d.stage === s))]) },
+    { id: 'ai', title: 'Accounts by Industry', col: 'Accounts', rows: inds.map(i => [i, DB.accounts.filter(a => (a.industry || 'Unspecified') === i).length]) },
+    { id: 'as', title: 'Activities by Status', col: 'Activities', rows: ACT_STATUSES.map(s => [s, DB.activities.filter(a => a.status === s).length]) }
+  ];
+}
+function renderReports() {
+  const tones = ['blue', 'purple', 'teal', 'green', 'amber', 'orange'];
+  return `<div class="page-h"><h2>Reports</h2><span class="count">Calculated live from the current in-memory dataset.</span><div class="spacer"></div>
+    <button class="btn" data-act="export-reports">${icon('download', 'sm')} Export all reports</button></div>
+    <div class="dash">${reportDefs().map((r, i) => {
+      const total = r.rows.reduce((s, x) => s + x[1], 0);
+      return `<section class="card c6"><div class="card-h"><h3>${esc(r.title)}</h3><button class="btn sm" data-act="export-report" data-id="${r.id}" aria-label="Export ${esc(r.title)} as CSV">${icon('download', 'sm')} CSV</button></div>
+      <div class="card-b">${bars(r.rows.map(x => ({ label: x[0], value: x[1], display: r.money ? money0(x[1]) : x[1] })), tones[i])}
+      <details style="margin-top:10px"><summary class="small" style="cursor:pointer">Show summary table</summary><table class="mini" style="margin-top:6px"><thead><tr><th scope="col">Group</th><th scope="col">${esc(r.col)}</th><th scope="col">Share</th></tr></thead><tbody>
+      ${r.rows.map(x => `<tr><td>${esc(x[0])}</td><td>${r.money ? money(x[1]) : x[1]}</td><td>${total ? Math.round(x[1] / total * 100) : 0}%</td></tr>`).join('')}
+      <tr><th scope="row">Total</th><td><b>${r.money ? money(total) : total}</b></td><td>100%</td></tr></tbody></table></details></div></section>`;
+    }).join('')}</div>`;
+}
+function exportReport(r) {
+  const total = r.rows.reduce((s, x) => s + x[1], 0);
+  return toCSV(['Report', 'Group', r.col, 'Share %'], r.rows.map(x => [r.title, x[0], x[1], total ? Math.round(x[1] / total * 100) : 0]));
+}
+function weeklyLeads() {
+  const out = [];
+  for (let w = 7; w >= 0; w--) {
+    const end = addDays(-w * 7), start = addDays(-w * 7 - 6);
+    const s = isoDate(start), e = isoDate(end);
+    out.push({ label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), value: DB.leads.filter(l => { const d = l.createdAt.slice(0, 10); return d >= s && d <= e; }).length });
+  }
+  return out;
+}
+function columnChart(data, title) {
+  const W = 560, H = 200, P = 28, max = Math.max(1, ...data.map(d => d.value)), bw = (W - P * 2) / data.length;
+  return `<svg viewBox="0 0 ${W} ${H + 30}" width="100%" role="img" aria-label="${esc(title)}: ${data.map(d => `${d.label} ${d.value}`).join(', ')}">
+    <line x1="${P}" y1="${H}" x2="${W - P}" y2="${H}" stroke="#e1e6ee"/>
+    ${data.map((d, i) => { const h = (d.value / max) * (H - 30), x = P + i * bw + bw * 0.2; return `<rect x="${x.toFixed(1)}" y="${(H - h).toFixed(1)}" width="${(bw * 0.6).toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="#3468E8"/>
+      <text x="${(x + bw * 0.3).toFixed(1)}" y="${(H - h - 6).toFixed(1)}" font-size="11" text-anchor="middle" fill="#3d4b60">${d.value}</text>
+      <text x="${(x + bw * 0.3).toFixed(1)}" y="${H + 18}" font-size="11" text-anchor="middle" fill="#56657c">${esc(d.label)}</text>`; }).join('')}</svg>`;
+}
+function renderAnalytics() {
+  const m = metrics();
+  const conv = m.leads ? (m.converted / m.leads * 100).toFixed(1) : '0.0';
+  const winRate = (m.wonCount + m.lostCount) ? Math.round(m.wonCount / (m.wonCount + m.lostCount) * 100) : 0;
+  const owners = OWNERS.map(o => {
+    const won = DB.deals.filter(d => d.owner === o && d.stage === 'Closed Won');
+    const open = DB.deals.filter(d => d.owner === o && isOpenDeal(d));
+    return { o, leads: DB.leads.filter(l => l.owner === o).length, won: won.reduce((s, d) => s + Number(d.amount), 0), open: open.reduce((s, d) => s + Number(d.amount), 0), acts: DB.activities.filter(a => a.assigned === o && a.status === 'Completed').length };
+  });
+  const srcConv = leadsBySource().filter(x => x.value).map(x => { const c = DB.leads.filter(l => l.source === x.label && l.status === 'Converted').length; return [x.label, x.value, c, Math.round(c / x.value * 100)]; });
+  return `<div class="page-h"><h2>Analytics</h2><span class="count">All figures reflect the current session's data.</span></div>
+  <div class="kpis">
+    ${kpi('Total Leads', m.leads, 'leads')}${kpi('Lead Conversion Rate', conv + '%', 'convert', 'Leads with status Converted ÷ all leads')}
+    ${kpi('Total Accounts', m.accounts, 'accounts')}${kpi('Active Opportunities', m.openDeals, 'deals', 'Deals not Closed Won / Lost')}
+    ${kpi('Open Pipeline Value', money0(m.pipeline), 'reports', 'Sum of open deal amounts')}${kpi('Closed Revenue', money0(m.closedRevenue), 'check', 'Sum of Closed Won deal amounts')}
+    ${kpi('Activities Completed', m.actsDone, 'activities', 'Status = Completed')}${kpi('Upcoming Activities', m.actsUpcoming, 'calendar', 'Not completed, due today or later')}
+  </div>
+  <div class="dash">
+    <section class="card c8"><div class="card-h"><h3>Leads created per week</h3><span class="small muted">Based on lead Created Time · last 8 weeks</span></div><div class="card-b">${columnChart(weeklyLeads(), 'Leads created per week')}</div></section>
+    <section class="card c4"><div class="card-h"><h3>Win / loss</h3><span class="small muted">Win rate ${winRate}%</span></div><div class="card-b">
+      ${bars([{ label: 'Closed Won', value: m.wonCount, tone: 'green' }, { label: 'Closed Lost', value: m.lostCount, tone: 'red' }, { label: 'Open', value: m.openDeals, tone: 'blue' }])}
+      <p class="small muted">Win rate = Closed Won ÷ (Closed Won + Closed Lost).</p></div></section>
+    <section class="card c6"><div class="card-h"><h3>Sales performance by owner</h3></div><div class="card-b tw"><table class="mini"><thead><tr><th scope="col">Owner</th><th scope="col">Leads</th><th scope="col">Closed revenue</th><th scope="col">Open pipeline</th><th scope="col">Activities done</th></tr></thead><tbody>
+      ${owners.map(o => `<tr><td>${esc(o.o)}</td><td>${o.leads}</td><td>${money0(o.won)}</td><td>${money0(o.open)}</td><td>${o.acts}</td></tr>`).join('')}</tbody></table></div></section>
+    <section class="card c6"><div class="card-h"><h3>Lead source performance</h3></div><div class="card-b tw"><table class="mini"><thead><tr><th scope="col">Source</th><th scope="col">Leads</th><th scope="col">Converted</th><th scope="col">Conversion</th></tr></thead><tbody>
+      ${srcConv.map(r => `<tr><td>${esc(r[0])}</td><td>${r[1]}</td><td>${r[2]}</td><td>${r[3]}%</td></tr>`).join('')}</tbody></table></div></section>
+  </div>`;
+}
+
+/* =========================================================
+   16. SETTINGS
+   ========================================================= */
+const DEMO_FEATURES = [
+  ['Workflow Rules', 'Automate field updates, emails and tasks when records meet criteria.'],
+  ['Assignment Rules', 'Route new leads to owners by territory, source or round-robin.'],
+  ['Blueprint', 'Define a guided, stage-by-stage process for deals.'],
+  ['Validation Rules', 'Block saves that break business rules.'],
+  ['Layout Rules', 'Show or hide fields based on other field values.'],
+  ['Client Script', 'Run custom JavaScript inside record pages.'],
+  ['Approval Process', 'Require manager approval for discounts or large deals.'],
+  ['Webforms', 'Capture leads from your website into the CRM.']
+];
+function renderSettings() {
+  return `<div class="page-h"><h2>Settings</h2><span class="count">Preferences apply to this browser session only.</span></div>
+  <div class="set-grid">
+    <section class="card"><div class="card-h"><h3>General Preferences</h3></div><form class="card-b" id="prefs-form">
+      <div class="fld"><label for="pref-per">Default records per page</label><select class="sel" id="pref-per" style="width:100%">${[10, 25, 50, 100].map(n => `<option ${SETTINGS.perPage === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      <div class="fld"><label for="pref-date">Date format</label><select class="sel" id="pref-date" style="width:100%">${optList([{ v: 'mdy', l: 'Oct 15, 2026' }, { v: 'dmy', l: '15/10/2026' }, { v: 'iso', l: '2026-10-15' }], SETTINGS.dateFmt)}</select></div>
+      <button class="btn primary" type="submit">Save preferences</button></form></section>
+    <section class="card"><div class="card-h"><h3>Display Preferences</h3></div><div class="card-b">
+      <fieldset style="border:0;padding:0;margin:0"><legend class="small muted" style="margin-bottom:6px">Table row density</legend>
+      <label class="toggle"><input type="radio" name="density" value="compact" data-change="density" ${SETTINGS.density === 'compact' ? 'checked' : ''}> Compact</label>
+      <label class="toggle"><input type="radio" name="density" value="comfortable" data-change="density" ${SETTINGS.density === 'comfortable' ? 'checked' : ''}> Comfortable</label></fieldset></div></section>
+    <section class="card"><div class="card-h"><h3>Lead Statuses</h3></div><div class="card-b"><div class="pill-list">${LEAD_STATUSES.map(s => badge(s)).join('')}</div>
+      <p class="small muted">Statuses are fixed in this demo because list views and reports depend on them.</p></div></section>
+    <section class="card"><div class="card-h"><h3>Lead Sources</h3></div><div class="card-b"><div class="pill-list">${LEAD_SOURCES.map(s => {
+      const used = DB.leads.some(l => l.source === s) || DB.contacts.some(c => c.source === s) || DB.deals.some(d => d.source === s);
+      return `<span class="tag">${esc(s)}${used ? '' : ` <button class="link x-btn" data-act="del-source" data-v="${esc(s)}" aria-label="Remove source ${esc(s)}">×</button>`}</span>`;
+    }).join('')}</div>
+      <form id="source-form" class="row" style="margin-top:10px"><label class="sr-only" for="new-source">New lead source</label><input class="inp" id="new-source" placeholder="New source name" style="flex:1;min-width:140px" maxlength="40"><button class="btn" type="submit">Add source</button></form>
+      <p class="small muted">Sources in use cannot be removed.</p></div></section>
+    <section class="card"><div class="card-h"><h3>Deal Stages</h3></div><div class="card-b tw"><table class="mini"><thead><tr><th scope="col">Stage</th><th scope="col">Default probability</th><th scope="col">Type</th><th scope="col">Deals</th></tr></thead><tbody>
+      ${STAGES.map(s => `<tr><td>${badge(s.n)}</td><td>${s.p}%</td><td>${s.n.startsWith('Closed') ? 'Closed' : 'Open'}</td><td>${DB.deals.filter(d => d.stage === s.n).length}</td></tr>`).join('')}</tbody></table></div></section>
+    <section class="card"><div class="card-h"><h3>Users and Owners</h3></div><div class="card-b tw"><table class="mini"><thead><tr><th scope="col">Name</th><th scope="col">Leads</th><th scope="col">Deals</th><th scope="col">Open activities</th></tr></thead><tbody>
+      ${OWNERS.map(o => `<tr><td>${esc(o)}${o === CURRENT_USER ? ' <span class="badge t-blue">You</span>' : ''}</td><td>${DB.leads.filter(l => l.owner === o).length}</td><td>${DB.deals.filter(d => d.owner === o).length}</td><td>${DB.activities.filter(a => a.assigned === o && a.status !== 'Completed').length}</td></tr>`).join('')}</tbody></table>
+      <form id="owner-form" class="row" style="margin-top:10px"><label class="sr-only" for="new-owner">New user name</label><input class="inp" id="new-owner" placeholder="New user full name" style="flex:1;min-width:140px" maxlength="40"><button class="btn" type="submit">Add user</button></form></div></section>
+    <section class="card" style="grid-column:1/-1"><div class="card-h"><h3>Customization &amp; Automation</h3><span class="badge t-amber">Demonstration only</span></div><div class="card-b">
+      <p class="small muted" style="margin-top:0">These areas mirror the configuration menu of a full CRM. In this simulator they are explanatory previews — no automation actually runs.</p>
+      <div class="demo-cards">${DEMO_FEATURES.map(([t, d], i) => `<div class="demo-card"><b>${esc(t)}</b><p>${esc(d)}</p><button class="btn sm" data-act="demo-feature" data-i="${i}">View demo</button></div>`).join('')}</div></div></section>
+    <section class="card" style="grid-column:1/-1"><div class="card-h"><h3>About This Demo</h3></div><div class="card-b">
+      <p style="margin-top:0">CRM Training Simulator is a self-contained, browser-only training environment inspired by enterprise CRM products. It is not affiliated with or connected to Zoho or any other vendor.</p>
+      <ul class="small" style="padding-left:18px;line-height:1.8"><li>All records are fictional and stored only in this tab's memory.</li><li>Refreshing the page restores the original dataset and returns to the sign-in screen.</li>
+      <li>No data is sent to any server; email, telephony and enrichment are not connected.</li><li>The sign-in is a demonstration and does not provide real security.</li></ul>
+      <p class="small muted">Current session: ${DB.leads.length} leads · ${DB.contacts.length} contacts · ${DB.accounts.length} accounts · ${DB.deals.length} deals · ${DB.activities.length} activities · ${DB.campaigns.length} campaigns.</p></div></section>
+  </div>`;
+}
+
+/* =========================================================
+   17. EVENT HANDLING
+   ========================================================= */
+const ACTIONS = {
+  nav: t => { closeModal(); go(t.dataset.mod); },
+  menu: t => toggleMenu(t),
+  'toggle-side': () => { const s = $('#sidebar'), open = !s.classList.contains('open'); s.classList.toggle('open', open); $('#scrim').hidden = !open; $('#menu-toggle').setAttribute('aria-expanded', String(open)); if (open) s.querySelector('.nav-btn').focus(); },
+  'close-side': () => closeSidebar(),
+  logout: () => logout(),
+  'modal-close': () => closeModal(),
+  create: t => {
+    const preset = {};
+    if (t.dataset.rel) preset.rel = t.dataset.rel;
+    if (t.dataset.account) preset.accountId = t.dataset.account;
+    openForm(t.dataset.mod, null, preset);
+  },
+  view: t => { hideGlobal(); closeMenus(); if ($('#modal').open && t.dataset.mod === 'accounts') closeModal(); openDetails(t.dataset.mod, t.dataset.id); },
+  edit: t => openForm(t.dataset.mod, t.dataset.id),
+  delete: t => removeRecord(t.dataset.mod, t.dataset.id),
+  complete: t => { const a = findById('activities', t.dataset.id); if (!a) return; updateRecord('activities', a.id, { status: 'Completed' }); toast('Activity completed.'); closeModal(); render(); },
+  convert: t => convertLead(t.dataset.id),
+  'list-view': t => { const s = LS(t.dataset.mod); s.view = t.dataset.view; s.page = 1; render(); $('#v-' + t.dataset.mod + '-' + t.dataset.view).focus(); },
+  'toggle-filters': t => { const s = LS(t.dataset.mod); s.showFilters = !s.showFilters; render(); },
+  'clear-filters': t => { const s = LS(t.dataset.mod); s.filters = {}; s.page = 1; render(); toast('Filters cleared.', 'info'); $('#ft-' + t.dataset.mod).focus(); },
+  'list-dir': t => { const s = LS(t.dataset.mod); s.dir = s.dir === 'asc' ? 'desc' : 'asc'; s.page = 1; render(); },
+  'list-refresh': () => { render(); toast('List refreshed.', 'info'); },
+  layout: t => { LS(t.dataset.mod).layout = t.dataset.layout; render(); },
+  page: t => {
+    const m = t.dataset.mod, s = LS(m); s.page = Math.max(1, s.page + Number(t.dataset.dir)); render();
+    const me = document.getElementById(t.id), other = $(t.dataset.dir === '1' ? '#pg-prev-' + m : '#pg-next-' + m);
+    (me && !me.disabled ? me : other || $('#page-title')).focus();
+  },
+  export: t => {
+    const mod = t.dataset.mod, c = MODS[mod], rows = getRows(mod);
+    if (!rows.length) return toast('Nothing to export — no records match the current view.', 'error');
+    downloadCSV(`${mod}-${todayISO()}.csv`, toCSV(c.csv.map(x => x[0]), rows.map(r => c.csv.map(x => x[1](r)))));
+  },
+  'bulk-owner': async t => {
+    const mod = t.dataset.mod, s = LS(mod), o = $('#bo-' + mod).value, f = MODS[mod].owner;
+    [...s.sel].forEach(id => findById(mod, id) && updateRecord(mod, id, { [f]: o }));
+    toast(`${s.sel.size} record(s) assigned to ${o}.`); s.sel.clear(); render(); focusSelAll(mod);
+  },
+  'bulk-status': t => {
+    const mod = t.dataset.mod, s = LS(mod), b = MODS[mod].bulk.status, v = $('#bs-' + mod).value;
+    [...s.sel].forEach(id => { if (findById(mod, id)) { const p = { [b.k]: v }; if (mod === 'deals') p.probability = (STAGES.find(x => x.n === v) || {}).p ?? 0; updateRecord(mod, id, p); } });
+    toast(`${s.sel.size} record(s) updated to ${v}.`); s.sel.clear(); render(); focusSelAll(mod);
+  },
+  'bulk-delete': async t => {
+    const mod = t.dataset.mod, s = LS(mod), n = s.sel.size;
+    const ok = await confirmBox({ title: `Delete ${n} record(s)?`, message: `The ${n} selected ${MODS[mod].label.toLowerCase()} will be removed from this session. This cannot be undone.` });
+    if (!ok) return;
+    [...s.sel].forEach(id => deleteRecord(mod, id));
+    s.sel.clear(); toast(`${n} record(s) deleted.`); render(); focusSelAll(mod);
+  },
+  'bulk-clear': t => { LS(t.dataset.mod).sel.clear(); render(); focusSelAll(t.dataset.mod); },
+  'goto-view': t => { const s = LS(t.dataset.mod); s.view = t.dataset.view; s.page = 1; go(t.dataset.mod); },
+  'goto-kanban': () => { LS('deals').layout = 'kanban'; go('deals'); },
+  'acc-tab': t => { UI.accTab = t.dataset.tab; render(); $('#at-' + UI.accTab).focus(); },
+  'side-tab': t => { UI.sideTab = t.dataset.tab; render(); $('#st-' + UI.sideTab).focus(); },
+  enrich: () => toast('Demo only: data enrichment is not connected to any external service in this simulator.', 'info'),
+  'export-report': t => { const r = reportDefs().find(x => x.id === t.dataset.id); downloadCSV(`report-${r.title.toLowerCase().replace(/\W+/g, '-')}-${todayISO()}.csv`, exportReport(r)); },
+  'export-reports': () => {
+    const rows = [];
+    reportDefs().forEach(r => { const total = r.rows.reduce((s, x) => s + x[1], 0); r.rows.forEach(x => rows.push([r.title, x[0], x[1], total ? Math.round(x[1] / total * 100) : 0])); });
+    downloadCSV(`crm-reports-${todayISO()}.csv`, toCSV(['Report', 'Group', 'Value', 'Share %'], rows));
+  },
+  'del-source': t => { const i = LEAD_SOURCES.indexOf(t.dataset.v); if (i >= 0) { LEAD_SOURCES.splice(i, 1); toast(`Lead source "${t.dataset.v}" removed.`); render(); } },
+  'demo-feature': t => {
+    const [title, desc] = DEMO_FEATURES[Number(t.dataset.i)];
+    openModal({ title: title + ' (demo)', body: `<p><span class="badge t-amber">Demonstration only</span></p><p>${esc(desc)}</p>
+      <div class="card" style="padding:12px;background:#f8fafc"><div class="small muted">Example configuration</div>
+      <p style="margin:6px 0 0"><b>When</b> a Lead is created <b>and</b> Lead Source is <i>Trade Show</i><br><b>Then</b> assign to <i>Bob Ross</i> and create a follow-up task due in 2 days.</p></div>
+      <p class="small muted">In this training simulator no rules are executed. Use it to discuss how the feature would be configured in a production CRM.</p>`,
+      footer: '<button type="button" class="btn primary" data-act="modal-close">Got it</button>' });
+  }
+};
+function focusSelAll(mod) { const el = $('#sa-' + mod) || $('#q-' + mod); if (el) el.focus(); }
+function closeSidebar() { $('#sidebar').classList.remove('open'); $('#scrim').hidden = true; $('#menu-toggle').setAttribute('aria-expanded', 'false'); }
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.menu-wrap')) closeMenus();
+  if (!e.target.closest('.gsearch')) hideGlobal();
+  const t = e.target.closest('[data-act]');
+  if (!t || t.disabled) return;
+  if (t.tagName === 'INPUT' || t.tagName === 'SELECT') return;
+  const fn = ACTIONS[t.dataset.act];
+  if (fn) { e.preventDefault(); fn(t, e); }
+});
+
+document.addEventListener('change', e => {
+  const t = e.target, k = t.dataset.change;
+  if (!k) return;
+  const mod = t.dataset.mod, s = mod ? LS(mod) : null;
+  switch (k) {
+    case 'list-sort': s.sort = t.value; s.page = 1; render(); break;
+    case 'list-per': s.per = Number(t.value); s.page = 1; render(); break;
+    case 'list-filter': s.filters[t.dataset.k] = t.value; s.page = 1; render(); break;
+    case 'sel': t.checked ? s.sel.add(t.dataset.id) : s.sel.delete(t.dataset.id); render(); break;
+    case 'sel-all': {
+      const all = getRows(mod), start = (s.page - 1) * s.per;
+      all.slice(start, start + s.per).forEach(r => t.checked ? s.sel.add(r.id) : s.sel.delete(r.id));
+      render(); break;
+    }
+    case 'kmove': moveCard(mod, t.dataset.id, t.value); { const el = document.getElementById('km-' + t.dataset.id); if (el) el.focus(); } break;
+    case 'quick': quickUpdate(mod, t.dataset.id, t.dataset.k, t.value); openDetails(mod, t.dataset.id); render(); break;
+    case 'density': SETTINGS.density = t.value; document.body.className = t.value; toast('Row density updated.'); break;
+  }
+});
+
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.id === 'gsearch') return showGlobal();
+  if (t.dataset.input === 'list-q') { const s = LS(t.dataset.mod); s.q = t.value; s.page = 1; clearTimeout(UI.qTimer); UI.qTimer = setTimeout(render, 250); }
+});
+
+document.addEventListener('submit', e => {
+  const f = e.target;
+  if (f.method === 'dialog') return;
+  e.preventDefault();
+  if (f.id === 'login-form') return login();
+  if (f.id === 'rec-form') return saveForm(f);
+  if (f.id === 'note-form') {
+    const txt = $('#note-text').value.trim();
+    if (!txt) { $('#note-err').textContent = 'Write a note before saving.'; $('#note-text').setAttribute('aria-invalid', 'true'); $('#note-text').focus(); return; }
+    createRecord('activities', { subject: 'Note — ' + (txt.length > 50 ? txt.slice(0, 50) + '…' : txt), type: 'Note', rel: 'accounts:' + f.dataset.id, assigned: CURRENT_USER,
+      due: todayISO(), priority: 'Normal', status: 'Completed', description: txt });
+    toast('Note added.'); render(); const n = $('#note-text'); if (n) n.focus(); return;
+  }
+  if (f.id === 'prefs-form') {
+    SETTINGS.perPage = Number($('#pref-per').value); SETTINGS.dateFmt = $('#pref-date').value;
+    Object.values(UI.lists).forEach(s => { s.per = SETTINGS.perPage; s.page = 1; });
+    toast('Preferences saved for this session.'); render(); return;
+  }
+  if (f.id === 'source-form') {
+    const v = $('#new-source').value.trim();
+    if (!v) return toast('Enter a source name.', 'error');
+    if (LEAD_SOURCES.some(s => s.toLowerCase() === v.toLowerCase())) return toast('That lead source already exists.', 'error');
+    LEAD_SOURCES.push(v); toast(`Lead source "${v}" added.`); render(); return;
+  }
+  if (f.id === 'owner-form') {
+    const v = $('#new-owner').value.trim();
+    if (!v) return toast('Enter a user name.', 'error');
+    if (OWNERS.some(o => o.toLowerCase() === v.toLowerCase())) return toast('That user already exists.', 'error');
+    OWNERS.push(v); toast(`User "${v}" added and available as an owner.`); render();
+  }
+});
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (!$('#gresults').hidden) { hideGlobal(); $('#gsearch').focus(); }
+    const open = $$('.menu').find(m => !m.hidden);
+    if (open) { closeMenus(); const b = document.querySelector(`[data-menu="${open.id}"]`); if (b) b.focus(); }
+    if ($('#sidebar').classList.contains('open')) { closeSidebar(); $('#menu-toggle').focus(); }
+  }
+  // Arrow-key navigation inside tab lists.
+  const tab = e.target.closest && e.target.closest('[role="tab"]');
+  if (tab && ['ArrowRight', 'ArrowLeft', 'Home', 'End'].includes(e.key)) {
+    const tabs = $$('[role="tab"]', tab.parentElement), i = tabs.indexOf(tab);
+    const next = e.key === 'Home' ? tabs[0] : e.key === 'End' ? tabs[tabs.length - 1] : tabs[(i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length];
+    e.preventDefault(); next.focus(); next.click();
+  }
+  if (e.key === 'ArrowDown' && e.target.id === 'gsearch') { const f = $('#gresults .gres'); if (f) { e.preventDefault(); f.focus(); } }
+});
+
+document.addEventListener('focusout', e => {
+  const wrap = e.target.closest && e.target.closest('.menu-wrap');
+  if (wrap && e.relatedTarget && !wrap.contains(e.relatedTarget)) closeMenus();
+  const gs = e.target.closest && e.target.closest('.gsearch');
+  if (gs && e.relatedTarget && !gs.contains(e.relatedTarget)) hideGlobal();
+});
+
+// Kanban drag-and-drop
+document.addEventListener('dragstart', e => {
+  const card = e.target.closest && e.target.closest('[data-drag-id]');
+  if (!card) return;
+  e.dataTransfer.setData('text/plain', card.dataset.dragId);
+  e.dataTransfer.effectAllowed = 'move';
+  card.classList.add('dragging');
+});
+document.addEventListener('dragend', () => { $$('.dragging').forEach(c => c.classList.remove('dragging')); $$('.kcol.over').forEach(c => c.classList.remove('over')); });
+document.addEventListener('dragover', e => { const col = e.target.closest && e.target.closest('[data-drop]'); if (!col) return; e.preventDefault(); col.classList.add('over'); });
+document.addEventListener('dragleave', e => { const col = e.target.closest && e.target.closest('[data-drop]'); if (col && !col.contains(e.relatedTarget)) col.classList.remove('over'); });
+document.addEventListener('drop', e => {
+  const col = e.target.closest && e.target.closest('[data-drop]');
+  if (!col) return;
+  e.preventDefault();
+  moveCard(col.dataset.mod, e.dataTransfer.getData('text/plain'), col.dataset.drop);
+});
+
+/* =========================================================
+   18. AUTHENTICATION (demo only)
+   ========================================================= */
+function login() {
+  const email = $('#login-email').value.trim().toLowerCase(), pass = $('#login-pass').value, err = $('#login-err');
+  const fail = msg => {
+    err.textContent = msg; err.hidden = false;
+    $('#login-email').setAttribute('aria-invalid', String(!email || msg.includes('Incorrect')));
+    $('#login-pass').setAttribute('aria-invalid', 'true');
+    (!email ? $('#login-email') : $('#login-pass')).focus();
+  };
+  if (!email || !pass) return fail('Please enter both your email and password.');
+  if (email !== AUTH.email.toLowerCase() || pass !== AUTH.password) return fail('Incorrect email or password. Please try again.');
+  err.hidden = true;
+  $('#login-email').removeAttribute('aria-invalid'); $('#login-pass').removeAttribute('aria-invalid');
+  AUTHED = true;
+  $('#skip-link').href = '#main';
+  $('#login-pass').value = '';
+  setPwVisible(false);
+  $('#login-screen').hidden = true;
+  $('#app').hidden = false;
+  go('home');
+  toast('Signed in as Training User.');
+}
+function logout() {
+  closeMenus(); closeModal(); closeSidebar(); hideGlobal();
+  AUTHED = false;
+  $('#skip-link').href = '#login-main';
+  $('#app').hidden = true;
+  $('#login-screen').hidden = false;
+  $('#login-err').hidden = true;
+  document.title = 'CRM Training Simulator';
+  $('#login-email').focus();
+  toast('You have been logged out. Your session data is kept until the page is refreshed.', 'info');
+}
+function setPwVisible(v) {
+  const b = $('#pw-toggle');
+  $('#login-pass').type = v ? 'text' : 'password';
+  b.textContent = v ? 'Hide' : 'Show';
+  b.setAttribute('aria-pressed', String(v));
+  b.setAttribute('aria-label', v ? 'Hide password' : 'Show password');
+}
+$('#pw-toggle').addEventListener('click', () => setPwVisible($('#login-pass').type === 'password'));
+
+/* =========================================================
+   19. INIT
+   ========================================================= */
+(function init() {
+  $('#logo-1').innerHTML = icon('logo');
+  $('#login-feats').innerHTML = [['leads', 'Leads'], ['contacts', 'Contacts'], ['deals', 'Deals'], ['analytics', 'Analytics']]
+    .map(([i, l]) => `<li>${icon(i)}<span>${l}</span></li>`).join('');
+  buildShell();
+  seedData();
+  $('#login-email').focus();
+})();
+</script>
+</body>
+</html>
