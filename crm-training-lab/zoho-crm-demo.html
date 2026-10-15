@@ -13,7 +13,7 @@
   --primary:#3468E8; --primary-d:#2453c7; --bg:#F3F5F9; --card:#fff;
   --ink:#1d2939; --mut:#56657c; --line:#e1e6ee; --line-2:#eef1f6;
   --ok:#17693f; --warn:#8a5a00; --err:#b42a22;
-  --r:8px; --sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
+  --r:8px; color-scheme:light; --sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.05);
   --row:40px;
   font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
@@ -65,7 +65,7 @@ svg.i.sm{width:15px;height:15px}
    APP SHELL
    ========================================================= */
 .app{display:flex;min-height:100vh}
-.sidebar{width:224px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:40}
+.sidebar{width:224px;flex:none;background:var(--side);color:var(--side-ink);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;z-index:40;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 .brand{display:flex;align-items:center;gap:10px;padding:16px 16px 14px;color:#fff;font-weight:600;font-size:15px;border-bottom:1px solid rgba(255,255,255,.08)}
 .brand .logo-mark{width:30px;height:30px;border-radius:8px}
 .sidebar nav{padding:10px 8px;flex:1}
@@ -76,7 +76,7 @@ svg.i.sm{width:15px;height:15px}
 .nav-sep{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#a9b8d3;padding:14px 12px 6px}
 .side-foot{padding:12px 16px;font-size:11px;color:#a9b8d3;border-top:1px solid rgba(255,255,255,.08)}
 .shell{flex:1;min-width:0;display:flex;flex-direction:column}
-.topbar{position:sticky;top:0;z-index:30;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 20px;min-height:58px;flex-wrap:wrap}
+.topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;padding:10px 20px;min-height:58px;flex-wrap:wrap}
 .topbar h1{font-size:19px;margin:0;font-weight:600;flex:none}
 .topbar h1:focus{outline:none}
 .spacer{flex:1}
@@ -246,7 +246,7 @@ dialog[open]{display:flex;flex-direction:column}
 .sec-t{font-size:13px;font-weight:600;margin:18px 0 8px;color:#3d4b60;text-transform:uppercase;letter-spacing:.04em}
 
 /* Toasts */
-.toasts{position:fixed;right:16px;bottom:16px;display:flex;flex-direction:column;gap:8px;z-index:200;max-width:calc(100vw - 32px)}
+.toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:8px;z-index:200;max-width:calc(100vw - 32px)}
 .toast{display:flex;gap:9px;align-items:center;background:#1d2939;color:#fff;padding:10px 14px;border-radius:7px;box-shadow:0 8px 24px rgba(16,24,40,.25);font-size:13.5px;animation:tin .18s ease-out}
 .toast.error{background:#8f1f19}
 .toast.info{background:#23395B}
@@ -315,7 +315,7 @@ dialog[open]{display:flex;flex-direction:column}
   .c4,.c6,.c8{grid-column:span 12}
 }
 @media (max-width:600px){
-  main{padding:12px 12px 32px}
+  main{padding:12px 16px 32px}
   .topbar{padding:8px 12px}
   .topbar h1{font-size:17px}
   .feat{grid-template-columns:1fr}
@@ -1048,13 +1048,38 @@ function toCSV(headers, rows) {
   };
   return [headers, ...rows].map(r => r.map(cell).join(',')).join('\r\n');
 }
+// Export opens a dialog with Download and Copy: some hosted viewers block
+// script-started downloads, so copying to the clipboard is the fallback.
+let pendingCSV = null;
 function downloadCSV(name, csv) {
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  pendingCSV = { name, csv };
+  const lines = csv.split('\r\n').length - 1;
+  openModal({
+    title: 'Export CSV',
+    body: `<p style="margin-top:0"><b>${esc(name)}</b> · ${lines} data ${lines === 1 ? 'row' : 'rows'}</p>
+      <label for="csv-text" class="small muted">CSV preview (select all and copy, or use the buttons below)</label>
+      <textarea id="csv-text" class="inp" readonly style="width:100%;height:220px;padding:8px;font:12px/1.4 ui-monospace,Consolas,monospace;margin-top:4px">${esc(csv)}</textarea>
+      <p class="small muted">If Download does nothing in your browser view, use Copy CSV and paste into Excel or Google Sheets.</p>`,
+    footer: `<button type="button" class="btn" data-act="modal-close">Close</button>
+      <button type="button" class="btn" data-act="csv-copy">Copy CSV</button>
+      <button type="button" class="btn primary" data-act="csv-download">${icon('download', 'sm')} Download</button>`
+  });
+}
+function saveCSVFile() {
+  if (!pendingCSV) return;
+  const blob = new Blob(['﻿' + pendingCSV.csv], { type: 'text/csv;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  a.href = url; a.download = pendingCSV.name; document.body.appendChild(a); a.click(); a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  toast('CSV exported: ' + name);
+  toast('Download started: ' + pendingCSV.name);
+}
+function copyCSV() {
+  if (!pendingCSV) return;
+  const ta = $('#csv-text');
+  const fallback = () => { ta.focus(); ta.select(); toast('Text selected. Press Ctrl+C (Cmd+C on Mac) to copy.', 'info'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pendingCSV.csv).then(() => toast('CSV copied to clipboard.'), fallback);
+  else fallback();
 }
 
 function closeMenus() {
@@ -1809,6 +1834,8 @@ const ACTIONS = {
   'goto-kanban': () => { LS('deals').layout = 'kanban'; go('deals'); },
   'acc-tab': t => { UI.accTab = t.dataset.tab; render(); $('#at-' + UI.accTab).focus(); },
   'side-tab': t => { UI.sideTab = t.dataset.tab; render(); $('#st-' + UI.sideTab).focus(); },
+  'csv-download': () => saveCSVFile(),
+  'csv-copy': () => copyCSV(),
   enrich: () => toast('Demo only: data enrichment is not connected to any external service in this simulator.', 'info'),
   'export-report': t => { const r = reportDefs().find(x => x.id === t.dataset.id); downloadCSV(`report-${r.title.toLowerCase().replace(/\W+/g, '-')}-${todayISO()}.csv`, exportReport(r)); },
   'export-reports': () => {
