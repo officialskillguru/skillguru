@@ -9,3 +9,37 @@ entrypoint = "./functions/create-mentor/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/create-mentor/*.html" ]
+
+# Public / non-user-JWT endpoints. Each does its own validation:
+#   converse            - anonymous website voice agent (Zod + DB rate limiting)
+#   leads               - anonymous contact/enquiry form
+#   sync-knowledge-base - own admin-role check via get_current_roles()
+#   payment-webhook     - Razorpay HMAC signature over the raw body
+# All other functions keep the default verify_jwt = true.
+[functions.converse]
+verify_jwt = false
+
+[functions.leads]
+import_map = "./functions/deno.json"
+verify_jwt = false
+
+[functions.sync-knowledge-base]
+verify_jwt = false
+
+[functions.payment-webhook]
+verify_jwt = false
+
+[functions.admin-mentor-account]
+import_map = "./functions/deno.json"
+
+[functions.admin-users]
+import_map = "./functions/deno.json"
+
+[functions.health-check]
+import_map = "./functions/deno.json"
+
+[functions.invoice-download]
+import_map = "./functions/deno.json"
+
+[functions.set-own-password]
+import_map = "./functions/deno.json"

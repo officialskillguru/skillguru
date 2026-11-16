@@ -40,3 +40,5 @@ Thumbs.db
 lint*.txt
 typecheck*.txt
 repo-forensics-*.txt
+.env.old-project.bak
+SKILLGURU_REVIEW_CREDENTIALS.txt
