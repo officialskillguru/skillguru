@@ -40,7 +40,7 @@ export default function CareerGuidancePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-foreground">AI Career Guidance</h2>
+        <h1 className="text-2xl font-black text-foreground">AI Career Guidance</h1>
         <p className="mt-1 text-sm font-semibold text-muted-foreground">
           Get an honest, AI-generated assessment of your readiness for a target role, grounded in your real resume and courses.
         </p>

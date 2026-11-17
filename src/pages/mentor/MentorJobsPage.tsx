@@ -143,7 +143,7 @@ export default function MentorJobsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-foreground">Job Postings</h2>
+          <h1 className="text-2xl font-black text-foreground">Job Postings</h1>
           <p className="text-sm text-muted-foreground">Post openings and internships for your network and track applicants. New postings need admin approval before going live.</p>
         </div>
         <Button onClick={handleCreate} className="gap-2">

@@ -382,7 +382,13 @@ export default function AuthPage() {
   };
 
   if (session && status === "READY") {
-    const from = (location.state as { from?: string } | null)?.from ?? RouteResolver.getDashboard(authUser);
+    // Return to where the user came from: router state (protected-route
+    // redirects) or ?redirect= (e.g. "Enroll" on a course page). Only
+    // same-site relative paths are accepted, so this can't be abused as an
+    // open redirect ("//evil.com" or "https://..." are ignored).
+    const redirectParam = new URLSearchParams(location.search).get("redirect");
+    const safeRedirect = redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//") ? redirectParam : null;
+    const from = (location.state as { from?: string } | null)?.from ?? safeRedirect ?? RouteResolver.getDashboard(authUser);
     return <Navigate to={from} replace />;
   }
 

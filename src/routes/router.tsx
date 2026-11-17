@@ -70,6 +70,7 @@ const MentorPortalProfilePage = lazy(() => import("@/pages/mentor/MentorPortalPr
 const CounsellorPortalShellPage = lazy(() => import("@/components/counsellor/layout/CounsellorPortalShell").then((m) => ({ default: m.CounsellorPortalShell })));
 const CounsellorOverviewPage    = lazy(() => import("@/pages/counsellor/CounsellorOverviewPage"));
 const CounsellorStudentsPage    = lazy(() => import("@/pages/counsellor/CounsellorStudentsPage"));
+const CounsellorLeadsPage       = lazy(() => import("@/pages/counsellor/CounsellorLeadsPage"));
 const CounsellorMentorsPage     = lazy(() => import("@/pages/counsellor/CounsellorMentorsPage"));
 const CounsellorCoursesPage     = lazy(() => import("@/pages/counsellor/CounsellorCoursesPage"));
 const CounsellorJobsPage        = lazy(() => import("@/pages/counsellor/CounsellorJobsPage"));
@@ -207,6 +208,7 @@ export const router = createBrowserRouter([
           { index: true,        element: <Navigate to={routes.counsellor.dashboard} replace /> },
           { path: "dashboard",  element: withSuspense(<CounsellorOverviewPage />) },
           { path: "students",   element: withSuspense(<CounsellorStudentsPage />) },
+          { path: "leads",      element: withSuspense(<CounsellorLeadsPage />) },
           { path: "mentors",    element: withSuspense(<CounsellorMentorsPage />) },
           { path: "courses",    element: withSuspense(<CounsellorCoursesPage />) },
           { path: "jobs",       element: withSuspense(<CounsellorJobsPage />) },

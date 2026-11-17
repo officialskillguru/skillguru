@@ -298,6 +298,7 @@ export function CourseCurriculumEditor({
               onChange={(e) => setNewModuleTitle(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddModule()}
               placeholder="Module title"
+              aria-label="Module title"
               className="flex-1 rounded-md border border-border bg-card px-3 py-2 text-sm font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
             <button
@@ -308,10 +309,12 @@ export function CourseCurriculumEditor({
               {mutations.createModule.isPending ? <Loader2 className="size-4 animate-spin" /> : "Save"}
             </button>
             <button
+              type="button"
               onClick={() => { setAddingModule(false); setNewModuleTitle(""); }}
+              aria-label="Cancel adding module"
               className="text-muted-foreground hover:text-foreground"
             >
-              <X className="size-4" />
+              <X className="size-4" aria-hidden="true" />
             </button>
           </div>
         ) : (
@@ -609,11 +612,13 @@ function LessonForm({ courseId, moduleId, mutations, onDone }: { courseId: strin
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="Lesson title"
+          aria-label="Lesson title"
           className="flex-1 rounded-md border border-border bg-card px-2 py-1.5 text-xs font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         <select
           value={contentType}
           onChange={(e) => setContentType(e.target.value as Lesson["content_type"])}
+          aria-label="Lesson type"
           className="rounded-md border border-border bg-card px-2 py-1.5 text-xs font-bold text-foreground"
         >
           {contentTypes.map((ct) => (
@@ -627,6 +632,7 @@ function LessonForm({ courseId, moduleId, mutations, onDone }: { courseId: strin
           value={textContent}
           onChange={(e) => setTextContent(e.target.value)}
           placeholder="Lesson content..."
+          aria-label="Lesson content"
           rows={3}
           className="w-full rounded-md border border-border bg-card px-2 py-1.5 text-xs font-semibold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
@@ -636,6 +642,7 @@ function LessonForm({ courseId, moduleId, mutations, onDone }: { courseId: strin
         <input
           type="file"
           accept={contentType === "video" ? "video/mp4,video/webm,video/quicktime" : "application/pdf"}
+          aria-label={contentType === "video" ? "Lesson video file" : "Lesson PDF file"}
           onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           className="w-full text-xs font-semibold text-muted-foreground"
         />

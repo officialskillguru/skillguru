@@ -47,14 +47,14 @@ export function MissionControlHero({
           >
             Mission Control
           </motion.p>
-          <motion.h2 
+          <motion.h1 
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
             className="mt-2 text-3xl font-black md:text-4xl lg:text-5xl"
           >
             Welcome back{student?.name ? `, ${student.name.split(' ')[0]}` : ''}!
-          </motion.h2>
+          </motion.h1>
           {course && (
             <motion.div 
               initial={{ opacity: 0, x: -10 }}

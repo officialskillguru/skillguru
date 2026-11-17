@@ -17,7 +17,7 @@ export default function MyCoursesPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-black text-foreground">My Courses</h2>
+        <h1 className="text-2xl font-black text-foreground">My Courses</h1>
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

@@ -107,10 +107,10 @@ export default function StudentMentorsPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-1">
-        <h2 className="flex items-center gap-2 text-2xl font-black text-foreground">
+        <h1 className="flex items-center gap-2 text-2xl font-black text-foreground">
           <Users className="size-6 text-secondary" aria-hidden="true" />
           Mentors
-        </h2>
+        </h1>
         <p className="text-sm text-foreground/70">Connect with industry experts for 1:1 guidance and project reviews.</p>
       </div>
 

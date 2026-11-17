@@ -87,6 +87,7 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-6rem)] overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <h1 className="sr-only">Messages</h1>
       {/* Sidebar */}
       <div className="flex w-64 flex-none flex-col border-r border-border">
         <div className="border-b border-border px-4 py-3">

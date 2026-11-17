@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Auth Signup Flow Hardening', () => {
+  // These tests create REAL auth users and send real confirmation emails via
+  // the live Supabase project (and trip its email rate limit). Opt in only
+  // against a disposable/staging project.
+  test.skip(process.env.E2E_ALLOW_REAL_SIGNUP !== '1', 'set E2E_ALLOW_REAL_SIGNUP=1 to run real-signup tests');
   test('prevents duplicate submissions via single-flight lock', async ({ page }) => {
     // Intercept signup requests to simulate network delay
     await page.route('**/auth/v1/signup', async (route) => {

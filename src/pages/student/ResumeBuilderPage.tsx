@@ -33,7 +33,7 @@ export default function ResumeBuilderPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-black text-foreground">Resume Builder</h2>
+          <h1 className="text-2xl font-black text-foreground">Resume Builder</h1>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">Build a structured, ATS-friendly resume from your profile data.</p>
         </div>
         <div className="flex gap-2 print:hidden">
@@ -137,18 +137,18 @@ function ContactSection() {
   return (
     <SectionShell title="Contact & Professional Summary">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div><label className={labelCls}>Full Name</label><input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>Phone</label><input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>City</label><input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>State</label><input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>Country</label><input value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>LinkedIn URL</label><input value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>GitHub URL</label><input value={form.github_url} onChange={(e) => setForm({ ...form, github_url: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>Portfolio URL</label><input value={form.portfolio_url} onChange={(e) => setForm({ ...form, portfolio_url: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>Full Name</label><input aria-label="Full Name" value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>Phone</label><input aria-label="Phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>City</label><input aria-label="City" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>State</label><input aria-label="State" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>Country</label><input aria-label="Country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>LinkedIn URL</label><input aria-label="LinkedIn URL" value={form.linkedin_url} onChange={(e) => setForm({ ...form, linkedin_url: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>GitHub URL</label><input aria-label="GitHub URL" value={form.github_url} onChange={(e) => setForm({ ...form, github_url: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>Portfolio URL</label><input aria-label="Portfolio URL" value={form.portfolio_url} onChange={(e) => setForm({ ...form, portfolio_url: e.target.value })} className={inputCls} /></div>
       </div>
       <div>
         <label className={labelCls}>Professional Summary</label>
-        <textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={3} className={textareaCls} placeholder="A 2-3 sentence pitch about yourself..." />
+        <textarea aria-label="Professional Summary" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={3} className={textareaCls} placeholder="A 2-3 sentence pitch about yourself..." />
       </div>
       <button onClick={handleSave} disabled={updateContact.isPending} className="rounded-lg bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
         {updateContact.isPending ? <Loader2 className="size-4 animate-spin"  aria-hidden="true" /> : "Save"}
@@ -193,13 +193,13 @@ function EducationSection() {
   return (
     <SectionShell title="Education & Skills">
       <div className="grid gap-4 sm:grid-cols-2">
-        <div><label className={labelCls}>Degree / Program</label><input value={form.education} onChange={(e) => setForm({ ...form, education: e.target.value })} className={inputCls} placeholder="B.Tech Computer Science" /></div>
-        <div><label className={labelCls}>College / University</label><input value={form.college} onChange={(e) => setForm({ ...form, college: e.target.value })} className={inputCls} /></div>
-        <div><label className={labelCls}>Graduation Year</label><input type="number" value={form.graduation_year} onChange={(e) => setForm({ ...form, graduation_year: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>Degree / Program</label><input aria-label="Degree / Program" value={form.education} onChange={(e) => setForm({ ...form, education: e.target.value })} className={inputCls} placeholder="B.Tech Computer Science" /></div>
+        <div><label className={labelCls}>College / University</label><input aria-label="College / University" value={form.college} onChange={(e) => setForm({ ...form, college: e.target.value })} className={inputCls} /></div>
+        <div><label className={labelCls}>Graduation Year</label><input aria-label="Graduation Year" type="number" value={form.graduation_year} onChange={(e) => setForm({ ...form, graduation_year: e.target.value })} className={inputCls} /></div>
       </div>
       <div>
         <label className={labelCls}>Skills (comma separated)</label>
-        <input value={form.skillsText} onChange={(e) => setForm({ ...form, skillsText: e.target.value })} className={inputCls} placeholder="React, TypeScript, SQL" />
+        <input aria-label="Skills (comma separated)" value={form.skillsText} onChange={(e) => setForm({ ...form, skillsText: e.target.value })} className={inputCls} placeholder="React, TypeScript, SQL" />
       </div>
       <button onClick={handleSave} disabled={updateEducation.isPending} className="rounded-lg bg-primary px-4 py-2 text-xs font-black text-primary-foreground hover:bg-primary/90 disabled:opacity-50">
         {updateEducation.isPending ? <Loader2 className="size-4 animate-spin"  aria-hidden="true" /> : "Save"}
@@ -266,16 +266,16 @@ function ExperienceForm({ form, setForm, onSubmit, onCancel, pending }: { form: 
   return (
     <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
       <div className="grid gap-3 sm:grid-cols-2">
-        <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Job Title" className={inputCls} />
-        <input value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Company" className={inputCls} />
-        <input value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Location" className={inputCls} />
-        <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className={inputCls} />
-        {!form.is_current && <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className={inputCls} />}
+        <input aria-label="Job Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Job Title" className={inputCls} />
+        <input aria-label="Company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} placeholder="Company" className={inputCls} />
+        <input aria-label="Location" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} placeholder="Location" className={inputCls} />
+        <input aria-label="Start date" type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} className={inputCls} />
+        {!form.is_current && <input aria-label="End date" type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} className={inputCls} />}
       </div>
       <label className="flex items-center gap-2 text-xs font-bold text-foreground">
         <input type="checkbox" checked={form.is_current} onChange={(e) => setForm({ ...form, is_current: e.target.checked })} /> I currently work here
       </label>
-      <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Key responsibilities and achievements..." className={textareaCls} />
+      <textarea aria-label="Key responsibilities and achievements..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} placeholder="Key responsibilities and achievements..." className={textareaCls} />
       <div className="flex gap-2">
         <button type="submit" disabled={pending} className="flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-primary-foreground disabled:opacity-50">{pending ? <Loader2 className="size-3.5 animate-spin"  aria-hidden="true" /> : <Check className="size-3.5"  aria-hidden="true" />} Save</button>
         <button type="button" onClick={onCancel} className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-black text-muted-foreground"><X className="size-3.5"  aria-hidden="true" /> Cancel</button>
@@ -322,10 +322,10 @@ function ProjectsSection() {
         rows.map((row) =>
           editingId === row.id ? (
             <form key={row.id} onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Project Title" className={inputCls} />
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Description" className={textareaCls} />
-              <input value={form.techStackText} onChange={(e) => setForm({ ...form, techStackText: e.target.value })} placeholder="Tech stack (comma separated)" className={inputCls} />
-              <input value={form.project_url} onChange={(e) => setForm({ ...form, project_url: e.target.value })} placeholder="Project URL" className={inputCls} />
+              <input aria-label="Project Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Project Title" className={inputCls} />
+              <textarea aria-label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Description" className={textareaCls} />
+              <input aria-label="Tech stack" value={form.techStackText} onChange={(e) => setForm({ ...form, techStackText: e.target.value })} placeholder="Tech stack (comma separated)" className={inputCls} />
+              <input aria-label="Project URL" value={form.project_url} onChange={(e) => setForm({ ...form, project_url: e.target.value })} placeholder="Project URL" className={inputCls} />
               <div className="flex gap-2">
                 <button type="submit" disabled={mutations.update.isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-primary-foreground disabled:opacity-50">Save</button>
                 <button type="button" onClick={cancel} className="rounded-lg border border-border px-3 py-1.5 text-xs font-black text-muted-foreground">Cancel</button>
@@ -344,10 +344,10 @@ function ProjectsSection() {
       )}
       {adding && (
         <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-primary/30 bg-primary/5 p-4">
-          <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Project Title" className={inputCls} />
-          <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Description" className={textareaCls} />
-          <input value={form.techStackText} onChange={(e) => setForm({ ...form, techStackText: e.target.value })} placeholder="Tech stack (comma separated)" className={inputCls} />
-          <input value={form.project_url} onChange={(e) => setForm({ ...form, project_url: e.target.value })} placeholder="Project URL" className={inputCls} />
+          <input aria-label="Project Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Project Title" className={inputCls} />
+          <textarea aria-label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Description" className={textareaCls} />
+          <input aria-label="Tech stack" value={form.techStackText} onChange={(e) => setForm({ ...form, techStackText: e.target.value })} placeholder="Tech stack (comma separated)" className={inputCls} />
+          <input aria-label="Project URL" value={form.project_url} onChange={(e) => setForm({ ...form, project_url: e.target.value })} placeholder="Project URL" className={inputCls} />
           <div className="flex gap-2">
             <button type="submit" disabled={mutations.create.isPending} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-black text-primary-foreground disabled:opacity-50">Save</button>
             <button type="button" onClick={cancel} className="rounded-lg border border-border px-3 py-1.5 text-xs font-black text-muted-foreground">Cancel</button>
@@ -388,10 +388,10 @@ function CertificationsSection() {
 
   const form_fields = (
     <>
-      <input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Certification Name" className={inputCls} />
-      <input value={form.issuer} onChange={(e) => setForm({ ...form, issuer: e.target.value })} placeholder="Issuer" className={inputCls} />
-      <input type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} className={inputCls} />
-      <input value={form.credential_url} onChange={(e) => setForm({ ...form, credential_url: e.target.value })} placeholder="Credential URL" className={inputCls} />
+      <input aria-label="Certification Name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Certification Name" className={inputCls} />
+      <input aria-label="Issuer" value={form.issuer} onChange={(e) => setForm({ ...form, issuer: e.target.value })} placeholder="Issuer" className={inputCls} />
+      <input aria-label="Issue date" type="date" value={form.issue_date} onChange={(e) => setForm({ ...form, issue_date: e.target.value })} className={inputCls} />
+      <input aria-label="Credential URL" value={form.credential_url} onChange={(e) => setForm({ ...form, credential_url: e.target.value })} placeholder="Credential URL" className={inputCls} />
     </>
   );
 
@@ -465,9 +465,9 @@ function AchievementsSection() {
 
   const fields = (
     <>
-      <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Achievement Title" className={inputCls} />
-      <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Description" className={textareaCls} />
-      <input type="date" value={form.date_achieved} onChange={(e) => setForm({ ...form, date_achieved: e.target.value })} className={inputCls} />
+      <input aria-label="Achievement Title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Achievement Title" className={inputCls} />
+      <textarea aria-label="Description" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={2} placeholder="Description" className={textareaCls} />
+      <input aria-label="Date achieved" type="date" value={form.date_achieved} onChange={(e) => setForm({ ...form, date_achieved: e.target.value })} className={inputCls} />
     </>
   );
 

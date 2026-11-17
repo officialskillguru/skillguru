@@ -66,6 +66,7 @@ export function CourseBuilderWizard({ courseId: routeCourseId, initialStep }: Re
   if (!activeCourseId) {
     return (
       <div className="mx-auto max-w-3xl rounded-xl border border-border bg-card p-6 shadow-sm">
+        <h1 className="mb-4 text-2xl font-black text-foreground">Create a new course</h1>
         <BasicInfoStep course={null} onCreated={handleCreated} onDirtyChange={onDirtyChange} />
       </div>
     );
@@ -98,6 +99,7 @@ export function CourseBuilderWizard({ courseId: routeCourseId, initialStep }: Re
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[220px_1fr]">
+      <h1 className="text-2xl font-black text-foreground lg:col-span-2">Edit course</h1>
       <nav aria-label="Course builder steps" className="lg:sticky lg:top-24 lg:self-start">
         <ol className="grid gap-1">
           {BUILDER_STEPS.map((step, index) => {

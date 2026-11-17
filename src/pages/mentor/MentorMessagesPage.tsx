@@ -12,6 +12,7 @@ export default function MentorMessagesPage() {
 
   return (
     <div className="flex h-[calc(100vh-9.5rem)] min-h-[500px] overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <h1 className="sr-only">Messages</h1>
       <div className={`w-full flex-none border-r border-border lg:block lg:w-80 xl:w-96 ${conversationId ? "hidden" : "block"}`}>
         <ConversationList
           activeConversationId={conversationId}

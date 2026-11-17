@@ -33,9 +33,10 @@ const PROFILE_SUB_TABS = [
   "Sessions",
   "Security",
 ] as const;
-type ProfileSubTab = typeof PROFILE_SUB_TABS[number];
+type ProfileSubTab = (typeof PROFILE_SUB_TABS)[number];
 
-const inputClass = "w-full h-10 rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const inputClass =
+  "w-full h-10 rounded-md border border-border bg-background px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring";
 const labelClass = "text-xs font-black text-muted-foreground";
 
 export function ProfileTab() {
@@ -53,12 +54,18 @@ export function ProfileTab() {
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-black text-foreground">Mentor Profile</h2>
-      <div role="tablist" aria-label="Profile sections" className="flex flex-wrap gap-2 border-b border-border pb-3">
+      <h1 className="text-foreground text-2xl font-black">Mentor Profile</h1>
+      <div
+        role="tablist"
+        aria-label="Profile sections"
+        className="border-border flex flex-wrap gap-2 border-b pb-3"
+      >
         {PROFILE_SUB_TABS.map((tab, i) => (
           <button
             key={tab}
-            ref={(el) => { tabRefs.current[tab] = el; }}
+            ref={(el) => {
+              tabRefs.current[tab] = el;
+            }}
             role="tab"
             id={`mentor-profile-tab-${tab}`}
             aria-controls={`mentor-profile-panel-${tab}`}
@@ -66,15 +73,22 @@ export function ProfileTab() {
             tabIndex={subTab === tab ? 0 : -1}
             onClick={() => setSubTab(tab)}
             onKeyDown={(e) => handleKeyDown(e, i)}
-            className={`rounded-md px-3 py-1.5 text-xs font-black uppercase tracking-wide transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-              subTab === tab ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+            className={`focus-visible:ring-ring rounded-md px-3 py-1.5 text-xs font-black tracking-wide uppercase transition-colors focus-visible:ring-2 focus-visible:outline-none ${
+              subTab === tab
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:bg-muted"
             }`}
           >
             {tab}
           </button>
         ))}
       </div>
-      <div role="tabpanel" id={`mentor-profile-panel-${subTab}`} aria-labelledby={`mentor-profile-tab-${subTab}`} tabIndex={0}>
+      <div
+        role="tabpanel"
+        id={`mentor-profile-panel-${subTab}`}
+        aria-labelledby={`mentor-profile-tab-${subTab}`}
+        tabIndex={0}
+      >
         {subTab === "Basic Info" && <ProfileBasicInfo />}
         {subTab === "Experience" && <MentorExperienceSection />}
         {subTab === "Projects" && <MentorProjectsSection />}
@@ -88,7 +102,10 @@ export function ProfileTab() {
   );
 }
 
-function SkillsEditor({ skills, onChange }: Readonly<{ skills: string[]; onChange: (skills: string[]) => void }>) {
+function SkillsEditor({
+  skills,
+  onChange,
+}: Readonly<{ skills: string[]; onChange: (skills: string[]) => void }>) {
   const [draft, setDraft] = useState("");
 
   const addSkill = () => {
@@ -103,7 +120,10 @@ function SkillsEditor({ skills, onChange }: Readonly<{ skills: string[]; onChang
       <Label htmlFor="mentor-skill-input">Skills</Label>
       <div className="flex flex-wrap gap-1.5">
         {skills.map((skill) => (
-          <span key={skill} className="flex items-center gap-1 rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold text-secondary">
+          <span
+            key={skill}
+            className="bg-secondary/10 text-secondary flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold"
+          >
             {skill}
             <button
               type="button"
@@ -133,7 +153,7 @@ function SkillsEditor({ skills, onChange }: Readonly<{ skills: string[]; onChang
         <button
           type="button"
           onClick={addSkill}
-          className="shrink-0 rounded-md border border-border px-3 text-xs font-black text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="border-border text-foreground hover:bg-muted focus-visible:ring-ring shrink-0 rounded-md border px-3 text-xs font-black focus-visible:ring-2 focus-visible:outline-none"
         >
           Add
         </button>
@@ -173,8 +193,14 @@ function ProfileBasicInfo() {
     youtubeUrl: "",
   });
 
-  if (isMentorProfileLoading || isProfileLoading) return <Skeleton className="h-96 w-full rounded-xl" />;
-  if (!mentorProfile || !profile) return <div className="py-12 text-center text-sm font-semibold text-muted-foreground">Profile not found.</div>;
+  if (isMentorProfileLoading || isProfileLoading)
+    return <Skeleton className="h-96 w-full rounded-xl" />;
+  if (!mentorProfile || !profile)
+    return (
+      <div className="text-muted-foreground py-12 text-center text-sm font-semibold">
+        Profile not found.
+      </div>
+    );
 
   const startEditing = () => {
     setForm({
@@ -185,7 +211,8 @@ function ProfileBasicInfo() {
       country: profile.country ?? "",
       headline: mentorProfile.headline ?? "",
       company: mentorProfile.company ?? "",
-      experienceYears: mentorProfile.experience_years != null ? String(mentorProfile.experience_years) : "",
+      experienceYears:
+        mentorProfile.experience_years != null ? String(mentorProfile.experience_years) : "",
       bio: mentorProfile.bio ?? "",
       skills: mentorProfile.skills ?? [],
       linkedinUrl: mentorProfile.linkedin_url ?? "",
@@ -246,12 +273,16 @@ function ProfileBasicInfo() {
   const publicProfilePath = profile.fullName ? `/mentors/${createSlug(profile.fullName)}` : null;
 
   return (
-    <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="flex flex-wrap items-center gap-6 border-b border-border pb-6">
+    <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
+      <div className="border-border flex flex-wrap items-center gap-6 border-b pb-6">
         <div className="relative">
-          <div className="grid size-24 place-items-center overflow-hidden rounded-full border-2 border-border bg-muted text-muted-foreground">
+          <div className="border-border bg-muted text-muted-foreground grid size-24 place-items-center overflow-hidden rounded-full border-2">
             {avatarUrl ? (
-              <img src={avatarUrl} alt={profile.fullName || "Avatar"} className="size-full object-cover" />
+              <img
+                src={avatarUrl}
+                alt={profile.fullName || "Avatar"}
+                className="size-full object-cover"
+              />
             ) : (
               <User className="size-10" aria-hidden="true" />
             )}
@@ -259,10 +290,13 @@ function ProfileBasicInfo() {
           <label
             htmlFor="mentor-avatar-upload"
             aria-label="Change profile photo"
-            className="absolute bottom-0 right-0 grid size-8 cursor-pointer place-items-center rounded-full border border-border bg-card text-muted-foreground shadow-sm hover:bg-muted focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2"
+            className="border-border bg-card text-muted-foreground hover:bg-muted focus-within:ring-ring absolute right-0 bottom-0 grid size-8 cursor-pointer place-items-center rounded-full border shadow-sm focus-within:ring-2 focus-within:ring-offset-2"
           >
             {uploadAvatar.isPending ? (
-              <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+              <Loader2
+                className="size-4 animate-spin motion-reduce:animate-none"
+                aria-hidden="true"
+              />
             ) : (
               <Camera className="size-4" aria-hidden="true" />
             )}
@@ -277,16 +311,20 @@ function ProfileBasicInfo() {
           </label>
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-xl font-black text-foreground">{profile.fullName ?? "Mentor Account"}</h3>
-          <p className="text-sm text-muted-foreground">{profile.email}</p>
-          {mentorProfile.headline && <p className="mt-1 text-sm font-bold text-primary">{mentorProfile.headline}</p>}
+          <h3 className="text-foreground text-xl font-black">
+            {profile.fullName ?? "Mentor Account"}
+          </h3>
+          <p className="text-muted-foreground text-sm">{profile.email}</p>
+          {mentorProfile.headline && (
+            <p className="text-primary mt-1 text-sm font-bold">{mentorProfile.headline}</p>
+          )}
         </div>
         {publicProfilePath && (
           <Link
             to={publicProfilePath}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-2 text-xs font-black text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="border-border text-foreground hover:bg-muted focus-visible:ring-ring flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-2 text-xs font-black focus-visible:ring-2 focus-visible:outline-none"
           >
             <ExternalLink className="size-3.5" aria-hidden="true" />
             View Public Profile
@@ -296,100 +334,246 @@ function ProfileBasicInfo() {
 
       {!editing ? (
         <div className="mt-6 space-y-3">
-          <p className="text-sm text-muted-foreground">{mentorProfile.bio || "No bio added yet."}</p>
+          <p className="text-muted-foreground text-sm">
+            {mentorProfile.bio || "No bio added yet."}
+          </p>
           <dl className="grid gap-x-6 gap-y-2 text-xs sm:grid-cols-2">
-            {mentorProfile.company && <div><dt className="font-black text-muted-foreground">Company</dt><dd className="text-foreground">{mentorProfile.company}</dd></div>}
-            {mentorProfile.experience_years != null && <div><dt className="font-black text-muted-foreground">Experience</dt><dd className="text-foreground">{mentorProfile.experience_years} years</dd></div>}
-            {profile.phone && <div><dt className="font-black text-muted-foreground">Phone</dt><dd className="text-foreground">{profile.phone}</dd></div>}
+            {mentorProfile.company && (
+              <div>
+                <dt className="text-muted-foreground font-black">Company</dt>
+                <dd className="text-foreground">{mentorProfile.company}</dd>
+              </div>
+            )}
+            {mentorProfile.experience_years != null && (
+              <div>
+                <dt className="text-muted-foreground font-black">Experience</dt>
+                <dd className="text-foreground">{mentorProfile.experience_years} years</dd>
+              </div>
+            )}
+            {profile.phone && (
+              <div>
+                <dt className="text-muted-foreground font-black">Phone</dt>
+                <dd className="text-foreground">{profile.phone}</dd>
+              </div>
+            )}
             {(profile.city || profile.state || profile.country) && (
-              <div><dt className="font-black text-muted-foreground">Location</dt><dd className="text-foreground">{[profile.city, profile.state, profile.country].filter(Boolean).join(", ")}</dd></div>
+              <div>
+                <dt className="text-muted-foreground font-black">Location</dt>
+                <dd className="text-foreground">
+                  {[profile.city, profile.state, profile.country].filter(Boolean).join(", ")}
+                </dd>
+              </div>
             )}
           </dl>
           {mentorProfile.skills && mentorProfile.skills.length > 0 && (
             <div className="flex flex-wrap gap-1.5 pt-1">
               {mentorProfile.skills.map((skill) => (
-                <span key={skill} className="rounded-full bg-secondary/10 px-3 py-1 text-xs font-bold text-secondary">{skill}</span>
+                <span
+                  key={skill}
+                  className="bg-secondary/10 text-secondary rounded-full px-3 py-1 text-xs font-bold"
+                >
+                  {skill}
+                </span>
               ))}
             </div>
           )}
           <button
             onClick={startEditing}
-            className="mt-4 rounded-md bg-primary px-4 py-2 text-sm font-black text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring mt-4 rounded-md px-4 py-2 text-sm font-black transition focus-visible:ring-2 focus-visible:outline-none"
           >
             Edit Profile details
           </button>
         </div>
       ) : (
-        <form onSubmit={(e) => void handleSave(e)} className="mt-6 space-y-6 border-t border-border pt-6">
+        <form
+          onSubmit={(e) => void handleSave(e)}
+          className="border-border mt-6 space-y-6 border-t pt-6"
+        >
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="mentor-full-name" className={labelClass}>Full name</Label>
-              <input id="mentor-full-name" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-full-name" className={labelClass}>
+                Full name
+              </Label>
+              <input
+                id="mentor-full-name"
+                value={form.fullName}
+                onChange={(e) => setForm({ ...form, fullName: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-headline" className={labelClass}>Headline</Label>
-              <input id="mentor-headline" value={form.headline} onChange={(e) => setForm({ ...form, headline: e.target.value })} placeholder="e.g. Senior Backend Engineer" className={inputClass} />
+              <Label htmlFor="mentor-headline" className={labelClass}>
+                Headline
+              </Label>
+              <input
+                id="mentor-headline"
+                value={form.headline}
+                onChange={(e) => setForm({ ...form, headline: e.target.value })}
+                placeholder="e.g. Senior Backend Engineer"
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-company" className={labelClass}>Company</Label>
-              <input id="mentor-company" value={form.company} onChange={(e) => setForm({ ...form, company: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-company" className={labelClass}>
+                Company
+              </Label>
+              <input
+                id="mentor-company"
+                value={form.company}
+                onChange={(e) => setForm({ ...form, company: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-experience" className={labelClass}>Years of experience</Label>
-              <input id="mentor-experience" type="number" min={0} value={form.experienceYears} onChange={(e) => setForm({ ...form, experienceYears: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-experience" className={labelClass}>
+                Years of experience
+              </Label>
+              <input
+                id="mentor-experience"
+                type="number"
+                min={0}
+                value={form.experienceYears}
+                onChange={(e) => setForm({ ...form, experienceYears: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-phone" className={labelClass}>Phone</Label>
-              <input id="mentor-phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-phone" className={labelClass}>
+                Phone
+              </Label>
+              <input
+                id="mentor-phone"
+                value={form.phone}
+                onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                className={inputClass}
+              />
             </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1">
-              <Label htmlFor="mentor-city" className={labelClass}>City</Label>
-              <input id="mentor-city" value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-city" className={labelClass}>
+                City
+              </Label>
+              <input
+                id="mentor-city"
+                value={form.city}
+                onChange={(e) => setForm({ ...form, city: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-state" className={labelClass}>State</Label>
-              <input id="mentor-state" value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-state" className={labelClass}>
+                State
+              </Label>
+              <input
+                id="mentor-state"
+                value={form.state}
+                onChange={(e) => setForm({ ...form, state: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-country" className={labelClass}>Country</Label>
-              <input id="mentor-country" value={form.country} onChange={(e) => setForm({ ...form, country: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-country" className={labelClass}>
+                Country
+              </Label>
+              <input
+                id="mentor-country"
+                value={form.country}
+                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                className={inputClass}
+              />
             </div>
           </div>
 
           <div className="space-y-1">
-            <Label htmlFor="mentor-bio" className={labelClass}>Bio</Label>
-            <Textarea id="mentor-bio" value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} rows={4} />
+            <Label htmlFor="mentor-bio" className={labelClass}>
+              Bio
+            </Label>
+            <Textarea
+              id="mentor-bio"
+              value={form.bio}
+              onChange={(e) => setForm({ ...form, bio: e.target.value })}
+              rows={4}
+            />
           </div>
 
           <SkillsEditor skills={form.skills} onChange={(skills) => setForm({ ...form, skills })} />
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1">
-              <Label htmlFor="mentor-linkedin" className={labelClass}>LinkedIn</Label>
-              <input id="mentor-linkedin" type="url" value={form.linkedinUrl} onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })} placeholder="https://linkedin.com/in/..." className={inputClass} />
+              <Label htmlFor="mentor-linkedin" className={labelClass}>
+                LinkedIn
+              </Label>
+              <input
+                id="mentor-linkedin"
+                type="url"
+                value={form.linkedinUrl}
+                onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })}
+                placeholder="https://linkedin.com/in/..."
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-github" className={labelClass}>GitHub</Label>
-              <input id="mentor-github" type="url" value={form.githubUrl} onChange={(e) => setForm({ ...form, githubUrl: e.target.value })} placeholder="https://github.com/..." className={inputClass} />
+              <Label htmlFor="mentor-github" className={labelClass}>
+                GitHub
+              </Label>
+              <input
+                id="mentor-github"
+                type="url"
+                value={form.githubUrl}
+                onChange={(e) => setForm({ ...form, githubUrl: e.target.value })}
+                placeholder="https://github.com/..."
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-portfolio" className={labelClass}>Portfolio</Label>
-              <input id="mentor-portfolio" type="url" value={form.portfolioUrl} onChange={(e) => setForm({ ...form, portfolioUrl: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-portfolio" className={labelClass}>
+                Portfolio
+              </Label>
+              <input
+                id="mentor-portfolio"
+                type="url"
+                value={form.portfolioUrl}
+                onChange={(e) => setForm({ ...form, portfolioUrl: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-website" className={labelClass}>Website</Label>
-              <input id="mentor-website" type="url" value={form.websiteUrl} onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-website" className={labelClass}>
+                Website
+              </Label>
+              <input
+                id="mentor-website"
+                type="url"
+                value={form.websiteUrl}
+                onChange={(e) => setForm({ ...form, websiteUrl: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-twitter" className={labelClass}>Twitter / X</Label>
-              <input id="mentor-twitter" type="url" value={form.twitterUrl} onChange={(e) => setForm({ ...form, twitterUrl: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-twitter" className={labelClass}>
+                Twitter / X
+              </Label>
+              <input
+                id="mentor-twitter"
+                type="url"
+                value={form.twitterUrl}
+                onChange={(e) => setForm({ ...form, twitterUrl: e.target.value })}
+                className={inputClass}
+              />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="mentor-youtube" className={labelClass}>YouTube</Label>
-              <input id="mentor-youtube" type="url" value={form.youtubeUrl} onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })} className={inputClass} />
+              <Label htmlFor="mentor-youtube" className={labelClass}>
+                YouTube
+              </Label>
+              <input
+                id="mentor-youtube"
+                type="url"
+                value={form.youtubeUrl}
+                onChange={(e) => setForm({ ...form, youtubeUrl: e.target.value })}
+                className={inputClass}
+              />
             </div>
           </div>
 
@@ -397,7 +581,7 @@ function ProfileBasicInfo() {
             <button
               type="button"
               onClick={() => setEditing(false)}
-              className="rounded-md border border-border px-4 py-2 text-sm font-bold text-foreground hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="border-border text-foreground hover:bg-muted focus-visible:ring-ring rounded-md border px-4 py-2 text-sm font-bold focus-visible:ring-2 focus-visible:outline-none"
             >
               Cancel
             </button>
@@ -405,9 +589,16 @@ function ProfileBasicInfo() {
               type="submit"
               disabled={isSaving}
               aria-busy={isSaving}
-              className="flex items-center gap-2 rounded-md bg-primary px-4 py-2 text-sm font-black text-primary-foreground transition hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+              className="bg-primary text-primary-foreground hover:bg-primary/90 focus-visible:ring-ring flex items-center gap-2 rounded-md px-4 py-2 text-sm font-black transition focus-visible:ring-2 focus-visible:outline-none disabled:opacity-50"
             >
-              {isSaving ? <Loader2 className="size-4 animate-spin motion-reduce:animate-none" aria-hidden="true" /> : <Save className="size-4" aria-hidden="true" />}
+              {isSaving ? (
+                <Loader2
+                  className="size-4 animate-spin motion-reduce:animate-none"
+                  aria-hidden="true"
+                />
+              ) : (
+                <Save className="size-4" aria-hidden="true" />
+              )}
               Save Changes
             </button>
           </div>
@@ -445,10 +636,10 @@ function ProfileSecurity() {
     <div className="space-y-6">
       <ChangePasswordCard idPrefix="mentor-password" />
 
-      <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-        <div className="flex items-center gap-2 border-b border-border pb-4">
-          <ShieldCheck className="size-5 text-primary" aria-hidden="true" />
-          <h3 className="text-lg font-black text-foreground">Recent Login Activity</h3>
+      <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
+        <div className="border-border flex items-center gap-2 border-b pb-4">
+          <ShieldCheck className="text-primary size-5" aria-hidden="true" />
+          <h3 className="text-foreground text-lg font-black">Recent Login Activity</h3>
         </div>
         <div className="mt-4">
           {isLoading ? (
@@ -458,20 +649,24 @@ function ProfileSecurity() {
               ))}
             </div>
           ) : !history || history.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No login activity recorded yet.</p>
+            <p className="text-muted-foreground text-sm">No login activity recorded yet.</p>
           ) : (
-            <ul className="divide-y divide-border">
+            <ul className="divide-border divide-y">
               {history.map((entry) => (
                 <li key={entry.id} className="flex items-center justify-between gap-3 py-3 text-sm">
                   <div>
-                    <p className="font-semibold text-foreground">
-                      {[entry.browser, entry.os, entry.device_type].filter(Boolean).join(" · ") || "Unknown device"}
+                    <p className="text-foreground font-semibold">
+                      {[entry.browser, entry.os, entry.device_type].filter(Boolean).join(" · ") ||
+                        "Unknown device"}
                     </p>
-                    <p className="text-xs text-muted-foreground">
-                      {[entry.city, entry.country].filter(Boolean).join(", ") || "Unknown location"} · {formatLoginTime(entry.created_at)}
+                    <p className="text-muted-foreground text-xs">
+                      {[entry.city, entry.country].filter(Boolean).join(", ") || "Unknown location"}{" "}
+                      · {formatLoginTime(entry.created_at)}
                     </p>
                   </div>
-                  <span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${entry.success ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive-text"}`}>
+                  <span
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black uppercase ${entry.success ? "bg-emerald-500/10 text-emerald-600" : "bg-destructive/10 text-destructive-text"}`}
+                  >
                     {entry.success ? "Success" : "Failed"}
                   </span>
                 </li>

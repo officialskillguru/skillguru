@@ -4,8 +4,6 @@ import {
   Mail,
   CreditCard,
   Save,
-  Eye,
-  EyeOff,
   AlertCircle,
   Bell,
   Shield,
@@ -34,8 +32,6 @@ export default function AdminSettingsPage() {
   const [smtpName, setSmtpName] = useState("SkillGuru Admissions");
   
   const [rzpKey, setRzpKey] = useState("rzp_test_Ym12aG9sMTI0NGt");
-  const [rzpSecret, setRzpSecret] = useState("••••••••••••••••••••••••");
-  const [showRzpSecret, setShowRzpSecret] = useState(false);
 
   useEffect(() => {
     if (remoteSmtp) {
@@ -53,7 +49,6 @@ export default function AdminSettingsPage() {
       /* eslint-disable react-hooks/set-state-in-effect */
       setGatewayMode(remoteGateway.mode);
       setRzpKey(remoteGateway.key);
-      setRzpSecret(remoteGateway.secret);
       /* eslint-enable react-hooks/set-state-in-effect */
     }
   }, [remoteGateway]);
@@ -66,7 +61,9 @@ export default function AdminSettingsPage() {
     });
     saveSetting.mutate({
       key: "sys_gateway",
-      value: { mode: gatewayMode, key: rzpKey, secret: rzpSecret }
+      // The API secret is intentionally NOT persisted here: payment edge
+      // functions read RAZORPAY_KEY_SECRET from Supabase function secrets.
+      value: { mode: gatewayMode, key: rzpKey }
     }, {
       onSuccess: () => toast.success("System parameters saved successfully.")
     });
@@ -148,7 +145,7 @@ export default function AdminSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">SMTP Host Server</label>
-                  <input
+                  <input aria-label="SMTP Host Server"
                     value={smtpHost}
                     onChange={(e) => setSmtpHost(e.target.value)}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -156,7 +153,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">SMTP Port</label>
-                  <input
+                  <input aria-label="SMTP Port"
                     value={smtpPort}
                     onChange={(e) => setSmtpPort(e.target.value)}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -167,7 +164,7 @@ export default function AdminSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">Default Sender Email</label>
-                  <input
+                  <input aria-label="Default Sender Email"
                     value={smtpEmail}
                     onChange={(e) => setSmtpEmail(e.target.value)}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -175,7 +172,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">Sender Display Name</label>
-                  <input
+                  <input aria-label="Sender Display Name"
                     value={smtpName}
                     onChange={(e) => setSmtpName(e.target.value)}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
@@ -229,30 +226,17 @@ export default function AdminSettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">API Key ID</label>
-                  <input
+                  <input aria-label="API Key ID"
                     value={rzpKey}
                     onChange={(e) => setRzpKey(e.target.value)}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-black text-slate-400">API Secret</label>
-                  <div className="relative">
-                    <input
-                      type={showRzpSecret ? "text" : "password"}
-                      value={rzpSecret}
-                      onChange={(e) => setRzpSecret(e.target.value)}
-                      className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 pr-10 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowRzpSecret((v) => !v)}
-                      aria-label={showRzpSecret ? "Hide API secret" : "Show API secret"}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-primary"
-                    >
-                      {showRzpSecret ? <EyeOff className="size-4.5" aria-hidden="true" /> : <Eye className="size-4.5" aria-hidden="true" />}
-                    </button>
-                  </div>
+                  <p className="text-xs font-black text-slate-400">API Secret</p>
+                  <p className="rounded-xl border border-dashed border-border bg-muted/50 px-3.5 py-2.5 text-xs font-semibold leading-5 text-muted-foreground">
+                    Never stored in the database. Set <code>RAZORPAY_KEY_SECRET</code> (and <code>PAYMENT_PROVIDER</code>) as Supabase Edge Function secrets; the payment functions read them server-side.
+                  </p>
                 </div>
               </div>
             </GsapReveal>
@@ -299,7 +283,7 @@ export default function AdminSettingsPage() {
               <form onSubmit={handleBroadcast} className="space-y-4">
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">Notification Title</label>
-                  <input
+                  <input aria-label="Notification Title"
                     required
                     value={notiTitle}
                     onChange={(e) => setNotiTitle(e.target.value)}
@@ -309,7 +293,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">Message Body</label>
-                  <textarea
+                  <textarea aria-label="Message Body"
                     required
                     rows={4}
                     value={notiMessage}
@@ -320,7 +304,7 @@ export default function AdminSettingsPage() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-black text-slate-400">Notification Type</label>
-                  <select
+                  <select aria-label="Notification Type"
                     value={notiType}
                     onChange={(e) => setNotiType(e.target.value)}
                     className="w-full h-11 rounded-xl border border-slate-200 bg-muted px-3.5 text-sm font-semibold outline-none focus:border-primary dark:border-slate-800 dark:bg-slate-950 dark:text-white"

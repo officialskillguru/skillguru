@@ -409,6 +409,7 @@ export default function AdminStudentsPage() {
         value={search}
         onChange={(e) => { setSearch(e.target.value); setPage(1); }}
         placeholder="Search students by name, email, phone, or city..."
+        aria-label="Search students"
         className="h-10 w-full max-w-sm rounded-xl border border-border bg-card px-3.5 text-sm outline-none focus:border-primary focus-visible:ring-2 focus-visible:ring-ring"
       />
 

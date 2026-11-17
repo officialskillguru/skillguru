@@ -56,6 +56,7 @@ export const routes = {
   counsellor: {
     dashboard: "/counsellor/dashboard",
     students: "/counsellor/students",
+    leads: "/counsellor/leads",
     mentors: "/counsellor/mentors",
     courses: "/counsellor/courses",
     jobs: "/counsellor/jobs",

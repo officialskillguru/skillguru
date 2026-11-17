@@ -29,7 +29,12 @@ export function OverviewTab() {
       </div>
     );
   }
-  if (!metrics) return <div className="py-12 text-center text-sm font-semibold text-muted-foreground">No data available</div>;
+  if (!metrics)
+    return (
+      <div className="text-muted-foreground py-12 text-center text-sm font-semibold">
+        No data available
+      </div>
+    );
 
   const mentorMetrics = [
     { label: "Assigned Courses", value: metrics.totalCourses, icon: BookOpenCheck },
@@ -45,29 +50,38 @@ export function OverviewTab() {
 
   return (
     <>
+      <div>
+        <h1 className="text-foreground text-2xl font-black">Overview</h1>
+        <p className="text-muted-foreground text-sm">
+          Your courses, students and conversations at a glance.
+        </p>
+      </div>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {mentorMetrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <article key={metric.label} className="rounded-xl border border-border bg-card p-5 shadow-sm">
-              <Icon className="size-7 text-primary" aria-hidden="true" />
-              <p className="mt-4 text-3xl font-black text-foreground">{metric.value}</p>
-              <p className="mt-1 text-sm font-bold text-muted-foreground">{metric.label}</p>
+            <article
+              key={metric.label}
+              className="border-border bg-card rounded-xl border p-5 shadow-sm"
+            >
+              <Icon className="text-primary size-7" aria-hidden="true" />
+              <p className="text-foreground mt-4 text-3xl font-black">{metric.value}</p>
+              <p className="text-muted-foreground mt-1 text-sm font-bold">{metric.label}</p>
             </article>
           );
         })}
       </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-black text-foreground">Course Status</h2>
-            <BookOpenCheck className="size-5 text-primary" aria-hidden="true" />
+            <h2 className="text-foreground text-lg font-black">Course Status</h2>
+            <BookOpenCheck className="text-primary size-5" aria-hidden="true" />
           </div>
           {metrics.totalCourses === 0 ? (
-            <p className="mt-4 text-sm text-muted-foreground">
+            <p className="text-muted-foreground mt-4 text-sm">
               You haven't created any courses yet.{" "}
-              <Link to="/mentor/courses/new" className="font-semibold text-primary hover:underline">
+              <Link to="/mentor/courses/new" className="text-primary font-semibold hover:underline">
                 Start your first course
               </Link>
               .
@@ -75,58 +89,77 @@ export function OverviewTab() {
           ) : (
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div>
-                <p className="text-2xl font-black text-foreground">{published}</p>
-                <p className="text-xs font-semibold text-muted-foreground">Published</p>
+                <p className="text-foreground text-2xl font-black">{published}</p>
+                <p className="text-muted-foreground text-xs font-semibold">Published</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-foreground">{underReview}</p>
-                <p className="text-xs font-semibold text-muted-foreground">Under Review</p>
+                <p className="text-foreground text-2xl font-black">{underReview}</p>
+                <p className="text-muted-foreground text-xs font-semibold">Under Review</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-foreground">{draft}</p>
-                <p className="text-xs font-semibold text-muted-foreground">Draft</p>
+                <p className="text-foreground text-2xl font-black">{draft}</p>
+                <p className="text-muted-foreground text-xs font-semibold">Draft</p>
               </div>
               <div>
-                <p className="text-2xl font-black text-foreground">{archived}</p>
-                <p className="text-xs font-semibold text-muted-foreground">Archived</p>
+                <p className="text-foreground text-2xl font-black">{archived}</p>
+                <p className="text-muted-foreground text-xs font-semibold">Archived</p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <div className="border-border bg-card rounded-xl border p-6 shadow-sm">
           <div className="flex items-center justify-between">
-            <h2 className="flex items-center gap-2 text-lg font-black text-foreground">
+            <h2 className="text-foreground flex items-center gap-2 text-lg font-black">
               Recent Messages
               {unreadCount > 0 && <Badge variant="destructive">{unreadCount} unread</Badge>}
             </h2>
-            <Link to="/mentor/messages" className="text-xs font-semibold text-primary hover:underline">
+            <Link
+              to="/mentor/messages"
+              className="text-primary text-xs font-semibold hover:underline"
+            >
               View inbox
             </Link>
           </div>
           {recentConversations.length === 0 ? (
             <div className="mt-4 flex flex-col items-center gap-2 py-4 text-center">
-              <MessageSquare className="size-8 text-muted-foreground/40" aria-hidden="true" />
-              <p className="text-sm text-muted-foreground">No conversations yet.</p>
+              <MessageSquare className="text-muted-foreground/40 size-8" aria-hidden="true" />
+              <p className="text-muted-foreground text-sm">No conversations yet.</p>
             </div>
           ) : (
             <ul className="mt-4 space-y-1">
               {recentConversations.map((conv) => {
                 const others = (conv.members ?? []).filter((m) => m.user_id !== selfId);
-                const title = conv.title ?? others.map((m) => m.user?.full_name).filter(Boolean).join(", ") ?? "Conversation";
+                const title =
+                  conv.title ??
+                  others
+                    .map((m) => m.user?.full_name)
+                    .filter(Boolean)
+                    .join(", ") ??
+                  "Conversation";
                 const own = conv.members?.find((m) => m.user_id === selfId);
-                const isUnread = !own?.last_read_at || new Date(own.last_read_at) < new Date(conv.updated_at);
+                const isUnread =
+                  !own?.last_read_at || new Date(own.last_read_at) < new Date(conv.updated_at);
                 return (
                   <li key={conv.id}>
                     <Link
                       to={`/mentor/messages/${conv.id}`}
-                      className="flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition hover:bg-muted"
+                      className="hover:bg-muted flex items-center gap-3 rounded-lg px-2 py-2 text-sm transition"
                     >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-black text-primary">
+                      <span className="bg-primary/10 text-primary grid size-8 shrink-0 place-items-center rounded-full text-xs font-black">
                         {initials(title)}
                       </span>
-                      <span className={`truncate ${isUnread ? "font-bold text-foreground" : "text-muted-foreground"}`}>{title}</span>
-                      {isUnread && <span className="ml-auto size-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />}
+                      <span
+                        className={`truncate ${isUnread ? "text-foreground font-bold" : "text-muted-foreground"}`}
+                      >
+                        {title}
+                      </span>
+                      {isUnread && (
+                        <span
+                          className="bg-primary ml-auto size-1.5 shrink-0 rounded-full"
+                          aria-hidden="true"
+                        />
+                      )}
                     </Link>
                   </li>
                 );

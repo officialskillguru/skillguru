@@ -95,17 +95,17 @@ export default function ContactPage() {
           <form onSubmit={(event) => void onSubmit(event)} className="rounded-lg border border-border bg-card p-6 text-primary shadow-[0_24px_80px_rgba(2,8,23,0.18)] sm:p-8">
             <h2 className="text-2xl font-black">Send Message</h2>
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <input name="fullName" required placeholder="Full Name" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card" />
-              <input name="phone" required placeholder="Phone Number" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card" />
-              <input name="email" required type="email" placeholder="Email Address" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card" />
-              <select name="subject" required className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card text-primary">
+              <input name="fullName" required aria-label="Full name" autoComplete="name" placeholder="Full Name" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card" />
+              <input name="phone" required type="tel" aria-label="Phone number" autoComplete="tel" placeholder="Phone Number" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card" />
+              <input name="email" required type="email" aria-label="Email address" autoComplete="email" placeholder="Email Address" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card" />
+              <select name="subject" required aria-label="Subject" className="h-12 rounded-md border border-border px-4 text-sm outline-none focus:border-secondary bg-card text-primary">
                 <option>Career Counselling</option>
                 <option>Course Enquiry</option>
                 <option>Placement Support</option>
                 <option>Corporate Training</option>
               </select>
             </div>
-            <textarea name="message" required rows={5} placeholder="How can we help you?" className="mt-4 w-full rounded-md border border-border px-4 py-3 text-sm outline-none focus:border-secondary bg-card" />
+            <textarea name="message" required rows={5} aria-label="Message" placeholder="How can we help you?" className="mt-4 w-full rounded-md border border-border px-4 py-3 text-sm outline-none focus:border-secondary bg-card" />
             <label className="mt-4 flex gap-3 text-sm text-muted-foreground">
               <input name="consent" type="checkbox" required className="mt-1 accent-secondary" />
               I agree to be contacted by SkillGuru.

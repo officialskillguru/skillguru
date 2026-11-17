@@ -73,7 +73,9 @@ test.describe("public website", () => {
     // Skill filter.
     await page.getByLabel("Price", { exact: true }).selectOption("");
     await page.getByLabel("Skill", { exact: true }).selectOption("figma");
-    await expect(page.getByRole("heading", { name: /Modern UI\/UX Design with Figma/i })).toBeVisible();
+    // Wait for the filtered result set to replace the unfiltered one.
+    await expect(page.getByText(new RegExp(`^Showing 1–\\d+ of (?!${total}\\b)\\d+ courses?$`))).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByRole("heading", { name: /Modern UI\/UX Design with Figma/i })).toBeVisible({ timeout: 15_000 });
 
     // Sorting by price low→high puts a free course first.
     await page.goto("/courses?sort=price_asc");

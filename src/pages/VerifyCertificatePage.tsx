@@ -35,6 +35,7 @@ export default function VerifyCertificatePage() {
             value={codeInput}
             onChange={(e) => setCodeInput(e.target.value)}
             placeholder="e.g. 1CDADF411900"
+            aria-label="Certificate verification code"
             className="flex-1 rounded-xl border border-border bg-card px-4 py-3 text-sm font-mono font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           />
           <button

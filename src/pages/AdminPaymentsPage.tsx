@@ -276,6 +276,7 @@ export default function AdminPaymentsPage() {
         <input
           className="h-10 w-full rounded-xl border border-border bg-background pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="Search by payment ID or status…"
+          aria-label="Search payments"
           value={search}
           onChange={e => { setSearch(e.target.value); setPage(1); }}
         />

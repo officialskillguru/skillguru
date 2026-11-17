@@ -72,7 +72,7 @@ export default function PlacementsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-black text-foreground">Placements</h2>
+        <h1 className="text-2xl font-black text-foreground">Placements</h1>
         <p className="mt-1 text-sm font-semibold text-muted-foreground">Browse openings, track your applications, and view offers.</p>
       </div>
 

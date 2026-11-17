@@ -12,6 +12,7 @@ import {
   PanelLeftOpen,
   Sun,
   User as UserIcon,
+  Target,
   Users,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -41,6 +42,7 @@ import { useFocusTrapDrawer } from "@/hooks/useFocusTrapDrawer";
 const navItems = [
   { label: "Dashboard", to: "/counsellor/dashboard", icon: LayoutDashboard },
   { label: "Students", to: "/counsellor/students", icon: Users, section: "Operations" },
+  { label: "Leads", to: "/counsellor/leads", icon: Target },
   { label: "Mentors", to: "/counsellor/mentors", icon: UserIcon },
   { label: "Courses", to: "/counsellor/courses", icon: BookOpen },
   { label: "Jobs & Internships", to: "/counsellor/jobs", icon: Briefcase, section: "Career" },
