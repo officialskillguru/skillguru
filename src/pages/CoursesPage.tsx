@@ -7,7 +7,14 @@ import { GsapReveal } from "@/components/motion/gsap-reveal";
 import { PublicCourseCard } from "@/components/cards/PublicCourseCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { usePageMeta } from "@/hooks/usePageMeta";
-import { listPublicCategories, listPublishedCourses, type PublicCourseFilters } from "@/services/courses.service";
+import {
+  listPublicCategories,
+  listPublicCourseFacets,
+  listPublishedCourses,
+  type PublicCourseFilters,
+  type PublicCoursePriceRange,
+  type PublicCourseSort,
+} from "@/services/courses.service";
 
 const LEVEL_OPTIONS = [
   { value: "", label: "All Levels" },
@@ -16,6 +23,26 @@ const LEVEL_OPTIONS = [
   { value: "advanced", label: "Advanced" },
   { value: "all_levels", label: "All Levels (course)" },
 ];
+
+const SORT_OPTIONS: { value: PublicCourseSort; label: string }[] = [
+  { value: "newest", label: "Newest first" },
+  { value: "oldest", label: "Oldest first" },
+  { value: "price_asc", label: "Price: low to high" },
+  { value: "price_desc", label: "Price: high to low" },
+  { value: "title", label: "Title A–Z" },
+];
+
+const PRICE_OPTIONS: { value: PublicCoursePriceRange | ""; label: string }[] = [
+  { value: "", label: "Any price" },
+  { value: "free", label: "Free" },
+  { value: "paid", label: "Paid" },
+  { value: "under_2000", label: "Under ₹2,000" },
+  { value: "2000_5000", label: "₹2,000 – ₹5,000" },
+  { value: "over_5000", label: "Over ₹5,000" },
+];
+
+const isSort = (v: string): v is PublicCourseSort => SORT_OPTIONS.some((o) => o.value === v);
+const isPriceRange = (v: string): v is PublicCoursePriceRange => PRICE_OPTIONS.some((o) => o.value === v && v !== "");
 
 function useDebouncedValue<T>(value: T, delayMs: number): T {
   const [debounced, setDebounced] = useState(value);
@@ -37,6 +64,11 @@ export default function CoursesPage() {
   const language = searchParams.get("language") ?? "";
   const courseType = searchParams.get("type") ?? "";
   const freeOnly = searchParams.get("free") === "1";
+  const priceParam = searchParams.get("price") ?? "";
+  const priceRange = isPriceRange(priceParam) ? priceParam : undefined;
+  const skill = searchParams.get("skill") ?? "";
+  const sortParam = searchParams.get("sort") ?? "";
+  const sort: PublicCourseSort = isSort(sortParam) ? sortParam : "newest";
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
@@ -59,6 +91,12 @@ export default function CoursesPage() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const { data: facets } = useQuery({
+    queryKey: ["public-course-facets"],
+    queryFn: listPublicCourseFacets,
+    staleTime: 5 * 60 * 1000,
+  });
+
   const filters: PublicCourseFilters = {
     search: search || undefined,
     categorySlug: categorySlug || undefined,
@@ -66,6 +104,9 @@ export default function CoursesPage() {
     language: language || undefined,
     courseType: courseType || undefined,
     freeOnly: freeOnly || undefined,
+    priceRange,
+    skill: skill || undefined,
+    sort,
     page,
     pageSize: 12,
   };
@@ -78,14 +119,12 @@ export default function CoursesPage() {
 
   const activeCategory = categories?.flatMap((c) => [c, ...c.subcategories]).find((c) => c.slug === categorySlug);
 
-  const languageOptions = Array.from(
-    new Set((data?.data ?? []).map((c) => c.language).filter((v): v is string => !!v))
-  );
-  const typeOptions = Array.from(
-    new Set((data?.data ?? []).map((c) => c.course_type).filter((v): v is string => !!v))
-  );
+  // Options come from every published course, not just the current page.
+  const languageOptions = facets?.languages ?? [];
+  const typeOptions = facets?.courseTypes ?? [];
+  const skillOptions = facets?.skills ?? [];
 
-  const hasActiveFilters = !!(categorySlug || level || language || courseType || freeOnly || search);
+  const hasActiveFilters = !!(categorySlug || level || language || courseType || freeOnly || priceRange || skill || search);
 
   const clearFilters = () => {
     setSearchInput("");
@@ -103,7 +142,7 @@ export default function CoursesPage() {
               {activeCategory ? activeCategory.name : "Find your next career track"}
             </h1>
             <p className="mt-4 max-w-2xl text-base font-semibold text-muted-foreground">
-              Browse real, admin-approved courses across every category, taught by working industry mentors.
+              Search and filter courses by category, skill, level and price, then preview the full curriculum before you enroll.
             </p>
           </GsapReveal>
 
@@ -127,8 +166,21 @@ export default function CoursesPage() {
             >
               <SlidersHorizontal className="size-4" />
               Filters
-              {hasActiveFilters && <span className="ml-1 grid size-5 place-items-center rounded-full bg-accent text-[10px] font-black text-primary">•</span>}
+              {hasActiveFilters && <span className="ml-1 grid size-5 place-items-center rounded-full bg-accent text-[10px] font-black text-primary" aria-label="Filters active">•</span>}
             </button>
+            <div className="sm:w-56">
+              <label htmlFor="courses-sort" className="sr-only">Sort courses</label>
+              <select
+                id="courses-sort"
+                value={sort}
+                onChange={(e) => setParam("sort", e.target.value === "newest" ? "" : e.target.value)}
+                className="h-12 w-full rounded-xl border border-border bg-card px-4 text-sm font-bold text-primary shadow-sm outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {filtersOpen && (
@@ -197,6 +249,35 @@ export default function CoursesPage() {
                 </select>
               </div>
 
+              <div>
+                <label htmlFor="filter-price" className="text-xs font-black uppercase tracking-wider text-muted-foreground">Price</label>
+                <select
+                  id="filter-price"
+                  value={priceRange ?? ""}
+                  onChange={(e) => setParam("price", e.target.value)}
+                  className="mt-1 h-11 w-full rounded-lg border border-border bg-muted px-3 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  {PRICE_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label htmlFor="filter-skill" className="text-xs font-black uppercase tracking-wider text-muted-foreground">Skill</label>
+                <select
+                  id="filter-skill"
+                  value={skill}
+                  onChange={(e) => setParam("skill", e.target.value)}
+                  className="mt-1 h-11 w-full rounded-lg border border-border bg-muted px-3 text-sm font-semibold text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <option value="">Any skill</option>
+                  {skillOptions.map((opt) => (
+                    <option key={opt.slug} value={opt.slug}>{opt.name} ({opt.count})</option>
+                  ))}
+                </select>
+              </div>
+
               <label className="flex items-center gap-2 text-sm font-bold text-foreground">
                 <input
                   type="checkbox"
@@ -254,8 +335,8 @@ export default function CoursesPage() {
 
         {!isLoading && !isError && (data?.data.length ?? 0) > 0 && (
           <>
-            <p className="mb-6 text-sm font-semibold text-muted-foreground">
-              Showing {data!.data.length} of {data!.count} course{data!.count === 1 ? "" : "s"}
+            <p className="mb-6 text-sm font-semibold text-muted-foreground" aria-live="polite">
+              Showing {(page - 1) * 12 + 1}–{(page - 1) * 12 + data!.data.length} of {data!.count} course{data!.count === 1 ? "" : "s"}
             </p>
             <GsapReveal stagger className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {data!.data.map((course) => (
@@ -268,7 +349,7 @@ export default function CoursesPage() {
                 <button
                   type="button"
                   disabled={page === 1}
-                  onClick={() => setPage((p) => p - 1)}
+                  onClick={() => { setPage((p) => p - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   className="rounded-lg border border-border px-4 py-2 text-sm font-bold text-muted-foreground hover:bg-muted disabled:opacity-40"
                 >
                   Prev
@@ -277,7 +358,7 @@ export default function CoursesPage() {
                 <button
                   type="button"
                   disabled={page >= data!.totalPages}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => { setPage((p) => p + 1); window.scrollTo({ top: 0, behavior: "smooth" }); }}
                   className="rounded-lg border border-border px-4 py-2 text-sm font-bold text-muted-foreground hover:bg-muted disabled:opacity-40"
                 >
                   Next

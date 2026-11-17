@@ -2,7 +2,12 @@ import { Client } from "pg";
 import dotenv from "dotenv";
 dotenv.config();
 
-const client = new Client({ connectionString: "postgres://postgres.nndltsrtotptcphvvwty:NAbhishek%402005@aws-0-ap-south-1.pooler.supabase.com:6543/postgres" });
+// Connection string comes from the environment - never hardcode credentials here.
+if (!process.env.DATABASE_URL) {
+  console.error("Set DATABASE_URL (see .env.example) before running this script.");
+  process.exit(1);
+}
+const client = new Client({ connectionString: process.env.DATABASE_URL });
 
 async function run() {
   await client.connect();

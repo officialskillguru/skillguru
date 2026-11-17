@@ -45,6 +45,8 @@ import { useIsWishlisted, useToggleWishlist } from "@/hooks/student/useWishlist"
 import { mentorService } from "@/features/mentor-profile/services/mentor.service";
 import {
   listPublishedCourses,
+  getPublicCourseOutline,
+  getPublicCourseModules,
   listCourseMedia,
   listCourseFaqs,
   listCourseTestimonials,
@@ -116,14 +118,14 @@ function useResolvedFileUrl(fileId: string | null | undefined) {
 function CourseHeroMedia({ videoFileId, thumbnailFileId }: { videoFileId: string | null; thumbnailFileId: string | null }) {
   const { data: videoUrl } = useResolvedFileUrl(videoFileId);
   const { data: thumbnailUrl } = useResolvedFileUrl(thumbnailFileId);
-  const fallback = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+  const [imageFailed, setImageFailed] = useState(false);
 
   if (videoFileId && videoUrl) {
     return (
       <video
         controls
         preload="none"
-        poster={thumbnailUrl ?? fallback}
+        poster={thumbnailUrl ?? undefined}
         className="aspect-video size-full object-cover"
       >
         <source src={videoUrl} />
@@ -131,7 +133,18 @@ function CourseHeroMedia({ videoFileId, thumbnailFileId }: { videoFileId: string
     );
   }
 
-  return <img src={thumbnailUrl ?? fallback} alt="" className="aspect-video size-full object-cover opacity-90" loading="eager" />;
+  if (!thumbnailUrl || imageFailed) {
+    // Local artwork — never depend on an external image host.
+    return (
+      <div
+        className="aspect-video size-full"
+        style={{ background: "radial-gradient(circle at 85% 15%, #3B82F666 0, transparent 50%), linear-gradient(135deg, #0B1736 0%, #0F2557 60%, #132F6B 100%)" }}
+        aria-hidden="true"
+      />
+    );
+  }
+
+  return <img src={thumbnailUrl} alt="" className="aspect-video size-full object-cover" loading="eager" onError={() => setImageFailed(true)} />;
 }
 
 function ModuleAccordion({ modules }: { modules: { id: string; title: string; description: string | null; lessons: { id: string; title: string; content_type: string; duration_seconds: number | null; is_free_preview: boolean }[] }[] }) {
@@ -218,9 +231,17 @@ export default function CourseDetailsPage() {
     queryKey: ["course-curriculum", course?.id],
     queryFn: async () => {
       if (!course?.id) return [];
+      // Prefer the public outline (all lesson titles/durations, no content) so
+      // visitors see the full curriculum; fall back to the RLS-filtered query.
+      const outline = await getPublicCourseOutline(course.id);
+      if (outline) return outline;
       const res = await learningService.getCourseModulesWithLessons(course.id);
-      if (!res.success) throw res.error;
-      return res.data;
+      if (res.success) return res.data;
+      // Last resort: module titles only (modules are publicly readable even
+      // when the nested lessons query is rejected by RLS).
+      const modulesOnly = await getPublicCourseModules(course.id);
+      if (modulesOnly) return modulesOnly;
+      throw res.error;
     },
     enabled: !!course?.id,
   });

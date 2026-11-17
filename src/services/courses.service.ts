@@ -635,8 +635,20 @@ export async function listPublicCategories(): Promise<PublicCategory[]> {
 }
 
 export type PublicCourseCategoryEmbed = { categories: Pick<CategoryRow, "id" | "name" | "slug"> | null };
+type PublicCourseTagEmbed = { tags: { name: string; slug: string } | null };
+
+/** Tag slug that marks seeded demonstration courses (scripts/demo-seed). Shown to visitors as a "Demo" badge. */
+export const DEMO_CONTENT_TAG_SLUG = "demo-content";
+
+export type PublicCourseSort = "newest" | "oldest" | "price_asc" | "price_desc" | "title";
+export type PublicCoursePriceRange = "free" | "paid" | "under_2000" | "2000_5000" | "over_5000";
+
 export type PublicCourseRow = Course & {
   course_categories: PublicCourseCategoryEmbed[];
+  /** Skill tags attached to the course (excludes the internal demo marker). */
+  skills: { name: string; slug: string }[];
+  /** True when the course is seeded demonstration content. */
+  is_demo: boolean;
   mentor_name: string | null;
   mentor_avatar_url: string | null;
   avg_rating: number | null;
@@ -651,6 +663,10 @@ export type PublicCourseFilters = {
   language?: string;
   courseType?: string;
   freeOnly?: boolean;
+  priceRange?: PublicCoursePriceRange;
+  /** Skill tag slug. */
+  skill?: string;
+  sort?: PublicCourseSort;
   mentorId?: string;
   excludeId?: string;
   page?: number;
@@ -681,6 +697,115 @@ async function resolveCategoryIdsForSlug(slug: string): Promise<string[] | null>
   return [match.id, ...((children ?? []).map((c) => c.id))];
 }
 
+export type PublicOutlineLesson = {
+  id: string;
+  title: string;
+  content_type: string;
+  duration_seconds: number | null;
+  is_free_preview: boolean;
+};
+export type PublicOutlineModule = { id: string; title: string; description: string | null; lessons: PublicOutlineLesson[] };
+
+/**
+ * Curriculum outline (titles, types, durations — never lesson content) for a
+ * published course, via the get_public_course_outline RPC. Returns null when
+ * the RPC is not deployed yet so callers can fall back to the RLS-filtered
+ * modules/lessons query.
+ */
+export async function getPublicCourseOutline(courseId: string): Promise<PublicOutlineModule[] | null> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase.rpc("get_public_course_outline", { p_course_id: courseId });
+  if (error) {
+    // PGRST202 / 42883: function not found (migration not applied yet).
+    if (error.code === "PGRST202" || error.code === "42883") return null;
+    throw new Error(error.message);
+  }
+  const modules = new Map<string, PublicOutlineModule>();
+  for (const row of data ?? []) {
+    let mod = modules.get(row.module_id);
+    if (!mod) {
+      mod = { id: row.module_id, title: row.module_title, description: row.module_description, lessons: [] };
+      modules.set(row.module_id, mod);
+    }
+    if (row.lesson_id && row.lesson_title) {
+      mod.lessons.push({
+        id: row.lesson_id,
+        title: row.lesson_title,
+        content_type: row.content_type ?? "text",
+        duration_seconds: row.duration_seconds,
+        is_free_preview: !!row.is_free_preview,
+      });
+    }
+  }
+  return [...modules.values()];
+}
+
+/** Module titles/descriptions of a published course without lessons (fallback when lesson RLS rejects the nested query). */
+export async function getPublicCourseModules(courseId: string): Promise<PublicOutlineModule[] | null> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase
+    .from("modules")
+    .select("id, title, description")
+    .eq("course_id", courseId)
+    .is("deleted_at", null)
+    .order("sort_order", { ascending: true });
+  if (error) return null;
+  return (data ?? []).map((m) => ({ ...m, lessons: [] }));
+}
+
+/** Course ids whose skill tags match an (already ilike-normalised) search term. */
+async function courseIdsForSkillSearch(search: string): Promise<string[]> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data: tags } = await supabase.from("tags").select("id").ilike("name", search).neq("slug", DEMO_CONTENT_TAG_SLUG).limit(50);
+  const tagIds = (tags ?? []).map((t) => t.id);
+  if (tagIds.length === 0) return [];
+  const { data: links } = await supabase.from("course_tags").select("course_id").in("tag_id", tagIds).limit(500);
+  return Array.from(new Set((links ?? []).map((l) => l.course_id)));
+}
+
+export type PublicCourseFacets = {
+  languages: string[];
+  courseTypes: string[];
+  skills: { name: string; slug: string; count: number }[];
+};
+
+/**
+ * Filter options computed across ALL published courses (not just the current
+ * page), so the catalogue's Language / Type / Skill dropdowns always list every
+ * value that can actually return results.
+ */
+export async function listPublicCourseFacets(): Promise<PublicCourseFacets> {
+  const supabase = getSupabaseClientOrThrow();
+  const { data, error } = await supabase
+    .from("courses")
+    .select("language, course_type, course_tags(tags(name, slug))")
+    .eq("status", "published")
+    .is("deleted_at", null)
+    .limit(1000)
+    .returns<{ language: string | null; course_type: string | null; course_tags: PublicCourseTagEmbed[] }[]>();
+  assertServiceResponse(error);
+
+  const languages = new Set<string>();
+  const courseTypes = new Set<string>();
+  const skillCounts = new Map<string, { name: string; slug: string; count: number }>();
+  for (const row of data ?? []) {
+    if (row.language) languages.add(row.language);
+    if (row.course_type) courseTypes.add(row.course_type);
+    for (const embed of row.course_tags ?? []) {
+      const tag = embed.tags;
+      if (!tag || tag.slug === DEMO_CONTENT_TAG_SLUG) continue;
+      const entry = skillCounts.get(tag.slug) ?? { ...tag, count: 0 };
+      entry.count += 1;
+      skillCounts.set(tag.slug, entry);
+    }
+  }
+  return {
+    languages: [...languages].sort(),
+    courseTypes: [...courseTypes].sort(),
+    skills: [...skillCounts.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+  };
+}
+
 export async function listPublishedCourses(filters: PublicCourseFilters = {}): Promise<PaginatedResult<PublicCourseRow>> {
   const supabase = getSupabaseClientOrThrow();
   const { page, pageSize, from, to } = paginationRange(filters);
@@ -688,19 +813,36 @@ export async function listPublishedCourses(filters: PublicCourseFilters = {}): P
 
   let query = supabase
     .from("courses")
-    .select("*, course_categories(categories(id, name, slug))", { count: "exact" })
+    .select("*, course_categories(categories(id, name, slug)), course_tags(tags(name, slug))", { count: "exact" })
     .eq("status", "published")
     .is("deleted_at", null);
 
   if (search) {
-    query = query.or(`title.ilike.${search},description.ilike.${search},short_description.ilike.${search}`);
+    // Also match skill tags by name, so "Figma" or "Kubernetes" finds courses
+    // that teach the skill even when the title doesn't mention it.
+    const skillCourseIds = await courseIdsForSkillSearch(search);
+    const idClause = skillCourseIds.length > 0 ? `,id.in.(${skillCourseIds.join(",")})` : "";
+    query = query.or(`title.ilike.${search},description.ilike.${search},short_description.ilike.${search}${idClause}`);
   }
   if (filters.level) query = query.eq("level", filters.level as NonNullable<Course["level"]>);
   if (filters.language) query = query.eq("language", filters.language);
   if (filters.courseType) query = query.eq("course_type", filters.courseType);
   if (filters.mentorId) query = query.eq("mentor_id", filters.mentorId);
   if (filters.excludeId) query = query.neq("id", filters.excludeId);
-  if (filters.freeOnly) query = query.or("price.is.null,price.eq.0");
+  if (filters.freeOnly || filters.priceRange === "free") query = query.or("price.is.null,price.eq.0");
+  if (filters.priceRange === "paid") query = query.gt("price", 0);
+  if (filters.priceRange === "under_2000") query = query.gt("price", 0).lt("price", 2000);
+  if (filters.priceRange === "2000_5000") query = query.gte("price", 2000).lte("price", 5000);
+  if (filters.priceRange === "over_5000") query = query.gt("price", 5000);
+
+  if (filters.skill) {
+    const { data: tag } = await supabase.from("tags").select("id").eq("slug", filters.skill).maybeSingle();
+    if (!tag) return { data: [], count: 0, page, pageSize, totalPages: 0 };
+    const { data: tagged } = await supabase.from("course_tags").select("course_id").eq("tag_id", tag.id);
+    const ids = (tagged ?? []).map((t) => t.course_id);
+    if (ids.length === 0) return { data: [], count: 0, page, pageSize, totalPages: 0 };
+    query = query.in("id", ids);
+  }
 
   if (filters.categorySlug) {
     const categoryIds = await resolveCategoryIdsForSlug(filters.categorySlug);
@@ -713,10 +855,17 @@ export async function listPublishedCourses(filters: PublicCourseFilters = {}): P
     query = query.in("id", courseIds);
   }
 
+  switch (filters.sort ?? "newest") {
+    case "oldest": query = query.order("created_at", { ascending: true }); break;
+    case "price_asc": query = query.order("price", { ascending: true, nullsFirst: true }).order("title", { ascending: true }); break;
+    case "price_desc": query = query.order("price", { ascending: false, nullsFirst: false }).order("title", { ascending: true }); break;
+    case "title": query = query.order("title", { ascending: true }); break;
+    default: query = query.order("created_at", { ascending: false });
+  }
+
   const { data, error, count } = await query
-    .order("created_at", { ascending: false })
     .range(from, to)
-    .returns<(Course & { course_categories: PublicCourseCategoryEmbed[] })[]>();
+    .returns<(Course & { course_categories: PublicCourseCategoryEmbed[]; course_tags: PublicCourseTagEmbed[] })[]>();
   assertServiceResponse(error);
 
   const rows = data ?? [];
@@ -736,8 +885,12 @@ export async function listPublishedCourses(filters: PublicCourseFilters = {}): P
   const mappedData: PublicCourseRow[] = rows.map((row) => {
     const profile = profileMap.get(row.mentor_id);
     const rating = ratingMap.get(row.id);
+    const { course_tags: tagEmbeds, ...course } = row;
+    const tags = (tagEmbeds ?? []).map((t) => t.tags).filter((t): t is { name: string; slug: string } => !!t);
     return {
-      ...row,
+      ...course,
+      skills: tags.filter((t) => t.slug !== DEMO_CONTENT_TAG_SLUG),
+      is_demo: tags.some((t) => t.slug === DEMO_CONTENT_TAG_SLUG),
       mentor_name: profile?.full_name ?? null,
       mentor_avatar_url: null,
       avg_rating: rating?.avg_rating ?? null,

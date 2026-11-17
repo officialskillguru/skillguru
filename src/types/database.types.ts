@@ -6453,6 +6453,21 @@ export type Database = {
           course_id: string
         }[]
       }
+      get_public_course_outline: {
+        Args: { p_course_id: string }
+        Returns: {
+          module_id: string
+          module_title: string
+          module_description: string | null
+          module_sort_order: number
+          lesson_id: string | null
+          lesson_title: string | null
+          content_type: Database["public"]["Enums"]["content_type"] | null
+          duration_seconds: number | null
+          is_free_preview: boolean | null
+          lesson_sort_order: number | null
+        }[]
+      }
       get_public_course_enrollment_counts: {
         Args: { p_course_ids: string[] }
         Returns: {

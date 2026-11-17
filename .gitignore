@@ -42,3 +42,6 @@ typecheck*.txt
 repo-forensics-*.txt
 .env.old-project.bak
 SKILLGURU_REVIEW_CREDENTIALS.txt
+
+# Demo-seed rendered thumbnails (regenerated on demand)
+scripts/demo-seed/.thumbs/

@@ -1,12 +1,28 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { ArrowRight, Clock, Star, Users } from "lucide-react";
 
 import type { PublicCourseRow } from "@/services/courses.service";
 import { resolveFileUrl } from "@/services/storage.service";
 import { courseDetailRoute } from "@/lib/routes";
+import { courseAccent } from "@/lib/courseVisuals";
 
-const FALLBACK_THUMBNAIL = "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?ixlib=rb-4.0.3&auto=format&fit=crop&w=1200&q=80";
+/**
+ * Local, always-available artwork used when a course has no thumbnail or the
+ * signed URL cannot be resolved/loaded. Never depends on an external host.
+ */
+function CourseArtworkFallback({ label, categorySlug }: Readonly<{ label: string; categorySlug: string | null }>) {
+  const accent = courseAccent(categorySlug);
+  return (
+    <div
+      className="flex size-full items-end p-4"
+      style={{ background: `radial-gradient(circle at 85% 15%, ${accent}66 0, transparent 50%), linear-gradient(135deg, #0B1736 0%, #0F2557 60%, #132F6B 100%)` }}
+    >
+      <p className="text-sm font-black uppercase tracking-[0.14em] text-white/80">{label}</p>
+    </div>
+  );
+}
 
 function formatPrice(value: number | null) {
   if (!value) return "Free";
@@ -37,7 +53,9 @@ export function PublicCourseCard({ course }: Readonly<{ course: PublicCourseRow 
     staleTime: 5 * 60 * 1000,
   });
 
-  const categoryName = course.course_categories.find((cc) => cc.categories)?.categories?.name ?? null;
+  const [imageFailed, setImageFailed] = useState(false);
+  const category = course.course_categories.find((cc) => cc.categories)?.categories ?? null;
+  const categoryName = category?.name ?? null;
   const level = levelLabel(course.level);
   const hasDiscount = course.discount_price != null && course.price != null && course.discount_price < course.price;
   const detailHref = courseDetailRoute(course.slug);
@@ -46,12 +64,17 @@ export function PublicCourseCard({ course }: Readonly<{ course: PublicCourseRow 
     <article className="premium-surface group flex h-full min-w-0 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition duration-300 hover:-translate-y-1.5 hover:border-accent/45 hover:shadow-md">
       <Link to={detailHref} className="block" tabIndex={-1} aria-hidden="true">
         <div className="relative aspect-[1.48] overflow-hidden bg-primary">
-          <img
-            src={thumbnailUrl ?? FALLBACK_THUMBNAIL}
-            alt=""
-            className="size-full object-cover transition duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
+          {thumbnailUrl && !imageFailed ? (
+            <img
+              src={thumbnailUrl}
+              alt=""
+              className="size-full object-cover transition duration-500 group-hover:scale-105"
+              loading="lazy"
+              onError={() => setImageFailed(true)}
+            />
+          ) : (
+            <CourseArtworkFallback label={categoryName ?? "SkillGuru"} categorySlug={category?.slug ?? null} />
+          )}
           <div className="absolute left-3 top-3 flex max-w-[calc(100%-1rem)] flex-wrap gap-1.5">
             {categoryName && (
               <span className="rounded-md bg-accent px-2.5 py-1 text-[10px] font-black uppercase leading-none text-primary shadow-sm">
@@ -64,6 +87,14 @@ export function PublicCourseCard({ course }: Readonly<{ course: PublicCourseRow 
               </span>
             )}
           </div>
+          {course.is_demo && (
+            <span
+              className="absolute right-3 top-3 rounded-md border border-dashed border-white/60 bg-primary/70 px-2 py-1 text-[10px] font-black uppercase leading-none text-white backdrop-blur"
+              title="Demonstration course created for platform review"
+            >
+              Demo
+            </span>
+          )}
         </div>
       </Link>
       <div className="flex flex-1 flex-col p-4">
@@ -72,6 +103,15 @@ export function PublicCourseCard({ course }: Readonly<{ course: PublicCourseRow 
         </Link>
         {course.short_description && (
           <p className="mt-1.5 line-clamp-2 text-sm font-medium text-muted-foreground">{course.short_description}</p>
+        )}
+        {course.skills.length > 0 && (
+          <ul className="mt-3 flex flex-wrap gap-1.5" aria-label="Skills covered">
+            {course.skills.slice(0, 3).map((skill) => (
+              <li key={skill.slug} className="rounded-md bg-secondary/10 px-2 py-0.5 text-[11px] font-bold text-secondary">
+                {skill.name}
+              </li>
+            ))}
+          </ul>
         )}
 
         <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-semibold text-muted-foreground">

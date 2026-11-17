@@ -2,7 +2,6 @@ import { registerMentors } from "./registerMentors";
 import { SearchRegistry } from "../core/SearchRegistry";
 import type { SearchRecord } from "../types";
 import { listPublishedCourses } from "@/services/courses.service";
-import { resolveFileUrl } from "@/services/storage.service";
 import { faqs } from "@/data/platform";
 
 export function initializeSearchRegistry() {
@@ -13,9 +12,10 @@ export function initializeSearchRegistry() {
   SearchRegistry.register("courses", async () => {
     const { data: publishedCourses } = await listPublishedCourses({ pageSize: 100 });
 
-    const records = await Promise.all(
-      publishedCourses.map(async (c): Promise<SearchRecord> => {
-        const image = c.thumbnail_file_id ? await resolveFileUrl(c.thumbnail_file_id).catch(() => null) : null;
+    // No per-course thumbnail signing here: resolving a signed URL for every
+    // published course on registry init cost one storage request per course
+    // (100+ requests) before the user had typed anything.
+    return publishedCourses.map((c): SearchRecord => {
         const categoryName = c.course_categories[0]?.categories?.name ?? undefined;
         return {
           id: `course_${c.slug}`,
@@ -25,13 +25,10 @@ export function initializeSearchRegistry() {
           description: c.short_description ?? c.description ?? undefined,
           category: "Courses",
           url: `/courses/${c.slug}`,
-          image: image ?? undefined,
-          keywords: [categoryName, c.level, c.language].filter((v): v is string => !!v),
+          keywords: [categoryName, c.level, c.language, ...c.skills.map((s) => s.name)].filter((v): v is string => !!v),
           popularity: 90,
         };
-      })
-    );
-    return records;
+      });
   });
 
   // 2. Register FAQs - the same static FAQ copy already shown on the public
