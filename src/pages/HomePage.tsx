@@ -85,8 +85,12 @@ function formatCount(value: number | undefined) {
 }
 
 export default function HomePage() {
-  usePageMeta("Career Transformation Platform");
   const location = useLocation();
+  usePageMeta(
+    location.pathname === routes.faq ? "Frequently Asked Questions" : "Career Transformation Platform",
+    undefined,
+    location.pathname === routes.faq ? routes.faq : "/",
+  );
   const faqRef = useRef<HTMLElement>(null);
 
   // /faq renders the homepage — bring the FAQ section into view.

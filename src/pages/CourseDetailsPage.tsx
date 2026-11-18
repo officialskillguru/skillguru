@@ -377,7 +377,17 @@ export default function CourseDetailsPage() {
   };
 
   if (isCourseLoading) return <PageLoader />;
-  if (!course) return <div className="p-10 text-center font-bold">Course not found.</div>;
+  if (!course) {
+    return (
+      <section className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center">
+        <h1 className="text-2xl font-black text-foreground">Course not found</h1>
+        <p className="mt-2 text-sm text-muted-foreground">This course may have been renamed or is no longer available.</p>
+        <Link to={routes.courses} className="mt-6 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          Browse all courses
+        </Link>
+      </section>
+    );
+  }
 
   const totalLessons = curriculum.reduce((sum, m) => sum + m.lessons.length, 0);
   const totalSeconds = curriculum.reduce((sum, m) => sum + m.lessons.reduce((s, l) => s + (l.duration_seconds ?? 0), 0), 0);

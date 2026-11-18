@@ -3,6 +3,7 @@ import { Award, Building2, HeartHandshake, Lightbulb, ShieldCheck, Sparkles, Tar
 import { MentorCard } from "@/components/cards/MentorCard";
 import { CTABanner } from "@/components/site/CTABanner";
 import { mentors, recruiterLogos, recruiters, stats } from "@/data/platform";
+import { IllustrativeContentNotice } from "@/components/common/IllustrativeContentNotice";
 import { usePageMeta } from "@/hooks/usePageMeta";
 
 const journey = [
@@ -19,6 +20,11 @@ const valueCards = [
   { title: "Integrity", body: "Transparent guidance and clear expectations.", icon: ShieldCheck },
   { title: "Innovation", body: "Modern tools for practical learning.", icon: Sparkles },
 ];
+
+function RecruiterMark({ name }: Readonly<{ name: string }>) {
+  const src = (recruiterLogos as Partial<Record<string, string>>)[name];
+  return src ? <img src={src} alt={name} className="mx-auto h-9 max-w-32 object-contain" /> : <span className="text-center font-black text-foreground">{name}</span>;
+}
 
 export default function AboutPage() {
   usePageMeta("About Us");
@@ -55,6 +61,10 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
+
+      <div className="bg-card px-4 pb-6 sm:px-6 lg:px-8">
+        <IllustrativeContentNotice>The headline figures, mentor profiles and recruiter names on this page are sample content for this preview and have not been verified.</IllustrativeContentNotice>
+      </div>
 
       <section className="bg-muted px-4 py-12 sm:px-6 lg:px-8 lg:py-25">
         <div className="mx-auto max-w-7xl">
@@ -125,7 +135,7 @@ export default function AboutPage() {
             <p className="text-center text-sm font-black text-primary">Our Top Recruiters</p>
             <div className="mt-6 grid grid-cols-2 items-center gap-8 md:grid-cols-4 lg:grid-cols-8">
               {recruiters.slice(0, 8).map((partner) => (
-                <img key={partner} src={recruiterLogos[partner as keyof typeof recruiterLogos]} alt={partner} className="mx-auto h-9 max-w-32 object-contain" />
+                <RecruiterMark key={partner} name={partner} />
               ))}
             </div>
           </div>

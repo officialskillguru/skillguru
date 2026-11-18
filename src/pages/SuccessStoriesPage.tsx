@@ -76,7 +76,9 @@ export default function SuccessStoriesPage() {
                 <img src={story.avatar} alt="" className="h-full w-full object-cover object-top opacity-90" />
                 <div className="absolute right-4 top-4 rounded-[10px] bg-card p-3 text-center shadow-lg">
                   <p className="text-[10px] font-bold text-muted-foreground">Placed at</p>
-                  <img src={story.companyLogo} alt={story.company} className="mt-1 h-8 w-24 object-contain" />
+                  {story.companyLogo && (
+                    <img src={story.companyLogo} alt={story.company} className="mt-1 h-8 w-24 object-contain" />
+                  )}
                 </div>
               </div>
               <div className="p-5">

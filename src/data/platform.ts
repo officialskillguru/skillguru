@@ -55,12 +55,8 @@ export const recruiterLogos = {
   Capgemini: assetUrl("/assets/recruiters/capgemini-display.svg"),
   Deloitte: assetUrl("/assets/recruiters/deloitte-display.svg"),
   "Tech Mahindra": assetUrl("/assets/recruiters/tech-mahindra-display.svg"),
-  Cognizant: assetUrl("/assets/recruiters/infosys-display.svg"),
-  IBM: assetUrl("/assets/recruiters/wipro-display.svg"),
-  Microsoft: assetUrl("/assets/recruiters/accenture-display.svg"),
-  Google: assetUrl("/assets/recruiters/capgemini-display.svg"),
-  AWS: assetUrl("/assets/recruiters/hcl-display.svg"),
-  PayPal: assetUrl("/assets/recruiters/deloitte-display.svg"),
+  // Cognizant, IBM, Microsoft, Google, AWS and PayPal previously pointed at other
+  // companies' logo files; with no genuine artwork available they render as text.
 } as const;
 
 export const recruiters = [
@@ -619,7 +615,7 @@ export const mentors: Mentor[] = [
     name: "Rahul Sharma",
     role: "Senior Data Scientist",
     company: "Microsoft",
-    companyLogo: recruiterLogos.Microsoft,
+    companyLogo: "", // no genuine Microsoft logo asset; MentorCard hides empty logos
     avatar: avatars.rahul,
     category: "Data Science",
     experience: "8+ Years Exp.",
@@ -638,7 +634,7 @@ export const mentors: Mentor[] = [
     name: "Neha Verma",
     role: "Product Manager",
     company: "Google",
-    companyLogo: recruiterLogos.Google,
+    companyLogo: "", // no genuine Google logo asset; MentorCard hides empty logos
     avatar: avatars.neha,
     category: "Data Science",
     experience: "7+ Years Exp.",
@@ -657,7 +653,7 @@ export const mentors: Mentor[] = [
     name: "Amit Singh",
     role: "Solutions Architect",
     company: "Amazon Web Services",
-    companyLogo: recruiterLogos.AWS,
+    companyLogo: "", // no genuine AWS logo asset; MentorCard hides empty logos
     avatar: avatars.rahul,
     category: "Cloud Computing",
     experience: "9+ Years Exp.",
@@ -676,7 +672,7 @@ export const mentors: Mentor[] = [
     name: "Pooja Rao",
     role: "Senior UI/UX Designer",
     company: "PayPal",
-    companyLogo: recruiterLogos.PayPal,
+    companyLogo: "", // no genuine PayPal logo asset; MentorCard hides empty logos
     avatar: avatars.pooja,
     category: "UI/UX Design",
     experience: "9+ Years Exp.",
@@ -807,7 +803,7 @@ export const successStories: SuccessStory[] = [
     name: "Karan Malhotra",
     role: "DevOps Engineer",
     company: "IBM",
-    companyLogo: recruiterLogos.IBM,
+    companyLogo: "", // no genuine IBM logo asset; MentorCard hides empty logos
     avatar: avatars.rahul,
     quote: "The DevOps training was practical and intensive. It upgraded my skills and my career.",
     growth: "10 LPA",

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Search, SlidersHorizontal, X } from "lucide-react";
@@ -56,6 +56,14 @@ function useDebouncedValue<T>(value: T, delayMs: number): T {
 export default function CoursesPage() {
   usePageMeta("Courses & Career Tracks");
   const [searchParams, setSearchParams] = useSearchParams();
+  // Latest URL params, updated synchronously by every filter change. React Router's
+  // setSearchParams (even its functional form) starts from this render's params, so two
+  // changes in the same tick (e.g. clearing Price then picking a Skill) would otherwise
+  // drop the first one and resurrect the cleared filter.
+  const latestParamsRef = useRef(searchParams);
+  useEffect(() => {
+    latestParamsRef.current = searchParams;
+  }, [searchParams]);
 
   const [searchInput, setSearchInput] = useState(searchParams.get("search") ?? "");
   const search = useDebouncedValue(searchInput, 300);
@@ -78,9 +86,10 @@ export default function CoursesPage() {
   };
 
   const setParam = (key: string, value: string) => {
-    const next = new URLSearchParams(searchParams);
+    const next = new URLSearchParams(latestParamsRef.current);
     if (value) next.set(key, value);
     else next.delete(key);
+    latestParamsRef.current = next;
     setSearchParams(next, { replace: true });
     setPage(1);
   };
@@ -128,6 +137,7 @@ export default function CoursesPage() {
 
   const clearFilters = () => {
     setSearchInput("");
+    latestParamsRef.current = new URLSearchParams();
     setSearchParams({}, { replace: true });
     setPage(1);
   };

@@ -11,6 +11,8 @@ export function useCourseBySlug(slug: string | undefined) {
       return res.data;
     },
     enabled: !!slug,
+    // A missing course is a definitive answer — don't retry it with backoff.
+    retry: (failureCount, error) => !(error instanceof Error && /not found/i.test(error.message)) && failureCount < 2,
     staleTime: 60 * 1000,
   });
 }

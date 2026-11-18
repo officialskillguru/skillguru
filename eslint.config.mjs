@@ -14,6 +14,9 @@ const eslintConfig = [
       "public/**",
       "supabase/functions/**",
       "tmp/**",
+      // Claude Code git worktrees: separate checkouts with their own config.
+      ".claude/**",
+      "test-results/**",
       "src/types/database.types.ts",
     ],
   },

@@ -19,6 +19,7 @@ import {
 import { CTAButton } from "@/components/common/CTAButton";
 import { CTABanner } from "@/components/site/CTABanner";
 import { faqs, recruiterLogos, recruiters, successStories } from "@/data/platform";
+import { IllustrativeContentNotice } from "@/components/common/IllustrativeContentNotice";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { placementStoryId } from "@/lib/placement-stories";
 import { placementStoryRoute, routes } from "@/lib/routes";
@@ -158,6 +159,10 @@ export default function PlacementsPage() {
         </div>
       </section>
 
+      <div className="bg-card px-4 pt-6 sm:px-6 lg:px-8">
+        <IllustrativeContentNotice>The success stories, salary figures and outcomes on this page are sample content for this preview and are not verified placement records.</IllustrativeContentNotice>
+      </div>
+
       <section className="bg-card px-4 pb-12 pt-10 sm:px-6 sm:pb-14 sm:pt-16 lg:px-8 lg:pb-20 lg:pt-24">
         <div className="mx-auto grid max-w-[1280px] gap-4 rounded-[24px] border border-border bg-card p-5 shadow-[0_24px_80px_rgba(10,42,136,0.14)] sm:grid-cols-2 lg:grid-cols-6">
           {placementStats.map((stat) => {
@@ -190,7 +195,9 @@ export default function PlacementsPage() {
                 <div className="relative h-40 bg-primary">
                   <img src={story.avatar} alt={story.name} className="size-full object-cover object-top opacity-92" loading="lazy" />
                   <span className="absolute left-4 top-4 rounded-full bg-card px-3 py-1 text-xs font-black text-primary">{story.package}</span>
-                  <img src={story.companyLogo} alt={story.company} className="absolute bottom-4 right-4 h-8 max-w-24 rounded-lg bg-card p-1.5 object-contain" />
+                  {story.companyLogo && (
+                    <img src={story.companyLogo} alt={story.company} className="absolute bottom-4 right-4 h-8 max-w-24 rounded-lg bg-card p-1.5 object-contain" />
+                  )}
                 </div>
                 <div className="p-5">
                   <h3 className="text-xl font-black text-primary">{story.name}</h3>

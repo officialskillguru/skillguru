@@ -11,7 +11,11 @@ export function TestimonialCard({ testimonial }: Readonly<{ testimonial: Testimo
           <h3 className="font-black text-primary">{testimonial.name}</h3>
           <p className="text-xs font-semibold text-muted-foreground">{testimonial.role}</p>
         </div>
-        <img src={testimonial.companyLogo} alt={testimonial.company} className="ml-auto h-8 max-w-24 object-contain" loading="lazy" />
+        {testimonial.companyLogo ? (
+          <img src={testimonial.companyLogo} alt={testimonial.company} className="ml-auto h-8 max-w-24 object-contain" loading="lazy" />
+        ) : (
+          <span className="ml-auto text-xs font-black text-muted-foreground">{testimonial.company}</span>
+        )}
       </div>
       <Quote className="mt-6 size-8 text-secondary" />
       <p className="mt-4 min-h-24 text-sm leading-7 text-slate-600">{testimonial.quote}</p>

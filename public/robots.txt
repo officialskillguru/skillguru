@@ -1,0 +1,18 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /mentor
+Disallow: /counsellor
+Disallow: /onboarding
+Disallow: /payment
+Disallow: /login
+Disallow: /signup
+Disallow: /verify-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /force-password-change
+Disallow: /auth/
+
+Sitemap: https://skillguru-india.vercel.app/sitemap.xml

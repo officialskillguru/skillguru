@@ -83,7 +83,8 @@ export default function MentorProfilePage() {
   return (
     <MentorProfileLayout>
       <Helmet>
-        <title>{mentor.name} - {mentor.role} Mentor | Skill Guru</title>
+        {/* Helmet requires <title> to have a single string child; mixed JSX children render an empty title. */}
+        <title>{`${mentor.name} - ${mentor.role} Mentor | Skill Guru`}</title>
         <meta name="description" content={mentor.about.slice(0, 160)} />
         <meta property="og:title" content={`${mentor.name} - ${mentor.role} Mentor | Skill Guru`} />
         <meta property="og:description" content={mentor.about.slice(0, 160)} />

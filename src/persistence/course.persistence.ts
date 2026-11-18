@@ -26,10 +26,14 @@ export class CoursePersistence {
       .from("courses")
       .select("*")
       .eq("slug", slug)
-      .single();
+      // maybeSingle: an unknown slug is a normal "not found", not a 406 error response.
+      .maybeSingle();
 
     if (error) {
       return fail(new DatabaseError(error.message, "getCourseBySlug failed"));
+    }
+    if (!data) {
+      return fail(new DatabaseError("Course not found", "getCourseBySlug not found"));
     }
     return ok(data);
   }

@@ -21,6 +21,7 @@ import { usePremiumPageMotion } from "@/components/motion/usePremiumPageMotion";
 import { successStories } from "@/data/platform";
 import { placementStoryId } from "@/lib/placement-stories";
 import { routes } from "@/lib/routes";
+import { IllustrativeContentNotice } from "@/components/common/IllustrativeContentNotice";
 import { submitLead } from "@/services/leads";
 
 export default function PlacementStoryPage() {
@@ -28,10 +29,10 @@ export default function PlacementStoryPage() {
   const pageRef = useRef<HTMLElement>(null);
   usePremiumPageMotion({ rootRef: pageRef });
 
-  // Find matching story, default to first story if not found
-  const story = successStories.find((item) => placementStoryId(item) === id) ?? successStories[0]!;
+  // An unknown id is "not found" — never silently substitute another person's story.
+  const story = successStories.find((item) => placementStoryId(item) === id);
 
-  usePageMeta(`${story.name}'s Placement Success Story`);
+  usePageMeta(story ? `${story.name}'s Placement Success Story` : "Story not found");
 
   // State for Callback Form
   const [callbackStatus, setCallbackStatus] = useState<string | null>(null);
@@ -51,8 +52,8 @@ export default function PlacementStoryPage() {
         fullName: typeof data.get("fullName") === "string" ? (data.get("fullName") as string) : "",
         email: typeof data.get("email") === "string" ? (data.get("email") as string) : "",
         phone: typeof data.get("phone") === "string" ? (data.get("phone") as string) : "",
-        subject: `Callback from Placement Page: ${story.name}`,
-        message: `Callback requested for program: ${story.course}`,
+        subject: `Callback from Placement Page: ${story?.name ?? "unknown"}`,
+        message: `Callback requested for program: ${story?.course ?? "unknown"}`,
         consent: true,
         website: "",
       });
@@ -63,8 +64,21 @@ export default function PlacementStoryPage() {
     }
   }
 
+  if (!story) {
+    return (
+      <div ref={pageRef as React.RefObject<HTMLDivElement>} className="mx-auto flex min-h-[60vh] max-w-xl flex-col items-center justify-center px-4 text-center">
+        <h1 className="text-2xl font-black text-foreground">Story not found</h1>
+        <p className="mt-2 text-sm text-muted-foreground">This placement story doesn&apos;t exist or has been removed.</p>
+        <Link to={routes.placements} className="mt-6 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+          View all placement stories
+        </Link>
+      </div>
+    );
+  }
+
   return (
-    <main ref={pageRef} className="page-shell">
+    <div ref={pageRef as React.RefObject<HTMLDivElement>} className="page-shell">
+      <IllustrativeContentNotice className="mt-4 mx-4 sm:mx-auto">This story is sample content for this preview and is not a verified placement record.</IllustrativeContentNotice>
       {/* Breadcrumb & Navigation */}
       <section className="bg-card px-4 py-5 border-b border-border sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
@@ -321,6 +335,6 @@ export default function PlacementStoryPage() {
           </div>
         </div>
       </section>
-    </main>
+    </div>
   );
 }
