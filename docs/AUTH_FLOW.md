@@ -70,3 +70,14 @@ A pure orchestration class — explicitly documented to never import React, show
 - Client: `createClient<Database>(url, anonKey, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true } })` (`src/lib/supabase/client.ts`).
 - Signup passes `full_name`/`role` via `options.data` (→ `raw_user_meta_data`), consumed by the `handle_new_user()` Postgres trigger (`SECURITY DEFINER`) to seed `profiles` + `user_roles` automatically.
 - Supabase Auth advisor flags **leaked-password-protection is currently disabled** (HaveIBeenPwned check) — see DATABASE.md / BUG_REPORT.md.
+
+## 8. Email links & redirects (updated 2026-11-17)
+
+- `src/lib/auth/redirects.ts` builds every auth email redirect from the origin actually serving the app (`window.location.origin`, falling back to `VITE_SITE_URL`). No host is hardcoded.
+  - `signUp()` and `resend({ type: "signup" })` pass `emailRedirectTo: <origin>/auth/callback`.
+  - `resetPasswordForEmail()` passes `redirectTo: <origin>/reset-password`.
+- Previously `signUp()`/`resend()` sent no redirect, so Supabase used the project Site URL (`http://localhost:3000`) and confirmation links failed in production.
+- `src/lib/auth/initialUrl.ts` snapshots the landing URL before `createClient()` so error params (`error_code=otp_expired`) survive supabase-js stripping the hash.
+- `/auth/callback` (`src/pages/AuthCallbackPage.tsx`): implicit-flow hash tokens are consumed by supabase-js (`detectSessionInUrl`); the page also supports `token_hash` (verifyOtp) and PKCE `code`. Shows "Email verified" with a role-aware dashboard button, or an expired/invalid state with a resend form. `type=recovery` is forwarded to `/reset-password`. Tokens are removed from the address bar after processing.
+- `/reset-password` shows the "Link expired or invalid" state when the landing URL carries an error, even if another session exists.
+- Supabase dashboard requirements: see DEPLOYMENT.md → "Supabase Auth URL configuration".

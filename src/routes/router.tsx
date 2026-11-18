@@ -29,6 +29,7 @@ const AuthPage            = lazy(() => import("@/pages/AuthPage"));
 const VerifyEmailPage     = lazy(() => import("@/pages/VerifyEmailPage"));
 const ForgotPasswordPage  = lazy(() => import("@/pages/ForgotPasswordPage"));
 const ResetPasswordPage   = lazy(() => import("@/pages/ResetPasswordPage"));
+const AuthCallbackPage    = lazy(() => import("@/pages/AuthCallbackPage"));
 const ForcePasswordChangePage = lazy(() => import("@/pages/ForcePasswordChangePage"));
 const LegalPage           = lazy(() => import("@/pages/LegalPage"));
 const NotFoundPage        = lazy(() => import("@/pages/NotFoundPage"));
@@ -137,6 +138,7 @@ export const router = createBrowserRouter([
       { path: routes.verifyEmail, element: withSuspense(<VerifyEmailPage />) },
       { path: routes.forgotPassword, element: withSuspense(<ForgotPasswordPage />) },
       { path: routes.resetPassword, element: withSuspense(<ResetPasswordPage />) },
+      { path: routes.authCallback, element: withSuspense(<AuthCallbackPage />) },
       { path: routes.verifyCertificate, element: withSuspense(<MarketingRoute><VerifyCertificatePage /></MarketingRoute>) },
       { path: "/verify-certificate/:code", element: withSuspense(<MarketingRoute><VerifyCertificatePage /></MarketingRoute>) },
 

@@ -23,14 +23,14 @@ cp .env.example .env.local
 npm run dev
 ```
 
-The app runs at `http://localhost:3000`.
+The app runs at `http://localhost:5173` (Vite dev server).
 
 ## Environment
 
 Create `.env.local` from `.env.example` and fill the values used by the environment:
 
 ```bash
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+VITE_SITE_URL=http://localhost:5173
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=

@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { Loader2, Eye, EyeOff, AlertCircle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabase/client";
+import { initialAuthUrl } from "@/lib/auth/initialUrl";
+import { parseAuthUrl } from "@/lib/auth/redirects";
 import { routes } from "@/lib/routes";
 import { Logo } from "@/components/common/Logo";
 import { Input } from "@/components/ui/input";
@@ -16,9 +18,20 @@ import { cn } from "@/lib/utils";
  * need to confirm a session exists, then call auth.updateUser like the
  * force-password-change flow already does.
  */
+/**
+ * An expired / already-used recovery link comes back with error params
+ * (e.g. error_code=otp_expired). Detected from the URL the app was loaded
+ * with, so the "expired" state wins even if the browser holds another session.
+ */
+function recoveryLinkFailedOnLoad(): boolean {
+  if (!initialAuthUrl) return false;
+  return new URL(initialAuthUrl).pathname === routes.resetPassword && parseAuthUrl(initialAuthUrl).error !== null;
+}
+
 export default function ResetPasswordPage() {
   const navigate = useNavigate();
-  const [hasSession, setHasSession] = useState<boolean | null>(null);
+  const [linkFailed] = useState(recoveryLinkFailedOnLoad);
+  const [hasSession, setHasSession] = useState<boolean | null>(linkFailed ? false : null);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -26,13 +39,18 @@ export default function ResetPasswordPage() {
   const [fieldError, setFieldError] = useState<{ field: "new-password" | "confirm-password"; message: string } | null>(null);
 
   useEffect(() => {
+    if (linkFailed) {
+      // Drop the error params from the address bar; keep the expired state.
+      window.history.replaceState(window.history.state, "", window.location.pathname);
+      return;
+    }
     void supabase.auth.getSession().then(({ data }) => setHasSession(!!data.session));
     const { data: subscription } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "PASSWORD_RECOVERY") setHasSession(true);
       else if (event === "SIGNED_IN" && session) setHasSession(true);
     });
     return () => subscription.subscription.unsubscribe();
-  }, []);
+  }, [linkFailed]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();

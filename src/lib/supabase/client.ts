@@ -1,3 +1,6 @@
+// Must be imported before createClient() so the original auth redirect URL
+// (tokens / error params) is captured before supabase-js strips it.
+import "@/lib/auth/initialUrl";
 import { createClient } from "@supabase/supabase-js";
 import { env } from "@/config/env";
 import type { Database } from "@/types/database.types";

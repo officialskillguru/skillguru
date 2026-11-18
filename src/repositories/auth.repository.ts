@@ -4,6 +4,7 @@ import { type Result, ok, fail, type AppError, AuthenticationError } from "@/uti
 import { AuthErrorMapper } from "@/utils/AuthErrorMapper";
 import type { IAuthRepository } from "./interfaces/IAuthRepository";
 import type { LoginFormData, SignupFormData } from "@/schemas/auth.schema";
+import { getEmailConfirmationRedirectUrl, getPasswordResetRedirectUrl } from "@/lib/auth/redirects";
 
 export class AuthRepository implements IAuthRepository {
   constructor(private readonly client: SupabaseClient<Database>) {}
@@ -63,6 +64,9 @@ export class AuthRepository implements IAuthRepository {
         email,
         password,
         options: {
+          // Without this Supabase falls back to the project's Site URL, which
+          // is how confirmation links ended up pointing at localhost:3000.
+          emailRedirectTo: getEmailConfirmationRedirectUrl(),
           data: {
             full_name: fullName,
             role,
@@ -95,7 +99,7 @@ export class AuthRepository implements IAuthRepository {
   async resetPassword(email: string): Promise<Result<void>> {
     try {
       const { error } = await this.client.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: getPasswordResetRedirectUrl(),
       });
       if (error) return fail(this.mapError(error));
       return ok(undefined);
@@ -109,6 +113,7 @@ export class AuthRepository implements IAuthRepository {
       const { error } = await this.client.auth.resend({
         type: "signup",
         email,
+        options: { emailRedirectTo: getEmailConfirmationRedirectUrl() },
       });
       if (error) return fail(this.mapError(error));
       return ok(undefined);

@@ -15,6 +15,7 @@ export const routes = {
   verifyEmail: "/verify-email",
   forgotPassword: "/forgot-password",
   resetPassword: "/reset-password",
+  authCallback: "/auth/callback",
   forcePasswordChange: "/force-password-change",
   dashboard: "/dashboard",
   freeCounselling: "/contact?intent=counselling",
