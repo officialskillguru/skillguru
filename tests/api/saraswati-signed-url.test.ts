@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterEach, describe, expect, it, vi } from "vitest";
-import handler, { handleSignedUrlRequest, isAllowedOrigin } from "../../api/saraswati/signed-url";
+import handler, { handleSignedUrlRequest, isAllowedOrigin, RATE_LIMIT, resetRateLimit } from "../../api/saraswati/signed-url";
 
 const API_KEY = "sk_test_super_secret_value_123";
 const AGENT_ID = "agent_test_abc";
@@ -17,6 +17,7 @@ async function body(res: Response) {
 }
 
 afterEach(() => {
+  resetRateLimit();
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -81,6 +82,20 @@ describe("GET /api/saraswati/signed-url", () => {
   it("rejects non-GET and cross-site origins", async () => {
     expect((await handleSignedUrlRequest(req(undefined, { method: "POST" }), env)).status).toBe(405);
     expect((await handleSignedUrlRequest(req(undefined, { headers: { origin: "https://evil.example" } }), env)).status).toBe(403);
+  });
+});
+
+describe("rate limiting", () => {
+  it("throttles one client after RATE_LIMIT.max sessions but not other clients or ?check=1", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => Promise.resolve(new Response(JSON.stringify({ signed_url: SIGNED }), { status: 200 }))));
+    const from = (ip: string, path?: string) => req(path, { headers: { "x-forwarded-for": `${ip}, 10.0.0.1` } });
+    for (let i = 0; i < RATE_LIMIT.max; i++) expect((await handleSignedUrlRequest(from("203.0.113.7"), env)).status).toBe(200);
+    const limited = await handleSignedUrlRequest(from("203.0.113.7"), env);
+    expect(limited.status).toBe(429);
+    expect(Number(limited.headers.get("retry-after"))).toBeGreaterThan(0);
+    expect(((await limited.json()) as { code: string }).code).toBe("RATE_LIMITED");
+    expect((await handleSignedUrlRequest(from("198.51.100.2"), env)).status).toBe(200);
+    expect((await handleSignedUrlRequest(from("203.0.113.7", "/api/saraswati/signed-url?check=1"), env)).status).toBe(200);
   });
 });
 

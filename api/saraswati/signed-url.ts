@@ -18,7 +18,45 @@ const ELEVENLABS_SIGNED_URL_ENDPOINT = "https://api.elevenlabs.io/v1/convai/conv
 const UPSTREAM_TIMEOUT_MS = 10_000;
 const DEV_ORIGINS = new Set(["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173"]);
 
-type ErrorCode = "METHOD_NOT_ALLOWED" | "FORBIDDEN_ORIGIN" | "MISSING_CONFIGURATION" | "UPSTREAM_ERROR" | "UPSTREAM_TIMEOUT";
+type ErrorCode = "METHOD_NOT_ALLOWED" | "FORBIDDEN_ORIGIN" | "RATE_LIMITED" | "MISSING_CONFIGURATION" | "UPSTREAM_ERROR" | "UPSTREAM_TIMEOUT";
+
+// Best-effort abuse brake: per-IP sliding window, held in this function
+// instance's memory. Fluid Compute reuses instances, so a single client
+// hammering the endpoint is throttled; it is NOT a global limit across
+// instances — the ElevenLabs workspace usage cap remains the hard backstop.
+export const RATE_LIMIT = { max: 10, windowMs: 10 * 60 * 1000 };
+const MAX_TRACKED_CLIENTS = 5000;
+const recentRequests = new Map<string, number[]>();
+
+export function clientKey(request: Request): string {
+  const forwarded = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return forwarded || request.headers.get("x-real-ip") || "unknown";
+}
+
+/** Records a request; returns seconds to wait when over the limit, else null. */
+export function checkRateLimit(key: string, now = Date.now()): number | null {
+  const windowStart = now - RATE_LIMIT.windowMs;
+  const hits = (recentRequests.get(key) ?? []).filter((t) => t > windowStart);
+  if (hits.length >= RATE_LIMIT.max) {
+    recentRequests.set(key, hits);
+    return Math.max(1, Math.ceil((hits[0]! + RATE_LIMIT.windowMs - now) / 1000));
+  }
+  hits.push(now);
+  recentRequests.delete(key);
+  recentRequests.set(key, hits);
+  // Bound memory: evict the least-recently-seen clients.
+  while (recentRequests.size > MAX_TRACKED_CLIENTS) {
+    const oldest = recentRequests.keys().next().value;
+    if (oldest === undefined) break;
+    recentRequests.delete(oldest);
+  }
+  return null;
+}
+
+/** Test hook. */
+export function resetRateLimit(): void {
+  recentRequests.clear();
+}
 
 function json(status: number, body: unknown, extraHeaders: Record<string, string> = {}): Response {
   return new Response(JSON.stringify(body), {
@@ -61,6 +99,15 @@ export async function handleSignedUrlRequest(request: Request, env: Record<strin
   // configuration without minting a URL or revealing anything about values.
   if (new URL(request.url).searchParams.get("check") === "1") {
     return json(200, { ok: configured.ELEVENLABS_API_KEY && configured.ELEVENLABS_AGENT_ID, configured });
+  }
+
+  const retryAfter = checkRateLimit(clientKey(request));
+  if (retryAfter !== null) {
+    return json(
+      429,
+      { ok: false, code: "RATE_LIMITED", message: "Too many voice sessions started. Please wait a few minutes.", retryAfterSeconds: retryAfter },
+      { "Retry-After": String(retryAfter) },
+    );
   }
 
   if (!apiKey || !agentId) {

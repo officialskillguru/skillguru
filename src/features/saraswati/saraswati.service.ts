@@ -19,6 +19,7 @@ const FRIENDLY: Record<string, string> = {
   UPSTREAM_ERROR: "Saraswati couldn't connect to the voice service. Please try again.",
   UPSTREAM_TIMEOUT: "The voice service took too long to respond. Please try again.",
   FORBIDDEN_ORIGIN: "Voice sessions can only be started from the SkillGuru site.",
+  RATE_LIMITED: "You've started several voice sessions in a short time. Please wait a few minutes and try again.",
 };
 
 export async function fetchSignedUrl(fetchImpl: typeof fetch = fetch): Promise<string> {
