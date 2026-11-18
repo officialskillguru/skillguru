@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 
-import { AIAgentWidget } from "@/components/site/AIAgentWidget";
 import { Footer } from "@/components/site/Footer";
 import { Navbar } from "@/components/site/Navbar";
+import { SaraswatiLauncher } from "@/features/saraswati/SaraswatiLauncher";
 
 export function MarketingLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
@@ -15,8 +15,10 @@ export function MarketingLayout({ children }: Readonly<{ children: ReactNode }>)
       </main>
       <Footer />
       {/* Outside #main-content deliberately — a persistent widget inside the skip
-          link's target would sit in the content users skip to. */}
-      <AIAgentWidget />
+          link's target would sit in the content users skip to.
+          Saraswati (ElevenLabs voice) replaces the Gemini text AIAgentWidget for
+          the presentation preview; AIAgentWidget is kept in the codebase to revert. */}
+      <SaraswatiLauncher />
     </div>
   );
 }

@@ -21,6 +21,7 @@
     }
   },
   "include": [
+    "api/**/*.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
     "tests/**/*.ts",

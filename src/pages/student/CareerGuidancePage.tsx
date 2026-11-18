@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { Compass, Loader2, Sparkles, ArrowRight, History } from "lucide-react";
@@ -8,6 +8,10 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { Badge } from "@/components/ui/badge";
 import { useCareerGuidanceReports, useGenerateCareerGuidance, useRecommendedCourses } from "@/hooks/student/useCareerGuidance";
 import type { CareerGuidanceReport } from "@/services/career-guidance.service";
+
+// Saraswati voice guide (ElevenLabs only — independent of the Gemini report below).
+// Lazy so three.js and the voice SDK load only for students who open this page.
+const SaraswatiPanel = lazy(() => import("@/features/saraswati/SaraswatiPanel").then((m) => ({ default: m.SaraswatiPanel })));
 
 const PRIORITY_VARIANTS: Record<string, "destructive" | "warning" | "muted"> = { high: "destructive", medium: "warning", low: "muted" };
 
@@ -46,7 +50,29 @@ export default function CareerGuidancePage() {
         </p>
       </div>
 
+      <section aria-labelledby="saraswati-heading" className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] md:items-start">
+          <div>
+            <h2 id="saraswati-heading" className="flex items-center gap-2 text-lg font-black text-foreground">
+              <Sparkles className="size-5 text-primary" aria-hidden="true" /> Talk it through with Saraswati
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Saraswati is SkillGuru's AI voice guide. Speak naturally about the role you want, where you are today and what's holding you back — she'll help you think through next steps.
+            </p>
+            <ul className="mt-3 space-y-1.5 text-sm text-foreground/80">
+              <li className="flex items-start gap-2"><ArrowRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" /> "I'm a B.Com graduate — can I move into data analytics?"</li>
+              <li className="flex items-start gap-2"><ArrowRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" /> "Which skills should I learn first for frontend roles?"</li>
+              <li className="flex items-start gap-2"><ArrowRight className="mt-0.5 size-3.5 shrink-0 text-primary" aria-hidden="true" /> "How do I prepare for my first interview?"</li>
+            </ul>
+          </div>
+          <Suspense fallback={<Skeleton className="h-80 w-full rounded-xl" />}>
+            <SaraswatiPanel avatarClassName="h-72" />
+          </Suspense>
+        </div>
+      </section>
+
       <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+        <h2 className="mb-3 text-sm font-black uppercase tracking-wide text-muted-foreground">Written readiness report</h2>
         <div className="flex flex-col gap-3 sm:flex-row">
           <label htmlFor="target-role" className="sr-only">Target role</label>
           <input
