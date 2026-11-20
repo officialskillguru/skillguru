@@ -1,0 +1,5 @@
+{
+  "$comment": "Approved LaTeX resume templates. Only entries with status 'active' are shown to students. Each entry must have a matching folder resume-templates/<id>/ containing the reviewed source files. See resume-templates/README.md before adding one.",
+  "registryVersion": 1,
+  "templates": []
+}

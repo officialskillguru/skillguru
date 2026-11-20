@@ -5290,6 +5290,216 @@ export type Database = {
           },
         ]
       }
+      resume_ai_usage: {
+        Row: {
+          created_at: string
+          id: number
+          operation: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          operation: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          operation?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_ai_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resume_pdf_jobs: {
+        Row: {
+          attempt_count: number
+          completed_at: string | null
+          created_at: string
+          error_code: string | null
+          id: string
+          requested_revision: number
+          resume_id: string
+          started_at: string | null
+          status: string
+          template_id: string
+          user_id: string
+          version_id: string | null
+        }
+        Insert: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          requested_revision: number
+          resume_id: string
+          started_at?: string | null
+          status?: string
+          template_id: string
+          user_id: string
+          version_id?: string | null
+        }
+        Update: {
+          attempt_count?: number
+          completed_at?: string | null
+          created_at?: string
+          error_code?: string | null
+          id?: string
+          requested_revision?: number
+          resume_id?: string
+          started_at?: string | null
+          status?: string
+          template_id?: string
+          user_id?: string
+          version_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_pdf_jobs_resume_fk"
+            columns: ["resume_id","user_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id","user_id"]
+          },
+          {
+            foreignKeyName: "resume_pdf_jobs_version_id_fkey"
+            columns: ["version_id"]
+            isOneToOne: false
+            referencedRelation: "resume_versions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resume_versions: {
+        Row: {
+          created_at: string
+          id: string
+          label: string | null
+          pdf_storage_path: string | null
+          resume_data_snapshot: Json
+          resume_id: string
+          resume_revision: number
+          schema_version: number
+          source: string
+          target_role: string | null
+          template_id: string | null
+          title: string
+          user_id: string
+          version_number: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          pdf_storage_path?: string | null
+          resume_data_snapshot: Json
+          resume_id: string
+          resume_revision: number
+          schema_version: number
+          source: string
+          target_role?: string | null
+          template_id?: string | null
+          title: string
+          user_id: string
+          version_number: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          label?: string | null
+          pdf_storage_path?: string | null
+          resume_data_snapshot?: Json
+          resume_id?: string
+          resume_revision?: number
+          schema_version?: number
+          source?: string
+          target_role?: string | null
+          template_id?: string | null
+          title?: string
+          user_id?: string
+          version_number?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resume_versions_resume_fk"
+            columns: ["resume_id","user_id"]
+            isOneToOne: false
+            referencedRelation: "resumes"
+            referencedColumns: ["id","user_id"]
+          },
+        ]
+      }
+      resumes: {
+        Row: {
+          created_at: string
+          current_version: number
+          id: string
+          latest_generated_at: string | null
+          latest_generated_revision: number | null
+          latest_pdf_path: string | null
+          resume_data: Json
+          revision: number
+          schema_version: number
+          status: string
+          target_role: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_version?: number
+          id?: string
+          latest_generated_at?: string | null
+          latest_generated_revision?: number | null
+          latest_pdf_path?: string | null
+          resume_data?: Json
+          revision?: number
+          schema_version?: number
+          status?: string
+          target_role?: string | null
+          template_id?: string | null
+          title: string
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          current_version?: number
+          id?: string
+          latest_generated_at?: string | null
+          latest_generated_revision?: number | null
+          latest_pdf_path?: string | null
+          resume_data?: Json
+          revision?: number
+          schema_version?: number
+          status?: string
+          target_role?: string | null
+          template_id?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resumes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resume_projects: {
         Row: {
           created_at: string
@@ -6390,6 +6600,106 @@ export type Database = {
       }
     }
     Functions: {
+      consume_resume_ai_quota: {
+        Args: { p_operation: string; p_per_day: number; p_per_minute: number; p_user_id: string }
+        Returns: { allowed: boolean; retry_after_seconds: number }[]
+      }
+      create_resume_version: {
+        Args: { p_label?: string; p_resume_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          label: string | null
+          pdf_storage_path: string | null
+          resume_data_snapshot: Json
+          resume_id: string
+          resume_revision: number
+          schema_version: number
+          source: string
+          target_role: string | null
+          template_id: string | null
+          title: string
+          user_id: string
+          version_number: number
+        }
+        SetofOptions: {
+          from: "*"
+          to: "resume_versions"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      duplicate_resume: {
+        Args: { p_resume_id: string; p_title?: string }
+        Returns: {
+          created_at: string
+          current_version: number
+          id: string
+          latest_generated_at: string | null
+          latest_generated_revision: number | null
+          latest_pdf_path: string | null
+          resume_data: Json
+          revision: number
+          schema_version: number
+          status: string
+          target_role: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "resumes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      get_my_resume_stats: {
+        Args: never
+        Returns: {
+          completed_count: number
+          draft_count: number
+          last_updated_at: string | null
+          last_updated_id: string | null
+          last_updated_title: string | null
+          total_count: number
+        }[]
+      }
+      prune_resume_versions: {
+        Args: { p_resume_id: string }
+        Returns: undefined
+      }
+      restore_resume_version: {
+        Args: { p_expected_revision: number; p_version_id: string }
+        Returns: {
+          created_at: string
+          current_version: number
+          id: string
+          latest_generated_at: string | null
+          latest_generated_revision: number | null
+          latest_pdf_path: string | null
+          resume_data: Json
+          revision: number
+          schema_version: number
+          status: string
+          target_role: string | null
+          template_id: string | null
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "resumes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      resume_version_retention: {
+        Args: never
+        Returns: number
+      }
       admin_restore_mentor: {
         Args: { p_mentor_id: string }
         Returns: undefined
