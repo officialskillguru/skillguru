@@ -1,0 +1,15 @@
+{
+  "name": "skillguru-resume-pdf-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated LaTeX-to-PDF compilation worker for the Skill Guru AI Resume Builder (Google Cloud Run).",
+  "engines": { "node": ">=24" },
+  "scripts": {
+    "start": "node src/server.ts",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  }
+}
