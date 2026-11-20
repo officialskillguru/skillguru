@@ -43,3 +43,10 @@ import_map = "./functions/deno.json"
 
 [functions.set-own-password]
 import_map = "./functions/deno.json"
+
+# AI Resume Builder (student JWT required; gateway verify_jwt stays on).
+[functions.resume-ai]
+import_map = "./functions/resume-ai/deno.json"
+
+[functions.resume-pdf]
+import_map = "./functions/resume-pdf/deno.json"
