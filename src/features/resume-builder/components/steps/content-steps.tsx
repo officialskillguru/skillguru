@@ -2,7 +2,6 @@
 // structured ResumeData document (form path "data.…"); no step is specific
 // to any template.
 import { useFormContext, useWatch } from "react-hook-form";
-import { Button } from "@/components/ui/button";
 import {
   ADDITIONAL_KINDS,
   ADDITIONAL_KIND_LABELS,
@@ -264,23 +263,15 @@ function SkillGroupFields({ index }: { index: number }) {
 }
 
 export function SkillsStep({ headingRef }: StepProps) {
-  const { getValues, setValue } = useFormContext<EditorValues>();
   const groups = useWatch<EditorValues, "data.skills">({ name: "data.skills" }) ?? [];
   const unused = SUGGESTED_SKILL_CATEGORIES.filter((c) => !groups.some((g) => g.category.toLowerCase() === c.toLowerCase()));
-  const addCategory = (category: string) => setValue("data.skills", [...getValues("data.skills"), entryFactories.skillGroup(category)], { shouldDirty: true });
   return (
     <StepSection headingRef={headingRef} title="Technical and Soft Skills" description="Group your skills into categories. List only skills you can confidently discuss in an interview.">
-      {unused.length > 0 && groups.length < ENTRY_LIMITS.skills && (
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-bold text-muted-foreground">Quick add category:</span>
-          {unused.map((c) => (
-            <Button key={c} type="button" size="sm" variant="outline" onClick={() => addCategory(c)} aria-label={`Add ${c} category`}>
-              + {c}
-            </Button>
-          ))}
-        </div>
-      )}
       <RepeatableList
+        quickAdds={{
+          heading: "Quick add category:",
+          items: unused.map((c) => ({ label: c, ariaLabel: `Add ${c} category`, noun: `${c} category`, create: () => entryFactories.skillGroup(c) })),
+        }}
         name="data.skills"
         noun="Skill category"
         addLabel="Add custom category"

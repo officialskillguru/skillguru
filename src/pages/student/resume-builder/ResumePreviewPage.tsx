@@ -25,7 +25,13 @@ export default function ResumePreviewPage() {
     staleTime: 4 * 60 * 1000, // signed URLs live 5 minutes
   });
 
-  if (resume.isLoading) return <Skeleton className="h-[70vh] w-full rounded-2xl" />;
+  if (resume.isLoading)
+    return (
+      <div role="status">
+        <span className="sr-only">Loading resume…</span>
+        <Skeleton className="h-[70vh] w-full rounded-2xl" />
+      </div>
+    );
   if (!resume.data) {
     return (
       <div className="space-y-3 rounded-2xl border border-border bg-card p-6">
@@ -85,7 +91,7 @@ export default function ResumePreviewPage() {
               </Link>
             </Button>
           </div>
-          <PdfPanel resume={r} data={r.resume_data} beforeGenerate={() => Promise.resolve(true)} />
+          <PdfPanel resume={r} data={r.resume_data} beforeGenerate={() => Promise.resolve(true)} headingLevel={2} />
         </aside>
 
         <section aria-label="PDF preview" className="min-w-0">
@@ -104,7 +110,10 @@ export default function ResumePreviewPage() {
               </Button>
             </div>
           ) : !pdfUrl.data ? (
-            <Skeleton className="h-[75vh] w-full rounded-2xl" />
+            <div role="status">
+              <span className="sr-only">Loading PDF preview…</span>
+              <Skeleton className="h-[75vh] w-full rounded-2xl" />
+            </div>
           ) : (
             <div className="space-y-2">
               {outdated && <p className="text-xs font-semibold text-amber-700 dark:text-amber-400">This PDF is older than your latest edits. Generate an updated PDF to include them.</p>}

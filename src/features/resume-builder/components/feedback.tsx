@@ -81,7 +81,7 @@ export function SaveStatusIndicator({ status, errorMessage, lastSavedAt, onRetry
     <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
       {icon}
       <span role="status" aria-live="polite">
-        {status === "saving" ? <span aria-hidden="true">{STATUS_TEXT.saving}</span> : STATUS_TEXT[status]}
+        {status === "saving" ? <span aria-hidden="true">{STATUS_TEXT.saving}</span> : status === "error" ? null : STATUS_TEXT[status]}
         {status === "saved" && lastSavedAt && (
           <span className="sr-only"> at {lastSavedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
         )}

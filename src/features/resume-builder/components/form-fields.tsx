@@ -77,6 +77,7 @@ export function TextField({
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={inputClass}
+        data-field-path={props.name}
         {...register(props.name)}
       />
     </FieldShell>
@@ -98,6 +99,7 @@ export function TextAreaField({ rows = 4, placeholder, actions, ...props }: Base
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
         className={textareaClass}
+        data-field-path={props.name}
         {...register(props.name)}
       />
     </FieldShell>
@@ -105,7 +107,7 @@ export function TextAreaField({ rows = 4, placeholder, actions, ...props }: Base
 }
 
 export function DateField(props: Omit<BaseProps, "maxLength">) {
-  return <TextField {...props} hint={props.hint ?? "YYYY or YYYY-MM"} placeholder="2024-06" inputMode="numeric" maxLength={7} />;
+  return <TextField {...props} hint={props.hint ?? "YYYY or YYYY-MM"} placeholder="2024-06" maxLength={7} />;
 }
 
 export function CheckboxField({ name, label, className }: { name: EditorPath; label: string; className?: string }) {

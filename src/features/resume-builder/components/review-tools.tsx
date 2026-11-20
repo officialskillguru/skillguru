@@ -94,7 +94,8 @@ const JOB_ERROR_TEXT: Record<string, string> = {
   STALE_JOB: "The previous attempt did not finish.",
 };
 
-export function PdfPanel({ resume, data, beforeGenerate }: { resume: ResumeDetail; data: ResumeData; beforeGenerate: () => Promise<boolean> }) {
+export function PdfPanel({ resume, data, beforeGenerate, headingLevel = 3 }: { resume: ResumeDetail; data: ResumeData; beforeGenerate: () => Promise<boolean>; headingLevel?: 2 | 3 }) {
+  const Heading = `h${headingLevel}` as const;
   const { generatePdf } = useResumeMutations();
   const job = useLatestPdfJob(resume.id);
   const [message, setMessage] = useState<string | null>(null);
@@ -124,9 +125,9 @@ export function PdfPanel({ resume, data, beforeGenerate }: { resume: ResumeDetai
 
   return (
     <section className="space-y-3 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5" aria-labelledby="pdf-panel-heading">
-      <h3 id="pdf-panel-heading" className="text-base font-black text-foreground">
+      <Heading id="pdf-panel-heading" className="text-base font-black text-foreground">
         Generate PDF
-      </h3>
+      </Heading>
       {!templatesExist ? (
         <p className="text-sm text-muted-foreground">
           PDF generation will be available as soon as the professional resume templates are ready. Your resume is saved and will work with every template — nothing you enter now will be lost.

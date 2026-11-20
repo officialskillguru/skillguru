@@ -28,6 +28,7 @@ export function RepeatableList<P extends ListPath>({
   renderItem,
   emptyText,
   secondaryAdd,
+  quickAdds,
 }: {
   name: P;
   noun: string;
@@ -39,6 +40,8 @@ export function RepeatableList<P extends ListPath>({
   emptyText: string;
   /** Optional second "add" button for a variant entry (e.g. "Add internship"). */
   secondaryAdd?: { label: string; noun: string; create: () => FieldArray<EditorValues, P> };
+  /** Preset "quick add" buttons shown above the list (e.g. common skill categories). */
+  quickAdds?: { heading: string; items: { label: string; ariaLabel: string; noun: string; create: () => FieldArray<EditorValues, P> }[] };
 }) {
   const { control } = useFormContext<EditorValues>();
   const { fields, append, remove, move } = useFieldArray({ control, name, keyName: "fieldKey" });
@@ -88,6 +91,16 @@ export function RepeatableList<P extends ListPath>({
 
   return (
     <div className="space-y-4">
+      {quickAdds && quickAdds.items.length > 0 && fields.length < max && (
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold text-muted-foreground">{quickAdds.heading}</span>
+          {quickAdds.items.map((q) => (
+            <Button key={q.label} type="button" size="sm" variant="outline" onClick={() => handleAdd(q.create(), q.noun)} aria-label={q.ariaLabel}>
+              + {q.label}
+            </Button>
+          ))}
+        </div>
+      )}
       {fields.length === 0 ? (
         <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">{emptyText}</p>
       ) : (

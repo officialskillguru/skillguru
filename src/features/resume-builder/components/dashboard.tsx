@@ -27,14 +27,14 @@ export function ResumeStatsCards({ stats, loading }: { stats: ResumeStats | unde
       {items.map((item) => (
         <div key={item.label} className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <dt className="text-xs font-bold text-muted-foreground">{item.label}</dt>
-          <dd className="mt-1 text-2xl font-black text-foreground">{loading ? <span className="inline-block h-7 w-10 animate-pulse rounded bg-muted" aria-label="Loading" /> : (item.value ?? 0)}</dd>
+          <dd className="mt-1 text-2xl font-black text-foreground">{loading ? <span className="inline-block h-7 w-10 animate-pulse rounded bg-muted"><span className="sr-only">Loading…</span></span> : (item.value ?? 0)}</dd>
         </div>
       ))}
       <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
         <dt className="text-xs font-bold text-muted-foreground">Recently updated</dt>
         <dd className="mt-1 text-sm font-bold text-foreground">
           {loading ? (
-            <span className="inline-block h-5 w-32 animate-pulse rounded bg-muted" aria-label="Loading" />
+            <span className="inline-block h-5 w-32 animate-pulse rounded bg-muted"><span className="sr-only">Loading…</span></span>
           ) : stats?.lastUpdated ? (
             <>
               <Link to={`/dashboard/resume-builder/${stats.lastUpdated.id}/edit`} className="line-clamp-1 hover:underline">
@@ -332,16 +332,24 @@ function ChangeTemplateDialog(props: ChangeTemplateProps) {
 
 function ChangeTemplateBody({ resume, pending, onClose, onSubmit }: ChangeTemplateProps) {
   const [selected, setSelected] = useState<string | null>(resume.template_id);
+  const pickerLabelId = useId();
   const templatesExist = getActiveTemplates().length > 0;
   return (
     <DialogContent className={`${dialogMotionClass} max-w-3xl`}>
       <DialogHeader>
-        <DialogTitle id="change-template-title">Change template for “{resume.title}”</DialogTitle>
+        <DialogTitle>Change template for “{resume.title}”</DialogTitle>
         <DialogDescription>
           {templatesExist ? "Your resume content stays exactly the same; only the layout changes. Generate an updated PDF afterwards." : "No resume templates are available yet. Your content is saved and will work with every template once they are ready."}
         </DialogDescription>
       </DialogHeader>
-      {templatesExist && <TemplatePicker value={selected} onChange={setSelected} labelledBy="change-template-title" />}
+      {templatesExist && (
+        <>
+          <p id={pickerLabelId} className="text-sm font-bold text-foreground">
+            Choose a template
+          </p>
+          <TemplatePicker value={selected} onChange={setSelected} labelledBy={pickerLabelId} />
+        </>
+      )}
       <DialogFooter className="gap-2">
         <Button type="button" variant="outline" onClick={onClose} disabled={pending}>
           {templatesExist ? "Cancel" : "Close"}

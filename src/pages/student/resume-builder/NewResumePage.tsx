@@ -30,7 +30,7 @@ export default function NewResumePage() {
     const finalTitle = title.trim() || (targetRole.trim() ? `${targetRole.trim()} Resume` : "");
     if (!finalTitle) {
       setTitleError("Enter a resume title or a target job role.");
-      document.getElementById(titleId)?.focus();
+      requestAnimationFrame(() => document.getElementById(titleId)?.focus());
       return;
     }
     setBusy(true);
@@ -60,6 +60,7 @@ export default function NewResumePage() {
         </Link>
         <h1 className="text-2xl font-black text-foreground">Create New Resume</h1>
         <p className="mt-1 text-sm text-muted-foreground">Start with the basics. You can change everything later, including the template.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Enter a resume title, a target job role, or both.</p>
       </div>
 
       <form onSubmit={(e) => void submit(e)} noValidate className="space-y-6 rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-6">

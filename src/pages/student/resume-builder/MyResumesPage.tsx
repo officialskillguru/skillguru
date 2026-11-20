@@ -68,7 +68,8 @@ export default function MyResumesPage() {
         </div>
 
         {list.isLoading ? (
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" aria-busy="true">
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3" role="status">
+            <span className="sr-only">Loading your resumes…</span>
             {Array.from({ length: 3 }).map((_, i) => (
               <Skeleton key={i} className="h-52 rounded-2xl" />
             ))}

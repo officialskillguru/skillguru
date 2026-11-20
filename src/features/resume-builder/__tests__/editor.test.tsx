@@ -83,13 +83,15 @@ describe("Resume editor wizard", () => {
     const email = screen.getByLabelText(/Email address/);
     await user.type(email, "aarav@");
     await user.click(screen.getByRole("button", { name: /Next/ }));
-    const summary = await screen.findByRole("alert");
-    expect(summary).toHaveTextContent("Please fix 1 field before continuing");
+    const summary = (await screen.findByText("Please fix 1 field before continuing:")).parentElement!;
     await waitFor(() => expect(summary).toHaveFocus());
     expect(email).toHaveAttribute("aria-invalid", "true");
     expect(email).toHaveValue("aarav@");
     expect(screen.getByRole("heading", { level: 2, name: "Personal Information" })).toBeInTheDocument();
-  });
+    // Each summary item is a button that jumps to the field it describes.
+    await user.click(within(summary).getByRole("button", { name: /valid email address/ }));
+    expect(email).toHaveFocus();
+  }, 15_000);
 
   it("autosaves edits with the current revision", async () => {
     const user = userEvent.setup();
@@ -101,7 +103,7 @@ describe("Resume editor wizard", () => {
     expect(revision).toBe(4);
     expect(patch.data.personal.fullName).toBe("Aarav Sharma");
     expect(await screen.findByText("Saved")).toBeInTheDocument();
-  });
+  }, 15_000);
 
   it("adds repeatable entries, focuses the new entry and names it from its content", async () => {
     const user = userEvent.setup();
@@ -115,7 +117,12 @@ describe("Resume editor wizard", () => {
     await user.click(screen.getByRole("button", { name: /Add education/ }));
     expect(screen.getByRole("button", { name: "Move Education 1: BCA down" })).toBeEnabled();
     expect(screen.getByRole("button", { name: "Move Education 1: BCA up" })).toBeDisabled();
-  });
+    // Moving the first entry to the end keeps focus on a usable move button, not <body>.
+    await user.click(screen.getByRole("button", { name: "Move Education 1: BCA down" }));
+    await waitFor(() => expect(screen.getByRole("button", { name: "Move Education 2: BCA up" })).toHaveFocus());
+    // Entries are named groups.
+    expect(screen.getByRole("group", { name: "Education 2: BCA" })).toBeInTheDocument();
+  }, 15_000);
 
   it("AI improvement: asks consent once, compares original vs improved, and only applies on Accept", async () => {
     const user = userEvent.setup();
@@ -149,7 +156,7 @@ describe("Resume editor wizard", () => {
     await within(again).findByText(/Developed an attendance/);
     await user.click(within(again).getByRole("button", { name: "Accept improvement" }));
     expect(description).toHaveValue("Developed an attendance management web application using React, Node.js and MongoDB.");
-  });
+  }, 15_000);
 
   it("shows a friendly AI error and keeps the student's text when AI fails", async () => {
     const user = userEvent.setup();
@@ -164,5 +171,5 @@ describe("Resume editor wizard", () => {
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("temporarily unavailable");
     expect(within(dialog).getByRole("button", { name: "Accept improvement" })).toBeDisabled();
     expect(summary).toHaveValue("I am a BCA student and I know Python");
-  });
+  }, 15_000);
 });

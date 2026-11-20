@@ -37,7 +37,8 @@ export default function ResumeEditorPage() {
 
   if (isLoading) {
     return (
-      <div className="space-y-4" aria-busy="true">
+      <div className="space-y-4" role="status">
+        <span className="sr-only">Loading resume…</span>
         <Skeleton className="h-10 w-64 rounded-xl" />
         <Skeleton className="h-96 w-full rounded-2xl" />
       </div>
@@ -240,11 +241,19 @@ function ResumeEditor({ resume }: { resume: ResumeDetail }) {
                 className="min-w-0 space-y-6"
               >
                 {stepErrors.length > 0 && (
-                  <div ref={summaryRef} tabIndex={-1} role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm outline-none">
+                  <div ref={summaryRef} tabIndex={-1} className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-sm outline-none">
                     <p className="font-bold text-destructive-text">Please fix {stepErrors.length} field{stepErrors.length === 1 ? "" : "s"} before continuing:</p>
                     <ul className="mt-1 list-disc pl-5 text-foreground">
                       {stepErrors.map(([path, message]) => (
-                        <li key={path}>{message}</li>
+                        <li key={path}>
+                          <button
+                            type="button"
+                            className="text-left underline underline-offset-2 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                            onClick={() => document.querySelector<HTMLElement>(`[data-field-path="${path}"]`)?.focus()}
+                          >
+                            {message}
+                          </button>
+                        </li>
                       ))}
                     </ul>
                   </div>

@@ -40,17 +40,19 @@ export function TemplatePicker({ value, onChange, labelledBy, templates = getAct
             )}
           >
             {t.previewImage ? (
-              <img src={t.previewImage} alt={`Preview of the ${t.name} template`} loading="lazy" className="aspect-[3/4] w-full rounded-lg border border-border object-cover object-top" />
+              <img src={t.previewImage} alt="" loading="lazy" className="aspect-[3/4] w-full rounded-lg border border-border object-cover object-top" />
             ) : (
               <div className="flex aspect-[3/4] items-center justify-center rounded-lg border border-border bg-muted/40 text-xs text-muted-foreground">Preview not available</div>
             )}
             <div className="flex items-start gap-2">
-              <input id={id} type="radio" name={name} value={t.id} checked={selected} onChange={() => onChange(t.id)} className="mt-1 size-5 accent-primary" />
+              <input id={id} type="radio" name={name} value={t.id} checked={selected} onChange={() => onChange(t.id)} aria-labelledby={`${id}-name`} aria-describedby={`${id}-desc`} className="mt-1 size-5 accent-primary" />
               <span>
-                <span className="block text-sm font-black text-foreground">{t.name}</span>
-                <span className="block text-xs text-muted-foreground">{t.description}</span>
-                <span className="mt-1 block text-xs text-muted-foreground">
-                  {t.ats.singleColumn ? "Single-column, ATS-friendly layout." : "Multi-column layout."} {t.ats.notes}
+                <span id={`${id}-name`} className="block text-sm font-black text-foreground">{t.name}</span>
+                <span id={`${id}-desc`}>
+                  <span className="block text-xs text-muted-foreground">{t.description}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">
+                    {t.ats.singleColumn ? "Single-column, ATS-friendly layout." : "Multi-column layout."} {t.ats.notes}
+                  </span>
                 </span>
               </span>
             </div>
