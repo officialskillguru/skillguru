@@ -8,6 +8,8 @@ import { buttonVariants } from "./button-variants";
 export interface ButtonProps
   extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
+  /** React 19 passes `ref` as a regular prop; it is spread onto the element below. */
+  ref?: React.Ref<HTMLButtonElement>;
 }
 
 function Button({ className, variant, size, asChild = false, ...props }: ButtonProps) {

@@ -61,7 +61,7 @@ const FRIENDLY_DB_ERRORS: Record<string, string> = {
 /** Maps database error codes to student-friendly text; never surfaces raw SQL errors. */
 export function toFriendlyResumeError(error: unknown, fallback = "Something went wrong. Please try again."): Error {
   if (error instanceof ResumeConflictError || error instanceof ResumeNotFoundError) return error;
-  const message = typeof error === "object" && error && "message" in error ? String((error as { message: unknown }).message) : "";
+  const message = typeof error === "object" && error && "message" in error ? String(error.message) : "";
   for (const [code, friendly] of Object.entries(FRIENDLY_DB_ERRORS)) {
     if (message.includes(code)) return new Error(friendly);
   }
@@ -257,7 +257,9 @@ type EdgeEnvelope<T> = { success: boolean; message: string; code?: string; data:
 /** Calls one of our Edge Functions and normalises its {success,message,code,data} envelope into a value or an EdgeFunctionError. */
 export async function invokeResumeFunction<T>(name: "resume-ai" | "resume-pdf", body: Record<string, unknown>): Promise<T> {
   const supabase = getSupabaseClientOrThrow();
-  const { data, error } = await supabase.functions.invoke<EdgeEnvelope<T>>(name, { body });
+  const response = await supabase.functions.invoke<EdgeEnvelope<T>>(name, { body });
+  const data: EdgeEnvelope<T> | null = response.data;
+  const error: unknown = response.error;
   if (error) {
     if (error instanceof FunctionsHttpError && error.context instanceof Response) {
       const envelope = (await error.context.json().catch(() => null)) as EdgeEnvelope<T> | null;

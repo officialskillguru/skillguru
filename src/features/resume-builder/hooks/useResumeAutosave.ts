@@ -33,57 +33,67 @@ export function useResumeAutosave({ resumeId, initialRevision, delayMs = 1500, o
   const inFlightRef = useRef<Promise<boolean> | null>(null);
   const blockedRef = useRef(false);
   const onSavedRef = useRef(onSaved);
-  onSavedRef.current = onSaved;
+
+  useEffect(() => {
+    onSavedRef.current = onSaved;
+  }, [onSaved]);
 
   useEffect(() => {
     revisionRef.current = initialRevision;
   }, [resumeId, initialRevision]);
 
-  const runSave = useCallback(async (): Promise<boolean> => {
-    if (inFlightRef.current) {
-      await inFlightRef.current;
-    }
+  /** One save attempt of the latest pending snapshot. */
+  const saveOnce = useCallback(async (): Promise<boolean> => {
     const patch = pendingRef.current;
-    if (!patch || blockedRef.current) return !patch;
+    if (!patch) return true;
     const json = JSON.stringify(patch);
     if (json === lastSavedJsonRef.current) {
       pendingRef.current = null;
       setStatus("saved");
       return true;
     }
-
     pendingRef.current = null;
     setStatus("saving");
     setErrorMessage(null);
-    const attempt = (async () => {
-      try {
-        const saved = await saveResume(resumeId, revisionRef.current, patch);
-        revisionRef.current = saved.revision;
-        lastSavedJsonRef.current = json;
-        setLastSavedAt(new Date());
-        onSavedRef.current?.(saved);
-        setStatus(pendingRef.current ? "unsaved" : "saved");
-        return true;
-      } catch (error) {
-        // Keep the unsaved snapshot so nothing typed is lost.
-        pendingRef.current = pendingRef.current ?? patch;
-        if (error instanceof ResumeConflictError) {
-          blockedRef.current = true;
-          setConflict(error.latest);
-          setStatus("conflict");
-        } else {
-          setErrorMessage(toFriendlyResumeError(error, "Your changes could not be saved. Please try again.").message);
-          setStatus("error");
-        }
-        return false;
+    try {
+      const saved = await saveResume(resumeId, revisionRef.current, patch);
+      revisionRef.current = saved.revision;
+      lastSavedJsonRef.current = json;
+      setLastSavedAt(new Date());
+      onSavedRef.current?.(saved);
+      setStatus(pendingRef.current ? "unsaved" : "saved");
+      return true;
+    } catch (error) {
+      // Keep the unsaved snapshot (unless newer edits replaced it) so nothing typed is lost.
+      pendingRef.current = pendingRef.current ?? patch;
+      if (error instanceof ResumeConflictError) {
+        blockedRef.current = true;
+        setConflict(error.latest);
+        setStatus("conflict");
+      } else {
+        setErrorMessage(toFriendlyResumeError(error, "Your changes could not be saved. Please try again.").message);
+        setStatus("error");
       }
-    })();
-    inFlightRef.current = attempt;
-    const ok = await attempt;
-    inFlightRef.current = null;
-    if (ok && pendingRef.current && !blockedRef.current) return runSave();
-    return ok;
+      return false;
+    }
   }, [resumeId]);
+
+  /**
+   * Serialised save: each call queues behind the previous one, then drains
+   * edits made meanwhile. Resolves true only when nothing is left unsaved.
+   */
+  const runSave = useCallback((): Promise<boolean> => {
+    const run = (inFlightRef.current ?? Promise.resolve(true)).then(async () => {
+      let ok = true;
+      while (ok && pendingRef.current && !blockedRef.current) ok = await saveOnce();
+      return ok && !blockedRef.current && pendingRef.current === null;
+    });
+    inFlightRef.current = run;
+    void run.finally(() => {
+      if (inFlightRef.current === run) inFlightRef.current = null;
+    });
+    return run;
+  }, [saveOnce]);
 
   const schedule = useCallback(
     (patch: SaveResumePatch) => {
@@ -159,6 +169,6 @@ export function useResumeAutosave({ resumeId, initialRevision, delayMs = 1500, o
     resolveConflict,
     markSaved,
     getRevision: () => revisionRef.current,
-    hasUnsavedChanges: () => pendingRef.current !== null || status === "saving",
+    hasUnsavedChanges: () => pendingRef.current !== null || inFlightRef.current !== null,
   };
 }

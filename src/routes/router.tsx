@@ -1,5 +1,6 @@
 import { lazy, Suspense, type ReactNode } from "react";
 import { createBrowserRouter, Navigate } from "react-router-dom";
+import { RESUME_BUILDER_V2_ENABLED } from "@/features/resume-builder/feature-flag";
 import { PageLoader } from "@/components/common/PageLoader";
 import { routes } from "@/lib/routes";
 import { AdminProtectedRoute, ProtectedRoute, MentorProtectedRoute, CounsellorProtectedRoute } from "@/routes/guards";
@@ -23,6 +24,10 @@ const StudentLiveClassesPage  = lazy(() => import("@/pages/student/StudentLiveCl
 const StudentLiveClassRoomPage = lazy(() => import("@/pages/student/StudentLiveClassRoomPage"));
 const StudentPlacementsPage = lazy(() => import("@/pages/student/PlacementsPage"));
 const ResumeBuilderPage = lazy(() => import("@/pages/student/ResumeBuilderPage"));
+const MyResumesPage = lazy(() => import("@/pages/student/resume-builder/MyResumesPage"));
+const NewResumePage = lazy(() => import("@/pages/student/resume-builder/NewResumePage"));
+const ResumeEditorPage = lazy(() => import("@/pages/student/resume-builder/ResumeEditorPage"));
+const ResumePreviewPage = lazy(() => import("@/pages/student/resume-builder/ResumePreviewPage"));
 const CareerGuidancePage = lazy(() => import("@/pages/student/CareerGuidancePage"));
 const GuidancePage        = lazy(() => import("@/pages/GuidancePage"));
 const AuthPage            = lazy(() => import("@/pages/AuthPage"));
@@ -171,7 +176,16 @@ export const router = createBrowserRouter([
           { path: "live-classes",     element: withSuspense(<StudentLiveClassesPage />) },
           { path: "live-classes/:id/room", element: withSuspense(<StudentLiveClassRoomPage />) },
           { path: "placement",        element: withSuspense(<StudentPlacementsPage />) },
-          { path: "resume-builder",   element: withSuspense(<ResumeBuilderPage />) },
+          // AI Resume Builder (multi-resume) behind VITE_RESUME_BUILDER_V2; the classic page stays available.
+          { path: "resume-builder",   element: withSuspense(RESUME_BUILDER_V2_ENABLED ? <MyResumesPage /> : <ResumeBuilderPage />) },
+          { path: "resume-builder/classic", element: withSuspense(<ResumeBuilderPage />) },
+          ...(RESUME_BUILDER_V2_ENABLED
+            ? [
+                { path: "resume-builder/new", element: withSuspense(<NewResumePage />) },
+                { path: "resume-builder/:resumeId/edit", element: withSuspense(<ResumeEditorPage />) },
+                { path: "resume-builder/:resumeId/preview", element: withSuspense(<ResumePreviewPage />) },
+              ]
+            : []),
           { path: "career-guidance",  element: withSuspense(<CareerGuidancePage />) },
         ],
       },

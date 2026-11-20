@@ -57,12 +57,14 @@ export async function handleCompile(body: Buffer, headers: Record<string, string
   };
   if (!(await verifyRequest(SECRET, body, header(TIMESTAMP_HEADER), header(SIGNATURE_HEADER)))) return { status: 401, json: { code: "UNAUTHORIZED" } };
 
-  let payload: { requestId?: unknown; templateId?: unknown; resumeData?: unknown };
+  let parsed: unknown;
   try {
-    payload = JSON.parse(body.toString("utf8"));
+    parsed = JSON.parse(body.toString("utf8"));
   } catch {
     return { status: 400, json: { code: "INVALID_REQUEST" } };
   }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return { status: 400, json: { code: "INVALID_REQUEST" } };
+  const payload = parsed as { requestId?: unknown; templateId?: unknown; resumeData?: unknown };
   const requestId = typeof payload.requestId === "string" ? payload.requestId.slice(0, 64) : "unknown";
   if (typeof payload.templateId !== "string") return { status: 400, json: { code: "INVALID_REQUEST" } };
 
@@ -109,7 +111,7 @@ export function startServer() {
     console.error("RESUME_PDF_WORKER_SECRET must be set (>= 32 chars). Refusing to start.");
     process.exit(1);
   }
-  const server = createServer(async (req, res) => {
+  const handle = async (req: IncomingMessage, res: ServerResponse) => {
     try {
       if (req.method === "GET" && req.url === "/healthz") return sendJson(res, 200, { ok: true });
       if (req.method !== "POST" || req.url !== "/compile") return sendJson(res, 404, { code: "NOT_FOUND" });
@@ -130,6 +132,9 @@ export function startServer() {
       log("unhandled", { severity: "ERROR", message: error instanceof Error ? error.message : "unknown" });
       return sendJson(res, 500, { code: "INTERNAL" });
     }
+  };
+  const server = createServer((req, res) => {
+    void handle(req, res);
   });
   server.requestTimeout = 60_000;
   server.listen(PORT, () => log("listening", { port: PORT, templatesRoot: TEMPLATES_ROOT }));

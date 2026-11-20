@@ -78,7 +78,7 @@ function lookup(contexts: ViewValue[], path: string): ViewValue {
     if (ctx && typeof ctx === "object" && !Array.isArray(ctx) && !isSafe(ctx) && parts[0]! in ctx) {
       let value: ViewValue = ctx[parts[0]!];
       for (const part of parts.slice(1)) {
-        value = value && typeof value === "object" && !Array.isArray(value) && !isSafe(value) ? (value as ViewObject)[part] : undefined;
+        value = value && typeof value === "object" && !Array.isArray(value) && !isSafe(value) ? value[part] : undefined;
       }
       return value;
     }

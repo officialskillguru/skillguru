@@ -61,12 +61,12 @@ describe("format rules", () => {
     data.personal.github = "github.com/aarav";
     data.education.push({ ...entryFactories.education(), startDate: "2025", endDate: "2023" });
     data.projects.push({ ...entryFactories.project(), liveUrl: "https://aarav.dev" });
-    expect(getFormatErrors(data)).toEqual({
-      "personal.email": expect.stringContaining("email"),
-      "personal.phone": expect.stringContaining("phone"),
-      "personal.github": expect.stringContaining("https://"),
-      "education.0.endDate": expect.stringContaining("before the start"),
-    });
+    const errors = getFormatErrors(data);
+    expect(Object.keys(errors).sort()).toEqual(["education.0.endDate", "personal.email", "personal.github", "personal.phone"]);
+    expect(errors["personal.email"]).toContain("email");
+    expect(errors["personal.phone"]).toContain("phone");
+    expect(errors["personal.github"]).toContain("https://");
+    expect(errors["education.0.endDate"]).toContain("before the start");
     expect(getFormatErrors(emptyResumeData())).toEqual({});
   });
 

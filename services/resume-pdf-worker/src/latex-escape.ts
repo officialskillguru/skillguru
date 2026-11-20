@@ -35,13 +35,25 @@ const PDFLATEX_REPLACEMENTS: Record<string, string> = {
   "★": "*",
 };
 
+/** Removes control characters (except tab/newline, collapsed later) and zero-width/BOM characters. */
+export function stripInvisible(text: string): string {
+  let out = "";
+  for (const ch of text) {
+    const cp = ch.codePointAt(0) ?? 0;
+    const isControl = (cp <= 0x1f && cp !== 0x09 && cp !== 0x0a && cp !== 0x0d) || cp === 0x7f;
+    const isZeroWidth = (cp >= 0x200b && cp <= 0x200d) || cp === 0xfeff;
+    if (!isControl && !isZeroWidth) out += ch;
+  }
+  return out;
+}
+
 /**
  * Escapes arbitrary text for use inside a LaTeX document body.
  * Newlines and tabs collapse to single spaces (structure comes from the
  * template, never from student input); control characters are removed.
  */
 export function escapeLatex(input: string, engine: LatexEngine = "pdflatex"): string {
-  let text = input.normalize("NFC").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F​-‍﻿]/g, "");
+  let text = stripInvisible(input.normalize("NFC"));
   text = text.replace(/\s+/g, " ").trim();
   if (engine === "pdflatex") {
     text = text.replace(/[₹•→✓★]/g, (c) => PDFLATEX_REPLACEMENTS[c] ?? c);

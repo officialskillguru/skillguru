@@ -17,7 +17,7 @@ export type LoadedTemplate = { meta: ResumeTemplateMetadata; dir: string; body: 
 export class TemplateNotAvailableError extends Error {}
 
 export async function loadRegistry(templatesRoot: string): Promise<ResumeTemplateMetadata[]> {
-  const raw = JSON.parse(await readFile(join(templatesRoot, "registry.json"), "utf8"));
+  const raw: unknown = JSON.parse(await readFile(join(templatesRoot, "registry.json"), "utf8"));
   return registrySchema.parse(raw).templates;
 }
 
