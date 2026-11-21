@@ -1,0 +1,10 @@
+LICENCE NOT CONFIRMED
+
+The supplied file (_originals/resume-template-2.tex) contains no author or licence.
+This template is integrated and tested, but registry.json keeps
+license.commercialUseReviewed = false, so it is NOT offered to students and the
+worker refuses to compile it for them.
+
+To enable it: find the template's original source (e.g. its Overleaf gallery page),
+confirm its licence allows commercial use inside Skill Guru, replace this file with
+that licence text, and set commercialUseReviewed = true in registry.json.

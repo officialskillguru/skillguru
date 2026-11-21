@@ -69,7 +69,10 @@ describe("Resume editor wizard", () => {
     const user = userEvent.setup();
     const router = renderEditor(0);
     expect(screen.getByRole("heading", { level: 2, name: "Resume Setup" })).toBeInTheDocument();
-    expect(screen.getByText("Resume templates are being prepared")).toBeInTheDocument(); // honest empty registry
+    // Only active, licence-reviewed templates are offered (simple-cv is hidden pending its licence).
+    expect(screen.getByRole("radio", { name: "Classic ATS" })).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "Modern Minimal" })).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Simple CV" })).not.toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /Next/ }));
     const heading = await screen.findByRole("heading", { level: 2, name: "Personal Information" });
     await waitFor(() => expect(heading).toHaveFocus());

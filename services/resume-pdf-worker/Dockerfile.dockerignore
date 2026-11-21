@@ -2,7 +2,9 @@
 *
 !services/resume-pdf-worker/package.json
 !services/resume-pdf-worker/src/**
+!services/resume-pdf-worker/scripts/**
 !src/features/resume-builder/domain/resume-schema.ts
 !src/features/resume-builder/domain/template-schema.ts
 !resume-templates/**
+resume-templates/_originals/**
 **/*.test.ts

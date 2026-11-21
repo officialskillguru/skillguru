@@ -1,6 +1,15 @@
 # Resume templates (approved LaTeX sources)
 
-This folder holds the **only** LaTeX that is ever compiled. Students choose a template id; they can never upload or edit LaTeX. `registry.json` currently lists **no templates**. The Overleaf templates have not been supplied yet, and the builder tells students that plainly.
+This folder holds the **only** LaTeX that is ever compiled. Students choose a template id; they can never upload or edit LaTeX. Status of the supplied templates (originals kept unchanged in `_originals/`):
+
+| id | Source | Licence | Status |
+| --- | --- | --- | --- |
+| `classic-ats` | Template 4, Jake Gutierrez (sb2nov) | MIT | **active**: compiled and text-validated |
+| `modern-lato` | Template 3, Audric Serador (sb2nov) | MIT | **active**. Its `custom-commands.tex` and `src/*.tex` were not supplied, so it uses the MIT sb2nov macros it derives from. |
+| `simple-cv` | Template 2, author unknown | **not stated** | integrated and tested, but **hidden** until a licence is confirmed (`commercialUseReviewed: false`) |
+| (not registered) | Template 1, Christian Maria Giannetti | not stated | **blocked**: requires `resume.cls` (defines `rSection`, `\printPersonalInfo`, …), which was not supplied |
+
+To finish Template 1, add its `resume.cls` from the original Overleaf project and confirm its licence. Note that it also prints date and place of birth, which should be dropped for ATS use.
 
 ## Folder layout
 
@@ -98,7 +107,8 @@ Dates are pre-formatted (`Jun 2024 – Present`). URLs are already prepared for 
 
 - Single column is preferred. Use standard headings (Education, Experience, Projects, Skills).
 - Don't put text in images or icons, and don't put key information only in headers or footers.
-- The worker rejects a PDF unless `pdftotext` can extract the name, email, phone, first skill, first employer and first institution.
+- The worker rejects a PDF unless pdf.js can extract the name, email, phone, first skill, first employer and first institution, and the template's section headings appear in reading order.
+- Use `\usepackage[T1]{fontenc}`: with the legacy OT1 encoding `_` is drawn as a rule and accents are composed glyphs, so emails like `first_last@…` and accented names don't survive text extraction.
 - It also logs headings that come out in the wrong reading order. A template that can't pass these checks must not be marked `active`.
 
 ## Testing a template

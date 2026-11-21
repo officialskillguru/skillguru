@@ -6,8 +6,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { signWorkerRequest } from "../../../supabase/functions/_shared/pdf-worker-client.ts";
 import { signRequest, verifyRequest } from "./auth.ts";
 import { compileLatex } from "./compile.ts";
-import { displayUrl, escapeLatex, escapeUrl, findUnsupportedCharacters } from "./latex-escape.ts";
-import { checkExtractedText } from "./pdf-validate.ts";
+import { MAX_DISPLAY_URL, displayUrl, displayUrlText, escapeLatex, escapeUrl, findUnsupportedCharacters } from "./latex-escape.ts";
+import { checkExtractedText, validatePdf } from "./pdf-validate.ts";
 import { TemplateNotAvailableError, loadTemplate } from "./registry.ts";
 import { TemplateError, renderTemplate, safe } from "./template-engine.ts";
 import { buildTemplateView, expectedPdfText, formatDateRange } from "./view-model.ts";
@@ -49,7 +49,21 @@ describe("escapeUrl", () => {
     expect(escapeUrl("not a url")).toBe("");
     expect(escapeUrl("https://example.com/a_b?x=1&y=2#top")).toBe("https://example.com/a\\_b?x=1\\&y=2\\#top");
     expect(escapeUrl("https://example.com/{x}\\y")).not.toMatch(/[{}]|\\(?![%#&_])/);
-    expect(displayUrl("https://www.linkedin.com/in/aarav_s/")).toBe("linkedin.com/in/aarav\\_s");
+    expect(displayUrl("https://www.linkedin.com/in/aarav_s/")).toBe("linkedin.\\allowbreak{}com/\\allowbreak{}in/\\allowbreak{}aarav\\_\\allowbreak{}s");
+    // Break opportunities are invisible: removing them leaves exactly the escaped text.
+    expect(displayUrl("https://example.com/a_very/long/path").replaceAll("\\allowbreak{}", "")).toBe(escapeLatex("example.com/a_very/long/path"));
+  });
+
+  it("tidies only the visible link text: no query/fragment, decoded path, length-capped", () => {
+    expect(displayUrlText("https://www.linkedin.com/in/aarav-sharma/?originalSubdomain=in&utm_source=share#about")).toBe("linkedin.com/in/aarav-sharma");
+    expect(displayUrlText("https://www.linkedin.com/in/zo%C3%AB-n%C3%BA%C3%B1ez")).toBe("linkedin.com/in/zoë-núñez");
+    const long = displayUrlText("https://example.com/" + "segment/".repeat(20));
+    expect(long.length).toBe(MAX_DISPLAY_URL);
+    expect(long.endsWith("…")).toBe(true);
+    expect(displayUrl("https://example.com/" + "segment/".repeat(20))).toContain("\\ldots{}");
+    expect(displayUrlText("https://example.com/%E0%A4")).toBe("example.com/%E0%A4"); // invalid UTF-8 kept encoded
+    // The clickable target is untouched.
+    expect(escapeUrl("https://www.linkedin.com/in/a/?x=1")).toBe("https://www.linkedin.com/in/a/?x=1");
   });
 });
 
@@ -141,6 +155,52 @@ describe("HMAC auth", () => {
     expect(await verifyRequest("t".repeat(40), "body", String(ts), sig)).toBe(false);
     expect(await verifyRequest("short", "body", String(ts), await signRequest("short", "body", ts))).toBe(false);
     expect(await verifyRequest(secret, "body", null, sig)).toBe(false);
+  });
+});
+
+/** Builds a tiny but genuine text PDF (Helvetica, one page per entry); pdf.js rebuilds the xref table itself. */
+function makePdf(pages: string[][], padTo = 1200): Buffer {
+  const objs: string[] = [];
+  const pageIds: number[] = [];
+  const fontId = 3;
+  objs[1] = "<< /Type /Catalog /Pages 2 0 R >>";
+  objs[fontId] = "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>";
+  let next = 4;
+  for (const lines of pages) {
+    const stream = `BT /F1 12 Tf 72 720 Td ${lines.map((l) => `(${l}) Tj 0 -16 Td`).join(" ")} ET`;
+    const contentId = next++;
+    const pageId = next++;
+    objs[contentId] = `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`;
+    objs[pageId] = `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 ${fontId} 0 R >> >> /Contents ${contentId} 0 R >>`;
+    pageIds.push(pageId);
+  }
+  objs[2] = `<< /Type /Pages /Kids [${pageIds.map((i) => `${i} 0 R`).join(" ")}] /Count ${pageIds.length} >>`;
+  let body = "%PDF-1.4\n";
+  objs.forEach((o, i) => {
+    if (o) body += `${i} 0 obj\n${o}\nendobj\n`;
+  });
+  body += `trailer\n<< /Root 1 0 R /Size ${objs.length} >>\n%%EOF\n`;
+  return Buffer.from(body.padEnd(padTo, "%"), "latin1");
+}
+
+describe("PDF validation with pdf.js (real PDFs, no system tools)", () => {
+  const expectations = [
+    { label: "name", text: "Aarav Sharma" },
+    { label: "email", text: "aarav@example.com" },
+  ];
+
+  it("extracts text and accepts a PDF containing the key details", async () => {
+    const pdf = makePdf([["Aarav Sharma", "aarav@example.com", "EDUCATION", "SKILLS Python"]]);
+    const result = await validatePdf(pdf, expectations, ["Education", "Skills"]);
+    expect(result).toMatchObject({ ok: true, pages: 1, reason: "OK", missing: [] });
+  });
+
+  it("rejects PDFs missing details, with too many pages, or that are not PDFs", async () => {
+    expect(await validatePdf(makePdf([["Someone Else", "nobody@example.com", "filler text here"]]), expectations, [])).toMatchObject({ ok: false, reason: "MISSING_TEXT", missing: ["name", "email"] });
+    expect(await validatePdf(makePdf([["Aarav Sharma aarav@example.com p1"], ["p2"], ["p3"]]), expectations, [], 2)).toMatchObject({ ok: false, reason: "TOO_MANY_PAGES", pages: 3 });
+    expect(await validatePdf(Buffer.from("not a pdf".padEnd(2000, " ")), expectations, [])).toMatchObject({ ok: false, reason: "NOT_A_PDF" });
+    expect(await validatePdf(Buffer.from("%PDF-1.4\n%%EOF"), expectations, [])).toMatchObject({ ok: false, reason: "TOO_SMALL" });
+    expect(await validatePdf(Buffer.from("%PDF-1.4\n".padEnd(2000, "x")), expectations, [])).toMatchObject({ ok: false, reason: "EXTRACTION_FAILED" });
   });
 });
 

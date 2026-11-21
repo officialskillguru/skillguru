@@ -4,12 +4,15 @@
   "private": true,
   "type": "module",
   "description": "Isolated LaTeX-to-PDF compilation worker for the Skill Guru AI Resume Builder (Google Cloud Run).",
-  "engines": { "node": ">=24" },
+  "engines": {
+    "node": ">=24"
+  },
   "scripts": {
     "start": "node src/server.ts",
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "pdfjs-dist": "4.10.38",
     "zod": "3.25.76"
   }
 }

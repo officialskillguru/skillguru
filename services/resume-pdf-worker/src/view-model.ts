@@ -46,6 +46,18 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
 
   const location = [p.city, p.state, p.country].map((x) => x.trim()).filter(Boolean).join(", ");
 
+  // Header contact line in display order. `notFirst` lets templates place a
+  // separator ("|", "·") only between items that actually exist.
+  const contactRaw: { text: string; url: string }[] = [
+    ...(p.phone.trim() ? [{ text: p.phone.trim(), url: "" }] : []),
+    ...(p.email.trim() ? [{ text: p.email.trim(), url: `mailto:${escapeUrlPart(p.email)}` }] : []),
+    ...(location ? [{ text: location, url: "" }] : []),
+  ];
+  const contactItems = [
+    ...contactRaw.map((c) => ({ text: t(c.text), url: safe(c.url), hasUrl: !!c.url })),
+    ...links.map((l) => ({ text: l.display, url: l.url, hasUrl: true })),
+  ].map((c, i) => ({ ...c, notFirst: i > 0 }));
+
   const education = data.education.map((e) => {
     const degreeLine = [e.degree, e.specialization].map((x) => x.trim()).filter(Boolean).join(", ");
     const score = [e.cgpa.trim() && `CGPA: ${e.cgpa.trim()}`, e.percentage.trim() && `Percentage: ${e.percentage.trim()}`].filter(Boolean).join(" | ");
@@ -61,6 +73,8 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
       coursework: t(e.coursework),
       details,
       hasDetails: details.length > 0,
+      /** Anything to list under the entry (score, coursework or detail bullets). */
+      hasExtras: !!score || !!e.coursework.trim() || details.length > 0,
     };
   });
 
@@ -76,6 +90,8 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
       hasBullets: items.length > 0,
       technologies: joined(e.technologies),
       hasTechnologies: e.technologies.length > 0,
+      /** Bullets and/or a technologies line: the template opens a list only when this is true. */
+      hasListItems: items.length > 0 || e.technologies.length > 0,
       isInternship: e.kind === "internship",
     };
   };
@@ -102,7 +118,7 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
 
   const skills = data.skills
     .filter((g) => g.items.length > 0)
-    .map((g) => ({ category: t(g.category || "Skills"), items: joined(g.items) }));
+    .map((g, i) => ({ category: t(g.category || "Skills"), items: joined(g.items), notFirst: i > 0 }));
 
   const certifications = data.certifications.map((c) => ({
     name: t(c.name),
@@ -111,6 +127,8 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
     credentialId: t(c.credentialId),
     credentialUrl: u(c.credentialUrl),
     hasCredentialUrl: !!escapeUrl(c.credentialUrl),
+    credentialDisplay: safe(displayUrl(c.credentialUrl, engine)),
+    hasCredentialLine: !!c.credentialId.trim() || !!escapeUrl(c.credentialUrl),
   }));
 
   const achievements = data.achievements.map((a) => ({
@@ -118,6 +136,7 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
     organization: t(a.organization),
     date: t(formatResumeDate(a.date)),
     description: t(a.description),
+    hasDescription: !!a.description.trim(),
   }));
 
   const languages = data.languages
@@ -131,7 +150,7 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
   }
   const additional = [...groups.entries()].map(([heading, items]) => ({
     heading: t(heading),
-    items: items.map((a) => ({ title: t(a.title), organization: t(a.organization), date: t(formatResumeDate(a.date)), description: t(a.description) })),
+    items: items.map((a) => ({ title: t(a.title), organization: t(a.organization), date: t(formatResumeDate(a.date)), description: t(a.description), hasDescription: !!a.description.trim() })),
   }));
 
   const summaryParagraphs = data.summary.summary.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean).map(t);
@@ -147,6 +166,8 @@ export function buildTemplateView(raw: unknown, engine: LatexEngine): { view: Vi
     hasLocation: !!location,
     links,
     hasLinks: links.length > 0,
+    contactItems,
+    hasContactItems: contactItems.length > 0,
     summary: t(data.summary.summary),
     summaryParagraphs,
     hasSummary: summaryParagraphs.length > 0,

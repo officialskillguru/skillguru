@@ -145,8 +145,9 @@ describe("quality checker", () => {
 });
 
 describe("template registry reader", () => {
-  it("ships with no templates and never shows unreviewed or inactive ones", () => {
-    expect(getActiveTemplates()).toEqual([]);
+  it("offers only active, licence-reviewed templates", () => {
+    // simple-cv is integrated but its licence is unconfirmed, so students never see it.
+    expect(getActiveTemplates().map((t) => t.id)).toEqual(["classic-ats", "modern-lato"]);
     const base = { name: "T", description: "", version: "1.0.0", mainFile: "r.tex", bodyTemplate: "b.tpl", compiler: "pdflatex", supportedSections: ["personal"], ats: { singleColumn: true, notes: "" } };
     const list = _loadRegistryForTests({
       registryVersion: 1,

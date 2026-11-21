@@ -97,7 +97,7 @@ describe("My Resumes dashboard", () => {
     renderPage();
     await user.click(screen.getByRole("button", { name: "Actions for Software Developer Resume" }));
     expect(await screen.findByRole("menuitem", { name: /Download PDF \(no PDF generated yet\)/ })).toHaveAttribute("aria-disabled", "true");
-    expect(screen.getByRole("menuitem", { name: /Regenerate PDF \(templates coming soon\)/ })).toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("menuitem", { name: /Regenerate PDF \(choose a template first\)/ })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("duplicates via a named dialog prefilled with a copy title", async () => {

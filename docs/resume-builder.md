@@ -13,7 +13,7 @@ Browser (React 19 + React Query)                 Supabase                       
     debounced autosave + revisions)
   ResumePreviewPage (signed-URL PDF) ─invoke──────▶ Edge fn resume-ai ──▶ Gemini (GeminiProvider)
                                      ─invoke──────▶ Edge fn resume-pdf ──HMAC──▶ Cloud Run worker
-                                                                                  (TeX Live, pdftotext)
+                                                                                  (TeX Live 2026, pdf.js)
 ```
 
 Data flow for a PDF: `ResumeData JSON → validate → approved template → escape → render → compile (sandbox) → text-extraction check → private storage → version row`.
@@ -125,6 +125,29 @@ cd supabase/functions && deno check --config resume-ai/deno.json resume-ai/index
 ```
 
 The PGlite tests stub Supabase's `auth.uid()`, roles and storage schema. They prove the SQL logic, not that the migration applies cleanly to the live project.
+
+**Against a real (local) Supabase stack** (verified 2026-11-21; the full migration chain applied cleanly and all 23 checks passed):
+
+```bash
+npx supabase start && npx supabase migration up --local
+eval "$(npx supabase status -o env | grep -E '^(API_URL|ANON_KEY|SERVICE_ROLE_KEY)=')"
+API_URL=$API_URL ANON_KEY=$ANON_KEY SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY node tests/manual/verify-resume-builder-local.ts
+```
+
+What it covers:
+
+- Real auth, PostgREST, RLS and Storage, with two throwaway students.
+- Ownership isolation, column grants and optimistic concurrency.
+- Stats, duplicate, version and restore RPCs; the quota RPC is not callable by students.
+- The private PDF-only bucket: owner signed URLs, no student uploads.
+- Cascading delete.
+
+It refuses to run against anything but localhost.
+
+**PDF worker (real TeX):**
+
+1. `docker build -f services/resume-pdf-worker/Dockerfile -t resume-pdf-worker .` This compiles every template with three fixtures as a build gate.
+2. Run the container, then `node services/resume-pdf-worker/scripts/verify-templates.ts` (see the script header) to exercise the signed HTTP path.
 
 ## 8. Troubleshooting
 

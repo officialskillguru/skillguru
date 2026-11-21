@@ -3,9 +3,9 @@
 // ============================================================================
 // resume-templates/registry.json is the single list of approved LaTeX
 // templates, shared with the PDF worker. Only templates whose status is
-// "active" (compiled + text-extraction tested) are offered to students; the
-// registry ships empty until the real Overleaf sources are integrated, and the
-// UI says so honestly instead of showing placeholder templates.
+// "active" (compiled + text-extraction tested) and licence-reviewed are offered
+// to students. With none available the UI says so honestly instead of showing
+// placeholder templates.
 // ============================================================================
 import registryJson from "../../../../resume-templates/registry.json";
 import { registrySchema, type ResumeTemplateMetadata } from "./template-schema";

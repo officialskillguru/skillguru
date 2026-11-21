@@ -26,6 +26,8 @@ export async function loadTemplate(templatesRoot: string, id: string, allowTesti
   const meta = (await loadRegistry(templatesRoot)).find((t) => t.id === id);
   if (!meta) throw new TemplateNotAvailableError("unknown template");
   if (!(meta.status === "active" || (allowTesting && meta.status === "testing"))) throw new TemplateNotAvailableError("template not active");
+  // Same rule as the web app: a template whose licence hasn't been reviewed is never compiled for students.
+  if (!allowTesting && !meta.license.commercialUseReviewed) throw new TemplateNotAvailableError("licence not reviewed");
 
   const dir = normalize(join(templatesRoot, meta.id));
   const inside = (rel: string) => {

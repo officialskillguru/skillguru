@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { SIGNATURE_HEADER, TIMESTAMP_HEADER, verifyRequest } from "./auth.ts";
 import { compileLatex, summariseTexLog } from "./compile.ts";
 import { findUnsupportedCharacters } from "./latex-escape.ts";
-import { validatePdf } from "./pdf-validate.ts";
+import { renderedHeadings, validatePdf } from "./pdf-validate.ts";
 import { TemplateNotAvailableError, loadTemplate } from "./registry.ts";
 import { renderTemplate, TemplateError } from "./template-engine.ts";
 import { buildTemplateView, collectAllText, expectedPdfText } from "./view-model.ts";
@@ -93,11 +93,13 @@ export async function handleCompile(body: Buffer, headers: Record<string, string
   const result = await compileLatex({ engine, templateDir: template.dir, assets: template.meta.assets, mainFile: template.meta.mainFile, source, timeoutMs: COMPILE_TIMEOUT_MS });
   if (!result.ok) {
     log("compile_failed", { severity: "ERROR", requestId, templateId: template.meta.id, code: result.code, tex: summariseTexLog(result.log) });
+    // A character the template's font encoding can't typeset is the student's to fix, not a server fault.
+    const unicode = [...result.log.matchAll(/Unicode character (\S+) \(U\+([0-9A-F]{4,6})\)/g)].map((m) => m[1]!);
+    if (result.code === "COMPILE_FAILED" && unicode.length > 0) return { status: 422, json: { code: "UNSUPPORTED_CHARACTERS", characters: [...new Set(unicode)].slice(0, 10) } };
     return { status: result.code === "COMPILE_TIMEOUT" ? 504 : 500, json: { code: result.code } };
   }
 
-  const headings = ["Education", "Experience", "Projects", "Skills"].filter((h) => (view[`has${h === "Experience" ? "AnyExperience" : h}`] ?? false) === true);
-  const validation = await validatePdf(result.pdf, expectedPdfText(data), headings, MAX_PAGES);
+  const validation = await validatePdf(result.pdf, expectedPdfText(data), renderedHeadings(source), MAX_PAGES);
   if (!validation.ok) {
     log("pdf_validation_failed", { severity: "WARNING", requestId, templateId: template.meta.id, reason: validation.reason, missing: validation.missing, pages: validation.pages });
     return { status: 422, json: { code: `PDF_${validation.reason}`, missing: validation.missing, pages: validation.pages } };
@@ -128,7 +130,11 @@ export function startServer() {
         busy = false;
       }
     } catch (error) {
-      if (error instanceof RangeError) return sendJson(res, 413, { code: "TOO_LARGE" });
+      if (error instanceof RangeError) {
+        // The rest of the upload is unread: tell the client not to reuse this connection.
+        res.setHeader("Connection", "close");
+        return sendJson(res, 413, { code: "TOO_LARGE" });
+      }
       log("unhandled", { severity: "ERROR", message: error instanceof Error ? error.message : "unknown" });
       return sendJson(res, 500, { code: "INTERNAL" });
     }

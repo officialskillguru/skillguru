@@ -86,10 +86,42 @@ export function escapeUrl(input: string): string {
     .replace(/_/g, "\\_");
 }
 
-/** "https://www.linkedin.com/in/aarav/" -> "linkedin.com/in/aarav" (escaped for display). */
+const URL_BREAK_AFTER = new Set(["/", "?", "&", "=", "-", "_", ".", "#"]);
+
+export const MAX_DISPLAY_URL = 60;
+
+/**
+ * The human-readable part of a link: host (without "www.") + decoded path, no query
+ * string or fragment, at most MAX_DISPLAY_URL characters. The clickable target is
+ * always the full URL (escapeUrl); only the visible text is tidied, e.g.
+ * "https://www.linkedin.com/in/aarav/?originalSubdomain=in" -> "linkedin.com/in/aarav".
+ */
+export function displayUrlText(input: string): string {
+  let text: string;
+  try {
+    const url = new URL(input.trim());
+    let path = url.pathname;
+    try {
+      path = decodeURIComponent(path);
+    } catch {
+      /* keep the encoded path if it isn't valid UTF-8 */
+    }
+    text = url.hostname.replace(/^www\./i, "") + path.replace(/\/+$/, "");
+  } catch {
+    text = input.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/[?#].*$/, "").replace(/\/+$/, "");
+  }
+  text = stripInvisible(text).replace(/\s+/g, "");
+  return text.length > MAX_DISPLAY_URL ? `${text.slice(0, MAX_DISPLAY_URL - 1)}…` : text;
+}
+
+/**
+ * displayUrlText() escaped for LaTeX. A line-break opportunity (\allowbreak, invisible and
+ * not extracted as text) follows URL separators for templates that don't box link text.
+ */
 export function displayUrl(input: string, engine: LatexEngine = "pdflatex"): string {
-  const plain = input.trim().replace(/^https?:\/\//i, "").replace(/^www\./i, "").replace(/\/+$/, "");
-  return escapeLatex(plain, engine);
+  let out = "";
+  for (const ch of displayUrlText(input)) out += (ch === "…" ? "\\ldots{}" : escapeLatex(ch, engine)) + (URL_BREAK_AFTER.has(ch) ? "\\allowbreak{}" : "");
+  return out;
 }
 
 /**

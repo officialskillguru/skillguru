@@ -1,0 +1,4 @@
+# Resume templates and the PDF worker compile in Linux containers: keep LF on every OS
+resume-templates/** text eol=lf
+resume-templates/**/*.png binary
+services/resume-pdf-worker/** text eol=lf

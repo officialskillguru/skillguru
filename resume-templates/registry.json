@@ -1,5 +1,84 @@
 {
-  "$comment": "Approved LaTeX resume templates. Only entries with status 'active' are shown to students. Each entry must have a matching folder resume-templates/<id>/ containing the reviewed source files. See resume-templates/README.md before adding one.",
+  "$comment": "Approved LaTeX resume templates. Only entries with status 'active' AND license.commercialUseReviewed = true are shown to students and compiled. Each entry has a folder resume-templates/<id>/. See resume-templates/README.md before adding one. Supplied originals are kept unchanged in resume-templates/_originals/.",
   "registryVersion": 1,
-  "templates": []
+  "templates": [
+    {
+      "id": "classic-ats",
+      "name": "Classic ATS",
+      "description": "Clean single-column layout with small-caps section headings and right-aligned dates. Suits most roles, especially software and engineering.",
+      "version": "1.0.0",
+      "status": "active",
+      "category": "Professional",
+      "mainFile": "resume.tex",
+      "bodyTemplate": "body.tex.tpl",
+      "compiler": "pdflatex",
+      "assets": [],
+      "previewImage": "/resume-templates/classic-ats.png",
+      "supportedSections": ["personal", "summary", "education", "experience", "projects", "skills", "certifications", "achievements", "languages", "additional"],
+      "requiredPackages": ["latexsym", "fullpage", "titlesec", "marvosym", "color", "verbatim", "enumitem", "hyperref", "fancyhdr", "babel", "tabularx", "glyphtounicode"],
+      "requiredFonts": [],
+      "license": {
+        "name": "MIT",
+        "url": "https://github.com/jakegut/resume",
+        "attribution": "Jake Gutierrez, based on sb2nov/resume",
+        "commercialUseReviewed": true
+      },
+      "ats": {
+        "singleColumn": true,
+        "notes": "Real-text headings, Unicode text mapping, no icons or images.",
+        "lastValidatedAt": "2026-11-20"
+      }
+    },
+    {
+      "id": "modern-lato",
+      "name": "Modern Minimal",
+      "description": "The same proven single-column structure set in the modern Lato typeface for a lighter, contemporary look.",
+      "version": "1.0.0",
+      "status": "active",
+      "category": "Modern",
+      "mainFile": "resume.tex",
+      "bodyTemplate": "body.tex.tpl",
+      "compiler": "pdflatex",
+      "assets": [],
+      "previewImage": "/resume-templates/modern-lato.png",
+      "supportedSections": ["personal", "summary", "education", "experience", "projects", "skills", "certifications", "achievements", "languages", "additional"],
+      "requiredPackages": ["fontawesome5", "latexsym", "fullpage", "titlesec", "marvosym", "color", "verbatim", "enumitem", "hyperref", "fancyhdr", "babel", "tabularx", "glyphtounicode", "lato"],
+      "requiredFonts": ["Lato (texlive-fonts-extra)"],
+      "license": {
+        "name": "MIT",
+        "attribution": "Audric Serador, inspired by sb2nov/resume",
+        "commercialUseReviewed": true
+      },
+      "ats": {
+        "singleColumn": true,
+        "notes": "Original custom-commands.tex was not supplied; uses the MIT sb2nov/Jake macros it derives from. Icons intentionally not printed.",
+        "lastValidatedAt": "2026-11-20"
+      }
+    },
+    {
+      "id": "simple-cv",
+      "name": "Simple CV",
+      "description": "Traditional A4 CV with a centred blue name, ruled section titles and Times-style typography.",
+      "version": "1.0.0",
+      "status": "active",
+      "category": "Corporate",
+      "mainFile": "resume.tex",
+      "bodyTemplate": "body.tex.tpl",
+      "compiler": "pdflatex",
+      "assets": [],
+      "previewImage": "/resume-templates/simple-cv.png",
+      "supportedSections": ["personal", "summary", "education", "experience", "projects", "skills", "certifications", "achievements", "languages", "additional"],
+      "requiredPackages": ["geometry", "fontenc", "newtxmath", "newtxtext", "parskip", "titlesec", "multirow", "graphicx", "xcolor", "hyperref", "enumitem", "glyphtounicode"],
+      "requiredFonts": ["newtx (texlive-fonts-extra)"],
+      "license": {
+        "name": "Unknown - no author or licence included with the supplied file",
+        "commercialUseReviewed": false
+      },
+      "ats": {
+        "singleColumn": true,
+        "notes": "Hidden from students until its licence is confirmed. \\textBF made breakable; glyphtounicode added for text extraction.",
+        "lastValidatedAt": "2026-11-20"
+      }
+    }
+  ]
 }

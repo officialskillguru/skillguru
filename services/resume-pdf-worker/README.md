@@ -1,6 +1,8 @@
 # Resume PDF worker (Google Cloud Run)
 
-This is an isolated LaTeX-to-PDF compiler for the AI Resume Builder. **It has not been deployed yet, and no templates are registered.**
+This is an isolated LaTeX-to-PDF compiler for the AI Resume Builder. **It has not been deployed yet.** Registered templates: `classic-ats`, `modern-lato` (active) and `simple-cv` (licence pending); see `resume-templates/README.md`.
+
+Template verification (real compile + text extraction in this image): `node services/resume-pdf-worker/scripts/verify-templates.ts` against a running container (see the script header).
 
 The `resume-pdf` Supabase Edge Function calls it with an HMAC-signed `POST /compile { requestId, templateId, resumeData }`. The worker then:
 
@@ -10,7 +12,7 @@ The `resume-pdf` Supabase Edge Function calls it with an HMAC-signed `POST /comp
 4. Rejects characters the engine can't typeset (e.g. Devanagari in a pdfLaTeX template) with `UNSUPPORTED_CHARACTERS`.
 5. Renders the `<< >>` template; there is no raw-insertion path.
 6. Compiles the template in a sandboxed temp directory: `-no-shell-escape`, TeX `openin/openout_any=p`, wall-clock timeout plus `prlimit` (CPU, memory, file size), and the temp directory is always deleted.
-7. Validates the PDF: `%PDF-` header, size, page count, and `pdftotext` must contain the student's key details.
+7. Validates the PDF with Mozilla pdf.js (in-process, no system PDF tools): `%PDF-` header, size, page count (max 4), the text layer must contain the student's key details, and the template's section headings must appear in reading order.
 8. Returns `application/pdf`, or a JSON `{ code }`. TeX logs go to Cloud Logging only.
 
 The Edge Function stores the PDF in the private `student-resumes` bucket and records a version.
@@ -61,3 +63,11 @@ supabase secrets set RESUME_PDF_WORKER_URL=https://resume-pdf-worker-xxxx.a.run.
 | `RESUME_COMPILE_TIMEOUT_MS` | `20000` | wall-clock compile limit |
 | `RESUME_MAX_PAGES` | `4` | PDFs longer than this are rejected |
 | `RESUME_WORKER_ALLOW_TESTING` | unset | `1` also allows `status: "testing"` templates (QA only) |
+
+## Image notes
+
+- Base: the official `texlive/texlive` image (TeX Live 2026, `latest-basic`), **pinned by digest** in the Dockerfile. It needs no `apt-get`: Node 24 is copied from the official Node image and PDF validation uses pdf.js, so the image has no system PDF tooling to patch.
+- Only the TeX packages the approved templates need are added with `tlmgr` at build time. Global TeX config: `shell_escape=f`, `openin_any=p`, `openout_any=p`.
+- **Build gate:** `scripts/smoke-compile.ts` runs inside `docker build`. It compiles every registered template with three fixtures (typical student; hostile input with LaTeX specials, injection attempts, diacritics and long strings; minimal) and runs the PDF validation. Any failure fails the build, so a broken template or missing package can never be deployed.
+- Verified locally (2026-11-21): the image built; all 3 templates × 3 fixtures passed in the build gate and again through signed HTTP `POST /compile` (0.6–2.4 s per PDF). That ran with `--read-only --tmpfs /tmp --cap-drop ALL --security-opt no-new-privileges --memory 1g --cpus 1`. Unsigned, wrong-secret, replayed and tampered requests returned 401; path traversal returned 404; an oversized body returned 413; Devanagari on a pdfLaTeX template returned 422; and the licence-unreviewed `simple-cv` was refused without `RESUME_WORKER_ALLOW_TESTING`.
+- Recommended Cloud Run flags mirror that: `--concurrency 1 --memory 1Gi --cpu 1 --timeout 60`.
