@@ -47,7 +47,7 @@ function toGeminiContents(messages: ChatMessage[]): { role: "user" | "model"; pa
     }));
 }
 
-async function fetchWithRetryAndTimeout(url: string, body: unknown, timeoutMs: number, maxAttempts: number): Promise<GeminiResponse> {
+async function fetchWithRetryAndTimeout(url: string, apiKey: string, body: unknown, timeoutMs: number, maxAttempts: number): Promise<GeminiResponse> {
   let lastError: unknown;
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
@@ -57,7 +57,10 @@ async function fetchWithRetryAndTimeout(url: string, body: unknown, timeoutMs: n
     try {
       const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        // Key travels in a header, never the query string: Deno's fetch network
+        // errors embed the full request URL, and converse echoes error messages
+        // back to the (public) client — a ?key= URL would leak the secret.
+        headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
         body: JSON.stringify(body),
         signal: controller.signal,
       });
@@ -109,7 +112,7 @@ export class GeminiProvider implements AIProvider {
 
   async generateStructured(request: StructuredGenerationRequest): Promise<StructuredGenerationResult> {
     const systemMessage = request.messages.find((m) => m.role === "system");
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent`;
 
     const body: Record<string, unknown> = {
       contents: toGeminiContents(request.messages),
@@ -133,7 +136,7 @@ export class GeminiProvider implements AIProvider {
       ];
     }
 
-    const json = await fetchWithRetryAndTimeout(url, body, this.timeoutMs, this.maxAttempts);
+    const json = await fetchWithRetryAndTimeout(url, this.apiKey, body, this.timeoutMs, this.maxAttempts);
 
     if (json.promptFeedback?.blockReason) {
       return {
@@ -166,10 +169,10 @@ export class GeminiProvider implements AIProvider {
   }
 
   async embed(text: string): Promise<number[]> {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${this.apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent`;
     const res = await fetch(url, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "x-goog-api-key": this.apiKey },
       body: JSON.stringify({ model: `models/${EMBEDDING_MODEL}`, content: { parts: [{ text }] }, taskType: "RETRIEVAL_QUERY", outputDimensionality: EMBEDDING_DIM }),
     });
 

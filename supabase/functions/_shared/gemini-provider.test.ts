@@ -31,6 +31,19 @@ describe("GeminiProvider.generateStructured", () => {
     expect(result.safetyBlock).toBeNull();
   });
 
+  it("sends the API key in the x-goog-api-key header, never in the URL", async () => {
+    const fetchMock = mockFetchOnce(200, { candidates: [{ content: { parts: [{ text: "ok" }] }, finishReason: "STOP" }] });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const provider = new GeminiProvider("secret-key-123", "gemini-2.5-flash", 5000, 1);
+    await provider.generateStructured({ messages: [{ role: "user", content: "hi" }] });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).not.toContain("secret-key-123");
+    expect(url).not.toContain("key=");
+    expect((init.headers as Record<string, string>)["x-goog-api-key"]).toBe("secret-key-123");
+  });
+
   it("parses a function call response", async () => {
     const fetchMock = mockFetchOnce(200, {
       candidates: [{ content: { parts: [{ functionCall: { name: "knowledge_search", args: { query: "pricing" } } }] }, finishReason: "STOP" }],
