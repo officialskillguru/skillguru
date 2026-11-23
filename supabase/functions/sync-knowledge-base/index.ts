@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { embedText } from "./embed.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -30,12 +31,6 @@ function log(requestId: string, level: "info" | "error", event: string, extra: R
   else console.log(JSON.stringify(entry));
 }
 
-const EMBEDDING_DIM = 768;
-// text-embedding-004 was retired by Google; gemini-embedding-001 replaces it and
-// supports an explicit outputDimensionality so we keep the same 768-dim vectors
-// the pgvector HNSW index (agent_knowledge_chunks.embedding) was built for.
-const EMBEDDING_MODEL = "gemini-embedding-001";
-
 /** Splits content into ~maxChars chunks on paragraph boundaries where possible, with a small overlap so semantic context isn't cut off mid-thought. Short content (the common case here) returns a single chunk. */
 function chunkText(text: string, maxChars = 1000, overlap = 100): string[] {
   const clean = text.trim();
@@ -62,33 +57,6 @@ function chunkText(text: string, maxChars = 1000, overlap = 100): string[] {
     }
   }
   return chunks;
-}
-
-/** Calls the real Gemini embeddings REST API. Requires GEMINI_API_KEY to be configured as an Edge Function secret (not hardcoded, not passed by the caller). */
-async function embedText(text: string, apiKey: string): Promise<number[]> {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${EMBEDDING_MODEL}:embedContent?key=${apiKey}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: `models/${EMBEDDING_MODEL}`,
-      content: { parts: [{ text }] },
-      taskType: "RETRIEVAL_DOCUMENT",
-      outputDimensionality: EMBEDDING_DIM,
-    }),
-  });
-
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Gemini embedding request failed (${res.status}): ${body.slice(0, 300)}`);
-  }
-
-  const json = await res.json();
-  const values = json?.embedding?.values;
-  if (!Array.isArray(values) || values.length !== EMBEDDING_DIM) {
-    throw new Error(`Gemini embedding response had unexpected shape (expected ${EMBEDDING_DIM} dims, got ${Array.isArray(values) ? values.length : typeof values})`);
-  }
-  return values;
 }
 
 interface SourceDocument {
