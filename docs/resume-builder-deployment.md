@@ -13,6 +13,17 @@ Status on 2026-11-21: **nothing deployed**. Every step below needs explicit owne
 | Live migration status | **Unknown.** `supabase migration list --linked` returned 403 (the CLI account lacks the privileges), and a REST probe was blocked locally. Verify with §2. | |
 | Vercel flag scope (Production/Preview/Development) | **Unknown.** The Vercel account connected to this machine has no projects; the site lives under another login. Check in the dashboard (§1). | |
 
+### Re-check 2026-11-23 (read-only)
+
+| Check | Result |
+| --- | --- |
+| Push state | Still **not pushed**: 7 commits ahead of `origin`; no remote branch contains `2a694d2`; `origin/main` has no reference to the flag. |
+| Live site | A **new production deploy** happened after 11-21 (`index-S6AuvY4q.js`). It still serves only the classic `ResumeBuilderPage-CTwIF5R5.js` chunk and has no V2 markers. Supabase host: `eapvwsikjqdizoncfntm`. |
+| Project identity | **Discrepancy:** the committed `supabase/.temp` link pointed at **"SkillGuru Production" (`thhiv…blwg`)**. The working copy is linked to **"officialskillguru's Project" (`eapv…fntm`)**, and that is the one the live bundle uses. The owner must confirm which is intended before any migration. |
+| Access from this machine | Supabase CLI account can't see `eapv…` (other org), so `migration list` → 403. The Vercel MCP team has no projects. Both checks remain manual. |
+| Pre-flight SQL | One paste-able, SELECT-only file: `docs/resume-builder-preflight.sql`. It also lists every repo migration missing on live. |
+| Q7 baseline (owner ran on `eapv…`, 2026-11-23) | `profiles` 17 · `student_profiles` 1 · `resume_experience` 0 · `auth.users` 17. These must be identical after the migration. All three predecessor tables exist on live. Q1–Q6 pending. |
+
 **Conclusion:** the live site is safe today. The flag is inert because no deployed code reads it. The risk starts the moment `feat/product-readiness` is **pushed** (Preview builds) or **merged to main** (Production build) while the tables are missing. Do not push or merge before §3 is complete, or first set the flag to `false` for those environments.
 
 ## 1. Vercel flag check (dashboard, read-only)
@@ -90,6 +101,12 @@ Compare (b) with `supabase/migrations/` (89 files, newest `20261120000001`). If 
 9. [ ] Ownership check with two test student accounts. Student A creates a resume in the app. Student B's `select * from resumes` returns nothing of A's (the local end-to-end script automates this, against localhost only).
 10. [ ] Existing data unchanged: re-run §2 e. The counts must match.
 11. [ ] Regenerate types (optional, the hand-written ones match): `supabase gen types typescript --linked > src/types/database.types.ts`.
+
+**Recovery plan that preserves student data:**
+- The migration never alters or deletes existing tables, so existing profiles, enrolments and classic resume data cannot be lost by it.
+- If the SQL fails partway, nothing is kept. The file has no `BEGIN`/`COMMIT` of its own, so the SQL Editor runs the whole script as one implicit transaction, and `supabase db push` wraps each migration in a transaction. Any error rolls back the entire file. Re-run the pre-flight to confirm Q1 is still all `false`. The file is idempotent (`IF NOT EXISTS`, `DROP … IF EXISTS` on its own objects only), so it can be re-applied after a fix.
+- If the app misbehaves after activation, set the flag to `false` and redeploy (or use Vercel Instant Rollback). Students land on the classic page again. Nothing in the database needs to change.
+- Only restore from the backup (§3.4) if existing data is unexpectedly damaged, which the Q7 baseline counts would show. A restore overwrites everything written since the backup, so it is the last resort.
 
 **Rollback:** the migration is additive, so leaving the tables in place is harmless. Turning the flag off restores the classic page. A full revert (drop the four tables, functions, bucket policies and the empty bucket) is a separate, approved destructive change, and it is never needed to recover the site.
 
