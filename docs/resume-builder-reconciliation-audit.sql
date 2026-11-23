@@ -62,7 +62,8 @@ with _start as (select 1)
     where n.nspname='public' and c.relname in ('resumes','resume_versions','resume_pdf_jobs','resume_ai_usage') and a.attnum>0 and not a.attisdropped)
 , cmp_column as (
   select 'column' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_column e full join live_column l on l.t = e.t and l.obj = e.obj
   )
@@ -97,7 +98,8 @@ with _start as (select 1)
     where n.nspname='public' and c.relname in ('resumes','resume_versions','resume_pdf_jobs','resume_ai_usage'))
 , cmp_constraint as (
   select 'constraint' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_constraint e full join live_constraint l on l.t = e.t and l.obj = e.obj
   )
@@ -118,7 +120,8 @@ with _start as (select 1)
 , live_index as (select tablename::text t, indexname::text obj, indexdef def from pg_indexes where schemaname='public' and tablename in ('resumes','resume_versions','resume_pdf_jobs','resume_ai_usage'))
 , cmp_index as (
   select 'index' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_index e full join live_index l on l.t = e.t and l.obj = e.obj
   )
@@ -133,7 +136,8 @@ with _start as (select 1)
     where relnamespace='public'::regnamespace and relname in ('resumes','resume_versions','resume_pdf_jobs','resume_ai_usage'))
 , cmp_rls as (
   select 'rls' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_rls e full join live_rls l on l.t = e.t and l.obj = e.obj
   )
@@ -154,7 +158,8 @@ with _start as (select 1)
       or coalesce(qual,'') || coalesce(with_check,'') like '%student-resumes%')))
 , cmp_policy as (
   select 'policy' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_policy e full join live_policy l on l.t = e.t and l.obj = e.obj
   )
@@ -196,7 +201,8 @@ with _start as (select 1)
 , live_table_priv as (select t, obj, has_table_privilege(split_part(obj, ':', 1), 'public.' || t, split_part(obj, ':', 2))::text def from exp_table_priv)
 , cmp_table_priv as (
   select 'table_priv' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_table_priv e full join live_table_priv l on l.t = e.t and l.obj = e.obj
   )
@@ -218,7 +224,8 @@ with _start as (select 1)
     and grantee in ('anon','authenticated') and privilege_type in ('INSERT','UPDATE'))
 , cmp_column_priv as (
   select 'column_priv' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_column_priv e full join live_column_priv l on l.t = e.t and l.obj = e.obj
   )
@@ -231,7 +238,8 @@ with _start as (select 1)
     where not g.tgisinternal and c.relnamespace='public'::regnamespace and c.relname in ('resumes','resume_versions','resume_pdf_jobs','resume_ai_usage'))
 , cmp_trigger as (
   select 'trigger' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_trigger e full join live_trigger l on l.t = e.t and l.obj = e.obj
   )
@@ -303,18 +311,31 @@ with _start as (select 1)
   left join public.permissions p on p.slug = e.slug
   left join lateral (select string_agg(r.code, ',' order by r.code) roles from public.role_permissions rp join public.roles r on r.id = rp.role_id
                      where rp.permission_id = p.id and r.code in ('admin','mentor')) lr on true)
--- 20261117000001 / 20261117000003 policies (existence + full rule text for review)
-, exp_other_pol(t, obj) as (values
-    ('public.files','Anyone can view published course media files'),
-    ('public.leads','CRM readers view leads'),('public.leads','CRM editors create leads'),('public.leads','CRM editors update leads'),
-    ('public.lead_followups','CRM readers view followups'),('public.lead_followups','CRM editors create followups'),('public.lead_followups','CRM editors update followups'),
-    ('public.lead_notes','CRM readers view lead notes'),('public.lead_notes','CRM editors add lead notes'),
-    ('public.lead_activities','CRM readers view lead activities'),('public.lead_activities','CRM editors log lead activities'))
+-- 20261117000001 / 20261117000003 policies: exact rule comparison (other existing policies on these tables are not judged here)
+
+-- other_pol: expected from the repository vs live
+, exp_other_pol(t, obj, def) as (values
+    ('public.files','Anyone can view published course media files','SELECT TO anon,authenticated USING ((bucket = ''courses''::text) AND (deleted_at IS NULL) AND is_published_course_media_file(id)) CHECK -'),
+    ('public.lead_activities','CRM editors log lead activities','INSERT TO authenticated USING - CHECK has_permission(''crm.update''::text)'),
+    ('public.lead_activities','CRM readers view lead activities','SELECT TO authenticated USING has_permission(''crm.read''::text) CHECK -'),
+    ('public.lead_followups','CRM editors create followups','INSERT TO authenticated USING - CHECK has_permission(''crm.update''::text)'),
+    ('public.lead_followups','CRM editors update followups','UPDATE TO authenticated USING has_permission(''crm.update''::text) CHECK has_permission(''crm.update''::text)'),
+    ('public.lead_followups','CRM readers view followups','SELECT TO authenticated USING has_permission(''crm.read''::text) CHECK -'),
+    ('public.lead_notes','CRM editors add lead notes','INSERT TO authenticated USING - CHECK (has_permission(''crm.update''::text) AND (author_id = auth.uid()))'),
+    ('public.lead_notes','CRM readers view lead notes','SELECT TO authenticated USING has_permission(''crm.read''::text) CHECK -'),
+    ('public.leads','CRM editors create leads','INSERT TO authenticated USING - CHECK has_permission(''crm.update''::text)'),
+    ('public.leads','CRM editors update leads','UPDATE TO authenticated USING has_permission(''crm.update''::text) CHECK has_permission(''crm.update''::text)'),
+    ('public.leads','CRM readers view leads','SELECT TO authenticated USING has_permission(''crm.read''::text) CHECK -'))
+, live_other_pol as (select (schemaname||'.'||tablename)::text t, policyname::text obj,
+      cmd || ' TO ' || array_to_string(roles, ',') || ' USING ' || coalesce(qual,'-') || ' CHECK ' || coalesce(with_check,'-') def
+    from pg_policies where schemaname = 'public' and tablename in ('files','leads','lead_followups','lead_notes','lead_activities'))
 , cmp_other_pol as (
-  select 'other_policy' as section, e.t as tbl, e.obj as object, case when p.policyname is null then 'MISSING' else 'PRESENT (review rule)' end as status,
-    null::text as expected,
-    p.cmd || ' TO ' || array_to_string(p.roles, ',') || ' USING ' || coalesce(p.qual,'-') || ' CHECK ' || coalesce(p.with_check,'-') as live
-  from exp_other_pol e left join pg_policies p on p.schemaname || '.' || p.tablename = e.t and p.policyname = e.obj)
+  select 'other_pol' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
+    case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
+  from exp_other_pol e full join live_other_pol l on l.t = e.t and l.obj = e.obj
+  where e.obj is not null)
 select * from (
   select * from cmp_column union all select * from cmp_constraint union all select * from cmp_index
   union all select * from cmp_rls union all select * from cmp_policy union all select * from cmp_table_priv

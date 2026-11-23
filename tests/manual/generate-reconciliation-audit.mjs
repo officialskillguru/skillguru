@@ -59,6 +59,21 @@ for (const v of OTHER) {
   const grants = sql.match(/^\s*(GRANT|REVOKE)[^;]*ON FUNCTION[^;]*;/gim) ?? [];
   for (const g of grants) if (created.some((n) => g.includes(`public.${n}(`))) await db.exec(g);
 }
+// 20261117000001 / 20261117000003 policies: stub only the columns their rules reference
+// (types as in 005_files.sql and 20260718000001_crm_schema.sql) so Postgres deparses them.
+await db.exec(`
+CREATE TABLE public.files (id uuid PRIMARY KEY, bucket text NOT NULL, deleted_at timestamptz);
+CREATE TABLE public.leads (id uuid PRIMARY KEY);
+CREATE TABLE public.lead_followups (id uuid PRIMARY KEY);
+CREATE TABLE public.lead_notes (id uuid PRIMARY KEY, author_id uuid NOT NULL);
+CREATE TABLE public.lead_activities (id uuid PRIMARY KEY);
+ALTER TABLE public.files ENABLE ROW LEVEL SECURITY; ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lead_followups ENABLE ROW LEVEL SECURITY; ALTER TABLE public.lead_notes ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.lead_activities ENABLE ROW LEVEL SECURITY;`);
+for (const v of ["20261117000001", "20261117000003"]) {
+  for (const p of read(v).match(/CREATE POLICY[\s\S]*?;/gi) ?? []) await db.exec(p);
+}
+const OTHER_POLICY_TABLES = ["files", "leads", "lead_followups", "lead_notes", "lead_activities"];
 
 const TABLES = ["resumes", "resume_versions", "resume_pdf_jobs", "resume_ai_usage"];
 const RESUME_FUNCS = ["get_my_resume_stats", "duplicate_resume", "create_resume_version", "restore_resume_version",
@@ -87,6 +102,10 @@ const rls = await q(`select relname t, (relrowsecurity::text || '/' || relforcer
 const policies = await q(`select schemaname||'.'||tablename t, policyname obj,
   cmd || ' TO ' || array_to_string(roles, ',') || ' USING ' || coalesce(qual,'-') || ' CHECK ' || coalesce(with_check,'-') def
   from pg_policies where (schemaname='public' and tablename in ${tbl}) or (schemaname='storage' and policyname like 'student_resumes_%') order by 1,2`);
+const otherPolicies = await q(`select schemaname||'.'||tablename t, policyname obj,
+  cmd || ' TO ' || array_to_string(roles, ',') || ' USING ' || coalesce(qual,'-') || ' CHECK ' || coalesce(with_check,'-') def
+  from pg_policies where schemaname='public' and tablename in (${OTHER_POLICY_TABLES.map(lit).join(",")}) order by 1,2`);
+if (otherPolicies.length !== 11) throw new Error(`expected 11 other policies, got ${otherPolicies.length}`);
 const tablePrivs = [];
 for (const t of TABLES) for (const r of ROLES) for (const p of ["SELECT", "INSERT", "UPDATE", "DELETE"]) {
   const [{ v }] = await q(`select has_table_privilege($1, $2, $3)::text v`, [r, `public.${t}`, p]);
@@ -139,7 +158,8 @@ const section = (name, rows, live, { extras = true } = {}) => `
 , live_${name} as (${live})
 , cmp_${name} as (
   select '${name}' as section, coalesce(e.t, l.t) as tbl, coalesce(e.obj, l.obj) as object,
-    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)' when e.def = l.def then 'MATCH' else 'DIFF' end as status,
+    case when l.obj is null then 'MISSING' when e.obj is null then 'EXTRA (not in repo)'
+       when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
     case when e.def is distinct from l.def then e.def end as expected, case when e.def is distinct from l.def then l.def end as live
   from exp_${name} e full join live_${name} l on l.t = e.t and l.obj = e.obj
   ${extras ? "" : "where e.obj is not null"})`;
@@ -203,18 +223,10 @@ ${fnSection("other_fn", otherFns)}
   left join public.permissions p on p.slug = e.slug
   left join lateral (select string_agg(r.code, ',' order by r.code) roles from public.role_permissions rp join public.roles r on r.id = rp.role_id
                      where rp.permission_id = p.id and r.code in ('admin','mentor')) lr on true)
--- 20261117000001 / 20261117000003 policies (existence + full rule text for review)
-, exp_other_pol(t, obj) as (values
-    ('public.files','Anyone can view published course media files'),
-    ('public.leads','CRM readers view leads'),('public.leads','CRM editors create leads'),('public.leads','CRM editors update leads'),
-    ('public.lead_followups','CRM readers view followups'),('public.lead_followups','CRM editors create followups'),('public.lead_followups','CRM editors update followups'),
-    ('public.lead_notes','CRM readers view lead notes'),('public.lead_notes','CRM editors add lead notes'),
-    ('public.lead_activities','CRM readers view lead activities'),('public.lead_activities','CRM editors log lead activities'))
-, cmp_other_pol as (
-  select 'other_policy' as section, e.t as tbl, e.obj as object, case when p.policyname is null then 'MISSING' else 'PRESENT (review rule)' end as status,
-    null::text as expected,
-    p.cmd || ' TO ' || array_to_string(p.roles, ',') || ' USING ' || coalesce(p.qual,'-') || ' CHECK ' || coalesce(p.with_check,'-') as live
-  from exp_other_pol e left join pg_policies p on p.schemaname || '.' || p.tablename = e.t and p.policyname = e.obj)
+-- 20261117000001 / 20261117000003 policies: exact rule comparison (other existing policies on these tables are not judged here)
+${section("other_pol", otherPolicies, `select (schemaname||'.'||tablename)::text t, policyname::text obj,
+      cmd || ' TO ' || array_to_string(roles, ',') || ' USING ' || coalesce(qual,'-') || ' CHECK ' || coalesce(with_check,'-') def
+    from pg_policies where schemaname = 'public' and tablename in (${OTHER_POLICY_TABLES.map(lit).join(",")})`, { extras: false })}
 select * from (
   select * from cmp_column union all select * from cmp_constraint union all select * from cmp_index
   union all select * from cmp_rls union all select * from cmp_policy union all select * from cmp_table_priv
@@ -233,4 +245,26 @@ select * from (
 order by case when status like 'MATCH%' then 1 else 0 end, section, tbl, object;
 `;
 writeFileSync("docs/resume-builder-reconciliation-audit.sql", out);
+
+// Standalone check for the 11 policies the first audit run reported as "PRESENT (review rule)".
+// Deparsed function names are qualified only when not on search_path, so compare with "public." removed.
+const policyCheck = `-- ============================================================================
+-- 20261117000001 + 20261117000003 POLICY CHECK (READ-ONLY: one SELECT).
+-- Run in the SQL Editor of project eapvwsikjqdizoncfntm. Expected: 11 rows, all MATCH.
+-- Generated by tests/manual/generate-reconciliation-audit.mjs (rules deparsed by Postgres 17).
+-- ============================================================================
+with exp(t, obj, def) as (values
+    ${vals(otherPolicies, ["t", "obj", "def"])})
+, live as (
+  select (schemaname||'.'||tablename)::text t, policyname::text obj,
+    cmd || ' TO ' || array_to_string(roles, ',') || ' USING ' || coalesce(qual,'-') || ' CHECK ' || coalesce(with_check,'-') def
+  from pg_policies where schemaname = 'public' and tablename in (${OTHER_POLICY_TABLES.map(lit).join(",")}))
+select e.t as tbl, e.obj as policy,
+  case when l.obj is null then 'MISSING' when replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 'MATCH' else 'DIFF' end as status,
+  case when l.obj is null or replace(e.def, 'public.', '') <> replace(l.def, 'public.', '') then e.def end as expected,
+  case when l.obj is not null and replace(e.def, 'public.', '') <> replace(l.def, 'public.', '') then l.def end as live
+from exp e left join live l on l.t = e.t and l.obj = e.obj
+order by case when l.obj is not null and replace(e.def, 'public.', '') = replace(l.def, 'public.', '') then 1 else 0 end, e.t, e.obj;
+`;
+writeFileSync("docs/resume-builder-policy-check.sql", policyCheck);
 console.log(`wrote docs/resume-builder-reconciliation-audit.sql: ${columns.length} columns, ${constraints.length} constraints, ${indexes.length} indexes, ${policies.length} policies, ${tablePrivs.length} table privs, ${colPrivs.length} column privs, ${triggers.length} triggers, ${resumeFns.length}+${otherFns.length} functions`);
