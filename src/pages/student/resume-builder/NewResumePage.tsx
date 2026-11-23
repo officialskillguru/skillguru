@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -7,6 +7,7 @@ import { useLoadProfileImportSource, useResumeMutations } from "@/hooks/student/
 import { toFriendlyResumeError } from "@/services/resumes.service";
 import { inputClass } from "@/features/resume-builder/components/form-model";
 import { TemplatePicker } from "@/features/resume-builder/components/TemplatePicker";
+import { getActiveTemplates } from "@/features/resume-builder/domain/templates";
 import { mapProfileToResumeData, mergeImportedData } from "@/features/resume-builder/domain/profile-import";
 import { emptyResumeData } from "@/features/resume-builder/domain/resume-schema";
 
@@ -16,7 +17,12 @@ export default function NewResumePage() {
   const loadSource = useLoadProfileImportSource();
   const [title, setTitle] = useState("");
   const [targetRole, setTargetRole] = useState("");
-  const [templateId, setTemplateId] = useState<string | null>(null);
+  // "Use this template" from My Resumes passes ?template=<id>; accept only an active, licence-reviewed id.
+  const [searchParams] = useSearchParams();
+  const [templateId, setTemplateId] = useState<string | null>(() => {
+    const requested = searchParams.get("template");
+    return requested && getActiveTemplates().some((t) => t.id === requested) ? requested : null;
+  });
   const [start, setStart] = useState<"profile" | "blank">("profile");
   const [error, setError] = useState<string | null>(null);
   const [titleError, setTitleError] = useState<string | null>(null);

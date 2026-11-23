@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyResumes, useMyResumeStats } from "@/hooks/student/useResumes";
 import { ResumeCard, ResumeStatsCards } from "@/features/resume-builder/components/dashboard";
+import { TemplateGalleryDialog } from "@/features/resume-builder/components/TemplateGalleryDialog";
 
 export default function MyResumesPage() {
   const [page, setPage] = useState(1);
@@ -31,6 +32,7 @@ export default function MyResumesPage() {
           <p className="mt-1 text-sm font-semibold text-muted-foreground">Create, improve, and manage professional ATS-friendly resumes with AI.</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <TemplateGalleryDialog />
           {latestDraft && (
             <Button asChild variant="outline">
               <Link to={`/dashboard/resume-builder/${latestDraft.id}/edit`} aria-label={`Continue draft: ${latestDraft.title}`}>

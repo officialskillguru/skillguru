@@ -22,10 +22,14 @@ vi.mock("@/hooks/student/useResumes", () => ({
     duplicate: mutation(duplicateMutate),
     remove: mutation(removeMutate),
     generatePdf: mutation(),
+    create: { mutateAsync: vi.fn(), isPending: false },
   }),
+  useLoadProfileImportSource: () => vi.fn(),
 }));
 
 import MyResumesPage from "@/pages/student/resume-builder/MyResumesPage";
+import NewResumePage from "@/pages/student/resume-builder/NewResumePage";
+import { getActiveTemplates } from "@/features/resume-builder/domain/templates";
 
 const resume = (over: Partial<ResumeSummary>): ResumeSummary => ({
   id: "r1", title: "Software Developer Resume", target_role: "Software Developer", template_id: null, status: "draft", revision: 3,
@@ -112,5 +116,58 @@ describe("My Resumes dashboard", () => {
     await user.type(input, "Data Analyst Resume");
     await user.click(screen.getByRole("button", { name: "Create copy" }));
     expect(duplicateMutate).toHaveBeenCalledWith({ id: "r1", title: "Data Analyst Resume" }, expect.any(Object));
+  });
+});
+
+describe("View templates", () => {
+  it("lists only active templates in a labelled dialog and starts a resume with the chosen one", async () => {
+    const user = userEvent.setup();
+    const active = getActiveTemplates();
+    expect(active.length).toBeGreaterThan(0);
+    renderPage();
+    await user.click(screen.getByRole("button", { name: "View templates" }));
+    const dialog = await screen.findByRole("dialog", { name: "Resume templates" });
+    const group = within(dialog).getByRole("radiogroup", { name: "Available templates" });
+    expect(within(group).getAllByRole("radio")).toHaveLength(active.length);
+    const last = active[active.length - 1]!;
+    await user.click(within(group).getByRole("radio", { name: last.name }));
+    expect(within(dialog).getByRole("link", { name: new RegExp(`^Use this template ?: ${last.name}$`) })).toHaveAttribute("href", `/dashboard/resume-builder/new?template=${last.id}`);
+  });
+
+  it("returns focus to the trigger when closed and reopens on the checked template", async () => {
+    const user = userEvent.setup();
+    const active = getActiveTemplates();
+    renderPage();
+    const trigger = screen.getByRole("button", { name: "View templates" });
+    await user.click(trigger);
+    let dialog = await screen.findByRole("dialog", { name: "Resume templates" });
+    const last = active[active.length - 1]!;
+    await user.click(within(dialog).getByRole("radio", { name: last.name }));
+    // The footer button, not the icon-only X that shadcn adds (also named "Close").
+    await user.click(within(dialog).getAllByRole("button", { name: "Close" }).find((b) => !b.querySelector("svg"))!);
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    expect(trigger).toHaveFocus();
+    await user.click(trigger);
+    dialog = await screen.findByRole("dialog", { name: "Resume templates" });
+    await waitFor(() => expect(within(dialog).getByRole("radio", { name: last.name })).toHaveFocus());
+  });
+
+  it("pre-selects an active template from ?template= and ignores unknown ids", () => {
+    const first = getActiveTemplates()[0]!;
+    const { unmount } = render(
+      <MemoryRouter initialEntries={[`/dashboard/resume-builder/new?template=${first.id}`]}>
+        <NewResumePage />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole("radio", { name: first.name })).toBeChecked();
+    unmount();
+    render(
+      <MemoryRouter initialEntries={["/dashboard/resume-builder/new?template=not-a-real-template"]}>
+        <NewResumePage />
+      </MemoryRouter>,
+    );
+    const templateRadios = within(screen.getByRole("radiogroup", { name: "Choose a template" })).getAllByRole("radio");
+    expect(templateRadios).toHaveLength(getActiveTemplates().length);
+    for (const radio of templateRadios) expect(radio).not.toBeChecked();
   });
 });
