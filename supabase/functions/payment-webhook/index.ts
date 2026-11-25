@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
       .single();
 
     try {
-      if (event === "order.paid" || event === "payment.captured") {
+      if (event === "order.paid" || event === "payment.captured" || event === "payment.failed") {
         const paymentEntity = payload.payload.payment.entity;
         const providerOrderId = paymentEntity.order_id as string;
 
@@ -81,76 +81,40 @@ Deno.serve(async (req) => {
           return jsonResponse({ success: true, message: "Ignored - order not found" }, 200);
         }
 
-        // Idempotent: a completed order is a no-op, not an error, no matter how many times the webhook redelivers.
-        if (order.status === "completed") {
-          await markProcessed(serviceClient, webhookRow?.id, null);
-          return jsonResponse({ success: true, message: "Already completed" }, 200);
-        }
-
-        const { data: payment } = await serviceClient
-          .from("payments")
-          .insert({
-            order_id: order.id,
-            amount: paymentEntity.amount / 100,
-            provider,
-            provider_id: paymentEntity.id,
-            razorpay_payment_id: paymentEntity.id,
-            status: "completed",
-          })
-          .select("id")
-          .single();
-
-        await serviceClient.from("orders").update({ status: "completed" }).eq("id", order.id);
-
-        const { data: orderItems } = await serviceClient.from("order_items").select("course_id").eq("order_id", order.id);
-        for (const item of orderItems ?? []) {
-          const { data: existing } = await serviceClient
-            .from("enrollments")
-            .select("id")
-            .eq("student_id", order.user_id)
-            .eq("course_id", item.course_id)
-            .maybeSingle();
-          if (!existing) {
-            await serviceClient
-              .from("enrollments")
-              .insert({ student_id: order.user_id, course_id: item.course_id, enrollment_source: "purchase", status: "active" });
-          }
-        }
-
-        const invoiceNumber = `INV-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
-        await serviceClient.from("invoices").insert({ order_id: order.id, invoice_number: invoiceNumber });
-
-        await serviceClient.from("notifications").insert({
-          recipient_id: order.user_id,
-          title: "Payment successful",
-          message: `Your payment for order ${order.id.slice(0, 8)} was successful. You can now access your course.`,
-          type: "payment",
-          is_read: false,
-          metadata: { category: "payment", orderId: order.id },
-        });
-
-        await serviceClient
-          .from("payment_logs")
-          .insert({ order_id: order.id, payment_id: payment?.id, event: "webhook.order_completed" });
-      } else if (event === "payment.failed") {
-        const paymentEntity = payload.payload.payment.entity;
-        const providerOrderId = paymentEntity.order_id as string;
-        const { data: order } = await serviceClient
-          .from("orders")
-          .select("id")
-          .eq("razorpay_order_id", providerOrderId)
-          .maybeSingle();
-        if (order) {
-          await serviceClient.from("orders").update({ status: "failed", failure_reason: paymentEntity.error_description ?? null }).eq("id", order.id);
-          await serviceClient.from("payments").insert({
-            order_id: order.id,
-            amount: paymentEntity.amount / 100,
-            provider,
-            provider_id: paymentEntity.id,
-            status: "failed",
-            failure_reason: paymentEntity.error_description ?? null,
+        // Both branches go through the same locked DB functions verify-payment
+        // uses (migration 20261125000001), so redelivered webhooks and a webhook
+        // racing the browser's verify call can never double-enroll, double-invoice
+        // or turn a completed order back into a failed one.
+        if (event === "payment.failed") {
+          const { error: failError } = await serviceClient.rpc("fail_paid_order", {
+            p_order_id: order.id,
+            p_provider: provider,
+            p_provider_payment_id: paymentEntity.id,
+            p_reason: paymentEntity.error_description ?? "Payment declined",
+            p_code: paymentEntity.error_code ?? null,
+            p_method: paymentEntity.method ?? null,
           });
-          await serviceClient.from("payment_logs").insert({ order_id: order.id, event: "webhook.payment_failed" });
+          if (failError) throw new Error(failError.message);
+        } else {
+          const { data: completion, error: completionError } = await serviceClient.rpc("complete_paid_order", {
+            p_order_id: order.id,
+            p_provider: provider,
+            p_provider_payment_id: paymentEntity.id,
+            p_signature: null,
+            p_method: paymentEntity.method ?? null,
+            p_source: "webhook",
+          });
+          if (completionError) {
+            if (completionError.message.startsWith("order_not_pending")) {
+              await markProcessed(serviceClient, webhookRow?.id, completionError.message);
+              return jsonResponse({ success: true, message: "Ignored - order is not payable" }, 200);
+            }
+            throw new Error(completionError.message);
+          }
+          if ((completion as { alreadyCompleted?: boolean } | null)?.alreadyCompleted) {
+            await markProcessed(serviceClient, webhookRow?.id, null);
+            return jsonResponse({ success: true, message: "Already completed" }, 200);
+          }
         }
       } else if (event === "refund.processed" || event === "refund.failed") {
         const refundEntity = payload.payload.refund.entity;

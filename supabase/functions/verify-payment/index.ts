@@ -6,6 +6,7 @@ interface VerifyPaymentRequest {
   providerOrderId: string;
   providerPaymentId: string;
   signature: string;
+  method?: string;
 }
 
 Deno.serve(async (req) => {
@@ -38,7 +39,7 @@ Deno.serve(async (req) => {
     const studentId = userResp.user.id;
 
     const body = (await req.json()) as VerifyPaymentRequest;
-    const { orderId, providerOrderId, providerPaymentId, signature } = body;
+    const { orderId, providerOrderId, providerPaymentId, signature, method } = body;
     if (!orderId || !providerOrderId || !providerPaymentId || !signature) {
       return createResponse(false, "Validation failed", null, ["Missing payment parameters"], 400, requestId);
     }
@@ -58,22 +59,10 @@ Deno.serve(async (req) => {
       return createResponse(false, "Unauthorized access to order", null, [], 403, requestId);
     }
 
-    // Idempotent: a second call for an already-completed order returns the same result, not an error.
-    if (order.status === "completed") {
-      const { data: orderItems } = await serviceClient.from("order_items").select("course_id").eq("order_id", orderId);
-      const courseIds = (orderItems ?? []).map((i: { course_id: string }) => i.course_id);
-      const { data: existingEnrollments } = await serviceClient
-        .from("enrollments")
-        .select("id")
-        .eq("student_id", studentId)
-        .in("course_id", courseIds);
-      return createResponse(true, "Order already completed", {
-        orderId,
-        enrollmentIds: (existingEnrollments ?? []).map((e: { id: string }) => e.id),
-      }, [], 200, requestId);
-    }
-
-    if (order.status !== "pending") {
+    // Fast path for an order that already failed/was cancelled. A completed
+    // order still goes through complete_paid_order(), which is idempotent and
+    // returns the original enrollment/receipt instead of creating new ones.
+    if (order.status !== "pending" && order.status !== "completed") {
       return createResponse(false, `Order is in a terminal state (${order.status}) and cannot be verified`, null, [], 409, requestId);
     }
 
@@ -88,80 +77,38 @@ Deno.serve(async (req) => {
       });
       return createResponse(false, "Invalid payment signature", null, [verifyResult.reason], 400, requestId);
     }
-
-    await serviceClient.from("payment_logs").insert({ order_id: orderId, event: "provider.signature_verified" });
-
-    // 1. Record the payment
-    const { data: payment, error: paymentError } = await serviceClient
-      .from("payments")
-      .insert({
-        order_id: orderId,
-        amount: order.total_amount,
-        provider: provider.name,
-        provider_id: providerPaymentId,
-        razorpay_payment_id: providerPaymentId,
-        razorpay_signature: signature,
-        status: "completed",
-      })
-      .select("id")
-      .single();
-    if (paymentError || !payment) {
-      throw new Error(paymentError?.message || "Failed to record payment");
+    if (!order.razorpay_order_id || order.razorpay_order_id !== providerOrderId) {
+      return createResponse(false, "Payment does not belong to this order", null, [], 400, requestId);
     }
 
-    // 2. Complete the order
-    await serviceClient.from("orders").update({ status: "completed" }).eq("id", orderId);
-
-    // 3. Grant enrollment for every course in the order (service-role - enrollments has no
-    //    student-facing INSERT policy, see docs/PAYMENT_ARCHITECTURE.md §16 / Phase 1.5 finding).
-    const { data: orderItems } = await serviceClient.from("order_items").select("course_id").eq("order_id", orderId);
-    const enrollmentIds: string[] = [];
-    for (const item of orderItems ?? []) {
-      const { data: existing } = await serviceClient
-        .from("enrollments")
-        .select("id")
-        .eq("student_id", studentId)
-        .eq("course_id", item.course_id)
-        .maybeSingle();
-
-      if (existing) {
-        enrollmentIds.push(existing.id);
-        continue;
+    // Single locked transition (see migration 20261125000001): payment row,
+    // order -> completed, enrollment(s), invoice and notification happen
+    // exactly once even if verify-payment and the webhook race each other.
+    const { data: completion, error: completionError } = await serviceClient.rpc("complete_paid_order", {
+      p_order_id: orderId,
+      p_provider: provider.name,
+      p_provider_payment_id: providerPaymentId,
+      p_signature: signature,
+      p_method: typeof method === "string" ? method.slice(0, 32) : null,
+      p_source: "verify",
+    });
+    if (completionError || !completion) {
+      const message = completionError?.message ?? "Failed to complete order";
+      if (message.startsWith("order_not_pending")) {
+        return createResponse(false, "Order is no longer payable", null, [message], 409, requestId);
       }
-
-      const { data: enrollment, error: enrollError } = await serviceClient
-        .from("enrollments")
-        .insert({ student_id: studentId, course_id: item.course_id, enrollment_source: "purchase", status: "active" })
-        .select("id")
-        .single();
-      if (enrollError || !enrollment) {
-        throw new Error(enrollError?.message || "Failed to create enrollment");
-      }
-      enrollmentIds.push(enrollment.id);
+      throw new Error(message);
     }
 
-    // 4. Invoice (only the columns that actually exist on `invoices`)
-    const invoiceNumber = `INV-${new Date().toISOString().slice(2, 10).replace(/-/g, "")}-${Math.floor(1000 + Math.random() * 9000)}`;
-    await serviceClient.from("invoices").insert({ order_id: orderId, invoice_number: invoiceNumber });
-
-    // 5. Notification (real schema: recipient_id/title/message/type, category goes in metadata)
-    await serviceClient.from("notifications").insert({
-      recipient_id: studentId,
-      title: "Payment successful",
-      message: `Your payment for order ${orderId.slice(0, 8)} was successful. You can now access your course.`,
-      type: "payment",
-      is_read: false,
-      metadata: { category: "payment", orderId },
-    });
-
-    await serviceClient.from("payment_logs").insert({
-      order_id: orderId,
-      payment_id: payment.id,
-      event: "enrollment.created",
-      payload: { enrollmentIds, invoiceNumber },
-    });
-
-    return createResponse(true, "Payment verified", { orderId, enrollmentIds, invoiceNumber }, [], 200, requestId);
+    const result = completion as { orderId: string; enrollmentIds: string[]; invoiceNumber: string | null; alreadyCompleted: boolean };
+    return createResponse(
+      true,
+      result.alreadyCompleted ? "Order already completed" : "Payment verified",
+      result,
+      [],
+      200,
+      requestId,
+    );
   } catch (error) {
     console.error("Error in verify-payment function:", error);
     return createResponse(false, "Internal Server Error", null, [(error as Error).message], 500, requestId);

@@ -15,7 +15,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dev:demo": "vite --mode demo",
+    "demo:seed": "node scripts/demo-sim/seed.mjs",
+    "demo:reset": "node scripts/demo-sim/seed.mjs --reset",
+    "demo:check": "node scripts/demo-sim/seed.mjs --check",
+    "demo:functions": "supabase functions serve --env-file supabase/functions/.env.demo.local"
   },
   "dependencies": {
     "@elevenlabs/react": "1.21.1",
