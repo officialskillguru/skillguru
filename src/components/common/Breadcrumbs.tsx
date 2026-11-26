@@ -1,6 +1,8 @@
 import { Link } from "react-router-dom";
 import { ChevronRight } from "lucide-react";
 
+const UUID_SEGMENT = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** Generic route-derived breadcrumb trail for any dashboard shell (admin/mentor/student). */
 export function Breadcrumbs({
   pathname,
@@ -21,11 +23,12 @@ export function Breadcrumbs({
       </Link>
       {segments.map((segment, i) => {
         const isLast = i === segments.length - 1;
-        const label = segment.replaceAll("-", " ");
+        // Record ids (e.g. /courses/<uuid>) are not meaningful to people.
+        const label = UUID_SEGMENT.test(segment) ? "Details" : segment.replaceAll("-", " ");
         return (
           <span key={segment + i} className="flex items-center gap-1.5">
             <ChevronRight className="size-3.5 text-muted-foreground/60" aria-hidden="true" />
-            <span className={isLast ? "font-bold capitalize text-foreground" : "font-semibold capitalize text-muted-foreground"}>
+            <span aria-current={isLast ? "page" : undefined} className={isLast ? "font-bold capitalize text-foreground" : "font-semibold capitalize text-muted-foreground"}>
               {label}
             </span>
           </span>

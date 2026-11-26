@@ -18,7 +18,7 @@ export default defineConfig({
     // .claude/worktrees/** holds full duplicate git worktree checkouts (own
     // node_modules included) that vitest would otherwise crawl and run as if
     // they were this checkout's own tests.
-    exclude: ["node_modules", ".next", "dist", "tests/e2e/**", "src/app/**", ".claude/worktrees/**"],
+    exclude: ["node_modules", ".next", "dist", "tests/e2e/**", "tests/simulation/**", "src/app/**", ".claude/worktrees/**"],
   },
   resolve: {
     alias: {

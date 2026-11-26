@@ -32,6 +32,7 @@
     "vitest.config.ts",
     "vitest.setup.ts",
     "playwright.config.ts",
+    "playwright.simulation.config.ts",
     "eslint.config.mjs"
   ],
   "exclude": ["node_modules", "dist", "supabase/functions"]

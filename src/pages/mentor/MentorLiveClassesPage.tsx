@@ -2,12 +2,15 @@ import { useId, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Loader2, Plus, Radio, Video } from "lucide-react";
+import { Loader2, Play, Plus, Radio, Video } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useMentorProfileId } from "@/hooks/useMentorPortal";
 import { useMentorLiveClasses, useLiveClassMutations } from "@/hooks/useLiveClasses";
 import { listMentorCourses } from "@/services/mentors.service";
 import type { LiveClass, LiveClassBucket } from "@/services/live-classes.service";
+import { LiveClassCard } from "@/components/live-classes/LiveClassCard";
+import { AttendanceTable } from "@/components/live-classes/AttendanceTable";
+import { formatIstSession, todayInIst } from "@/lib/date";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,41 +33,86 @@ const BUCKET_LABELS: Record<LiveClassBucket, string> = {
   past: "Previous Classes",
 };
 
-const STATUS_VARIANT: Record<string, "success" | "warning" | "muted" | "destructive"> = {
-  scheduled: "warning",
-  live: "success",
-  completed: "muted",
-  cancelled: "destructive",
-};
-
-function ClassCard({ cls, onJoin }: Readonly<{ cls: LiveClass; onJoin: (id: string) => void }>) {
+function StartClassDialog({ cls, onClose }: Readonly<{ cls: LiveClass; onClose: () => void }>) {
+  const navigate = useNavigate();
+  const { start } = useLiveClassMutations();
+  const handleStart = () =>
+    start.mutate(cls.id, {
+      onSuccess: () => {
+        toast.success("Class is live. Students can join now.");
+        void navigate(`/mentor/live-classes/${cls.id}/room`);
+      },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Could not start the class."),
+    });
   return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="truncate font-bold text-foreground">{cls.title}</p>
-            <Badge variant="warning" className="shrink-0">Demo</Badge>
-          </div>
-          <p className="truncate text-xs font-semibold text-muted-foreground">{cls.courseTitle}</p>
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>Start {cls.title}?</DialogTitle>
+          <DialogDescription>Enrolled students are notified and can join from their class schedule as soon as you start.</DialogDescription>
+        </DialogHeader>
+        <dl className="space-y-2 rounded-lg bg-muted/40 p-3 text-sm">
+          <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Course</dt><dd className="text-right font-semibold text-foreground">{cls.courseTitle}</dd></div>
+          <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Scheduled</dt><dd className="text-right font-semibold text-foreground">{formatIstSession(cls.scheduled_date, cls.start_time, cls.end_time)}</dd></div>
+          <div className="flex justify-between gap-3"><dt className="text-muted-foreground">Room</dt><dd className="text-right font-semibold text-foreground">SkillGuru simulated classroom</dd></div>
+        </dl>
+        <div>
+          <h3 className="mb-2 text-xs font-black uppercase tracking-wide text-muted-foreground">Eligible students</h3>
+          <AttendanceTable classId={cls.id} />
         </div>
-        <Badge variant={STATUS_VARIANT[cls.status] ?? "muted"} className="shrink-0 capitalize">{cls.status}</Badge>
-      </div>
-      <p className="mt-2 text-xs font-semibold text-muted-foreground">
-        {new Date(cls.scheduled_date).toLocaleDateString()} · {cls.start_time.slice(0, 5)}–{cls.end_time.slice(0, 5)}
-      </p>
-      {cls.description && <p className="mt-1 line-clamp-2 text-xs text-foreground/80">{cls.description}</p>}
-      <Button
-        type="button"
-        size="sm"
-        className="mt-3 gap-1.5"
-        disabled={cls.status === "cancelled" || cls.status === "completed"}
-        onClick={() => onJoin(cls.id)}
-      >
-        <Video className="size-3.5" aria-hidden="true" /> Join Class
-      </Button>
-    </div>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose} disabled={start.isPending}>Not yet</Button>
+          <Button type="button" onClick={handleStart} disabled={start.isPending} aria-busy={start.isPending} className="gap-2">
+            {start.isPending ? <Loader2 className="size-4 animate-spin" aria-hidden="true" /> : <Play className="size-4" aria-hidden="true" />} Start class
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
+}
+
+function AttendanceDialog({ cls, onClose }: Readonly<{ cls: LiveClass; onClose: () => void }>) {
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{cls.status === "completed" ? "Attendance" : "Student roster"} · {cls.title}</DialogTitle>
+          <DialogDescription>{formatIstSession(cls.scheduled_date, cls.start_time, cls.end_time)}</DialogDescription>
+        </DialogHeader>
+        <AttendanceTable classId={cls.id} poll={cls.status === "live"} />
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MentorClassActions({ cls, onStart, onRoster }: Readonly<{ cls: LiveClass; onStart: () => void; onRoster: () => void }>) {
+  const navigate = useNavigate();
+  if (cls.status === "scheduled") {
+    const future = cls.scheduled_date > todayInIst();
+    return (
+      <>
+        <Button type="button" size="sm" className="gap-1.5" onClick={onStart} disabled={future} aria-describedby={future ? `start-note-${cls.id}` : undefined}>
+          <Play className="size-3.5" aria-hidden="true" /> Start class
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={onRoster}>Roster</Button>
+        {future && <span id={`start-note-${cls.id}`} className="self-center text-xs text-muted-foreground">Can be started on the class day</span>}
+      </>
+    );
+  }
+  if (cls.status === "live") {
+    return (
+      <>
+        <Button type="button" size="sm" className="gap-1.5" onClick={() => void navigate(`/mentor/live-classes/${cls.id}/room`)}>
+          <Video className="size-3.5" aria-hidden="true" /> Open classroom
+        </Button>
+        <Button type="button" size="sm" variant="outline" onClick={onRoster}>Attendance</Button>
+      </>
+    );
+  }
+  if (cls.status === "completed") {
+    return <Button type="button" size="sm" variant="outline" onClick={onRoster}>View attendance</Button>;
+  }
+  return null;
 }
 
 function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
@@ -84,6 +132,7 @@ function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [platform, setPlatform] = useState("demo");
+  const [errors, setErrors] = useState<Partial<Record<"title" | "course" | "date" | "start" | "end", string>>>({});
 
   const { data: courses } = useQuery({
     queryKey: ["mentor-live-class-courses", mentorId],
@@ -101,22 +150,31 @@ function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
     setStartTime("");
     setEndTime("");
     setPlatform("demo");
+    setErrors({});
   };
 
   const handleSubmit = () => {
-    if (!title.trim() || !courseId || !scheduledDate || !startTime || !endTime) {
-      toast.error("Title, course, date, and start/end time are required.");
-      return;
-    }
-    if (endTime <= startTime) {
-      toast.error("End time must be after the start time.");
+    const next: typeof errors = {};
+    if (!title.trim()) next.title = "Enter a class title.";
+    if (!courseId) next.course = "Choose the course this class belongs to.";
+    if (!scheduledDate) next.date = "Choose a date.";
+    else if (scheduledDate < todayInIst()) next.date = "Choose today or a later date.";
+    if (!startTime) next.start = "Choose a start time.";
+    if (!endTime) next.end = "Choose an end time.";
+    else if (startTime && endTime <= startTime) next.end = "End time must be after the start time.";
+    setErrors(next);
+    const fieldIds = { title: titleId, course: courseId2, date: dateId, start: startId, end: endId };
+    const firstInvalid = (Object.keys(next) as Array<keyof typeof fieldIds>)[0];
+    if (firstInvalid) {
+      // Focus the first invalid field so its linked error message is announced.
+      requestAnimationFrame(() => document.getElementById(fieldIds[firstInvalid])?.focus());
       return;
     }
     create.mutate(
       { courseId, title: title.trim(), description: description.trim() || undefined, scheduledDate, startTime, endTime, meetingPlatform: platform },
       {
         onSuccess: () => {
-          toast.success("Live class scheduled (demo).");
+          toast.success("Live class scheduled. Enrolled students have been notified.");
           setOpen(false);
           resetForm();
         },
@@ -136,13 +194,14 @@ function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
         <DialogHeader>
           <DialogTitle>Schedule a Live Class</DialogTitle>
           <DialogDescription>
-            This creates a demo class — no real video connection is made yet.
+            Date and times are India Standard Time (IST). Classes run in the SkillGuru simulated classroom.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor={titleId}>Class Title</Label>
-            <Input id={titleId} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Week 4 Live Q&A" required />
+            <Input id={titleId} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Week 4 Live Q&A" required aria-invalid={!!errors.title} aria-describedby={errors.title ? `${titleId}-error` : undefined} />
+            {errors.title && <p id={`${titleId}-error`} className="text-xs font-semibold text-destructive-text">{errors.title}</p>}
           </div>
           <div className="space-y-2">
             <Label htmlFor={courseId2}>Course</Label>
@@ -150,26 +209,32 @@ function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
               id={courseId2}
               value={courseId}
               onChange={(e) => setCourseId(e.target.value)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
+              required
+              aria-invalid={!!errors.course} aria-describedby={errors.course ? `${courseId2}-error` : undefined}
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="">Select a course…</option>
               {(courses ?? []).map((c) => (
                 <option key={c.id} value={c.id}>{c.title}</option>
               ))}
             </select>
+            {errors.course && <p id={`${courseId2}-error`} className="text-xs font-semibold text-destructive-text">{errors.course}</p>}
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor={dateId}>Date</Label>
-              <Input id={dateId} type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} />
+              <Label htmlFor={dateId}>Date (IST)</Label>
+              <Input id={dateId} type="date" min={todayInIst()} required value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} aria-invalid={!!errors.date} aria-describedby={errors.date ? `${dateId}-error` : undefined} />
+              {errors.date && <p id={`${dateId}-error`} className="text-xs font-semibold text-destructive-text">{errors.date}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={startId}>Start</Label>
-              <Input id={startId} type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+              <Input id={startId} type="time" required value={startTime} onChange={(e) => setStartTime(e.target.value)} aria-invalid={!!errors.start} aria-describedby={errors.start ? `${startId}-error` : undefined} />
+              {errors.start && <p id={`${startId}-error`} className="text-xs font-semibold text-destructive-text">{errors.start}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor={endId}>End</Label>
-              <Input id={endId} type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
+              <Input id={endId} type="time" required value={endTime} onChange={(e) => setEndTime(e.target.value)} aria-invalid={!!errors.end} aria-describedby={errors.end ? `${endId}-error` : undefined} />
+              {errors.end && <p id={`${endId}-error`} className="text-xs font-semibold text-destructive-text">{errors.end}</p>}
             </div>
           </div>
           <div className="space-y-2">
@@ -178,7 +243,7 @@ function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
               id={platformId}
               value={platform}
               onChange={(e) => setPlatform(e.target.value)}
-              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm outline-none focus:border-primary"
+              className="h-10 w-full rounded-md border border-input bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             >
               <option value="demo">SkillGuru Demo Room</option>
               <option value="zoom">Zoom (not yet connected)</option>
@@ -203,9 +268,10 @@ function ScheduleClassDialog({ mentorId }: Readonly<{ mentorId: string }>) {
 
 export default function MentorLiveClassesPage() {
   usePageMeta("Live Classes");
-  const navigate = useNavigate();
   const { data: mentorId } = useMentorProfileId();
   const { grouped, isLoading, isError, refetch } = useMentorLiveClasses();
+  const [starting, setStarting] = useState<LiveClass | null>(null);
+  const [rosterFor, setRosterFor] = useState<LiveClass | null>(null);
 
   const buckets: LiveClassBucket[] = ["today", "upcoming", "past"];
 
@@ -213,12 +279,12 @@ export default function MentorLiveClassesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="flex items-center gap-2 text-2xl font-black text-foreground">
+          <h1 className="flex flex-wrap items-center gap-2 text-2xl font-black text-foreground">
             <Radio className="size-6 text-primary" aria-hidden="true" /> Live Classes
-            <Badge variant="warning">Demo / Coming Soon</Badge>
+            <Badge variant="info">Simulated classroom</Badge>
           </h1>
           <p className="mt-1 text-sm font-semibold text-muted-foreground">
-            Schedule and run live sessions for your assigned courses. This is a demo experience — no real video provider is connected yet.
+            Sessions for the courses you teach, including ones scheduled by counsellors. Times are IST.
           </p>
         </div>
         {mentorId && <ScheduleClassDialog mentorId={mentorId} />}
@@ -229,7 +295,7 @@ export default function MentorLiveClassesPage() {
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
         </div>
       ) : isError ? (
-        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm font-semibold text-destructive-text">
           Failed to load live classes.
           <button type="button" onClick={() => void refetch()} className="ml-2 font-black underline">Retry</button>
         </div>
@@ -237,16 +303,18 @@ export default function MentorLiveClassesPage() {
         buckets.map((bucket) => {
           const items = grouped?.[bucket] ?? [];
           return (
-            <section key={bucket} aria-label={BUCKET_LABELS[bucket]}>
-              <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-muted-foreground">{BUCKET_LABELS[bucket]}</h2>
+            <section key={bucket} aria-labelledby={`mentor-bucket-${bucket}`}>
+              <h2 id={`mentor-bucket-${bucket}`} className="mb-3 text-sm font-black uppercase tracking-wider text-muted-foreground">{BUCKET_LABELS[bucket]}</h2>
               {items.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border p-6 text-center text-xs font-semibold text-muted-foreground">
-                  No classes {bucket === "past" ? "yet" : `${bucket}`}.
+                  No classes {bucket === "past" ? "yet" : bucket}.
                 </p>
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {items.map((cls) => (
-                    <ClassCard key={cls.id} cls={cls} onJoin={(id) => void navigate(`/mentor/live-classes/${id}/room`)} />
+                    <LiveClassCard key={cls.id} cls={cls} showTeacher={false}>
+                      <MentorClassActions cls={cls} onStart={() => setStarting(cls)} onRoster={() => setRosterFor(cls)} />
+                    </LiveClassCard>
                   ))}
                 </div>
               )}
@@ -254,6 +322,9 @@ export default function MentorLiveClassesPage() {
           );
         })
       )}
+
+      {starting && <StartClassDialog cls={starting} onClose={() => setStarting(null)} />}
+      {rosterFor && <AttendanceDialog cls={rosterFor} onClose={() => setRosterFor(null)} />}
     </div>
   );
 }

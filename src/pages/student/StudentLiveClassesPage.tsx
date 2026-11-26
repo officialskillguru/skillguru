@@ -1,11 +1,13 @@
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Radio, Video } from "lucide-react";
 import { usePageMeta } from "@/hooks/usePageMeta";
 import { useStudentLiveClasses } from "@/hooks/useLiveClasses";
 import type { LiveClass, LiveClassBucket } from "@/services/live-classes.service";
+import { LiveClassCard } from "@/components/live-classes/LiveClassCard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { routes } from "@/lib/routes";
 
 const BUCKET_LABELS: Record<LiveClassBucket, string> = {
   today: "Today",
@@ -13,77 +15,72 @@ const BUCKET_LABELS: Record<LiveClassBucket, string> = {
   past: "Past",
 };
 
-const STATUS_VARIANT: Record<string, "success" | "warning" | "muted" | "destructive"> = {
-  scheduled: "warning",
-  live: "success",
-  completed: "muted",
-  cancelled: "destructive",
-};
-
-function ClassCard({ cls, onJoin }: Readonly<{ cls: LiveClass; onJoin: (id: string) => void }>) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <p className="truncate font-bold text-foreground">{cls.title}</p>
-            <Badge variant="warning" className="shrink-0">Demo</Badge>
-          </div>
-          <p className="truncate text-xs font-semibold text-muted-foreground">{cls.courseTitle} · {cls.mentorName}</p>
-        </div>
-        <Badge variant={STATUS_VARIANT[cls.status] ?? "muted"} className="shrink-0 capitalize">{cls.status}</Badge>
-      </div>
-      <p className="mt-2 text-xs font-semibold text-muted-foreground">
-        {new Date(cls.scheduled_date).toLocaleDateString()} · {cls.start_time.slice(0, 5)}–{cls.end_time.slice(0, 5)}
-      </p>
-      {cls.description && <p className="mt-1 line-clamp-2 text-xs text-foreground/80">{cls.description}</p>}
-      <Button
-        type="button"
-        size="sm"
-        className="mt-3 gap-1.5"
-        disabled={cls.status === "cancelled" || cls.status === "completed"}
-        onClick={() => onJoin(cls.id)}
-      >
-        <Video className="size-3.5" aria-hidden="true" /> Join Demo
+function StudentClassActions({ cls, onJoin }: Readonly<{ cls: LiveClass; onJoin: (id: string) => void }>) {
+  if (cls.status === "live") {
+    return (
+      <Button type="button" size="sm" className="gap-1.5" onClick={() => onJoin(cls.id)}>
+        <Video className="size-3.5" aria-hidden="true" /> Join class
       </Button>
-    </div>
-  );
+    );
+  }
+  return null;
+}
+
+function studentNote(cls: LiveClass) {
+  switch (cls.status) {
+    case "scheduled":
+      return "Waiting for the teacher to start. Join opens here as soon as the class goes live.";
+    case "completed":
+      return "This class has ended.";
+    case "cancelled":
+      return "This class was cancelled by the course team.";
+    default:
+      return null;
+  }
 }
 
 export default function StudentLiveClassesPage() {
   usePageMeta("Live Classes");
   const navigate = useNavigate();
-  const { grouped, isLoading, isError, refetch } = useStudentLiveClasses();
-
+  const { grouped, data, isLoading, isError, refetch } = useStudentLiveClasses();
   const buckets: LiveClassBucket[] = ["today", "upcoming", "past"];
+  const liveCount = (data ?? []).filter((c) => c.status === "live").length;
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="flex items-center gap-2 text-2xl font-black text-foreground">
-          <Radio className="size-6 text-primary" aria-hidden="true" /> Live Classes
-          <Badge variant="warning">Demo / Coming Soon</Badge>
+        <h1 className="flex flex-wrap items-center gap-2 text-2xl font-black text-foreground">
+          <Radio className="size-6 text-primary" aria-hidden="true" /> Class Schedule
+          <Badge variant="info">Simulated classroom</Badge>
         </h1>
         <p className="mt-1 text-sm font-semibold text-muted-foreground">
-          Live sessions for your enrolled courses. This is a demo experience — no real video provider is connected yet.
+          Live sessions for your enrolled courses. All times are India Standard Time (IST). This page refreshes automatically.
         </p>
       </div>
 
+      <p role="status" aria-live="polite" className="sr-only">
+        {liveCount > 0 ? `${liveCount} class${liveCount === 1 ? " is" : "es are"} live now.` : ""}
+      </p>
+
       {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}
-        </div>
+        <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 w-full rounded-xl" />)}</div>
       ) : isError ? (
-        <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-semibold text-red-700">
-          Failed to load live classes.
+        <div role="alert" className="rounded-xl border border-destructive/40 bg-destructive/5 p-4 text-sm font-semibold text-destructive-text">
+          Failed to load your class schedule.
           <button type="button" onClick={() => void refetch()} className="ml-2 font-black underline">Retry</button>
+        </div>
+      ) : (data ?? []).length === 0 ? (
+        <div className="rounded-xl border border-dashed border-border p-8 text-center">
+          <p className="text-sm font-semibold text-foreground">No live classes yet</p>
+          <p className="mt-1 text-sm text-muted-foreground">Classes for courses you enroll in appear here, and you are notified when one is scheduled.</p>
+          <Link to={routes.courses} className="mt-4 inline-block text-sm font-bold text-primary underline">Explore courses</Link>
         </div>
       ) : (
         buckets.map((bucket) => {
           const items = grouped?.[bucket] ?? [];
           return (
-            <section key={bucket} aria-label={BUCKET_LABELS[bucket]}>
-              <h2 className="mb-3 text-sm font-black uppercase tracking-wider text-muted-foreground">{BUCKET_LABELS[bucket]}</h2>
+            <section key={bucket} aria-labelledby={`bucket-${bucket}`}>
+              <h2 id={`bucket-${bucket}`} className="mb-3 text-sm font-black uppercase tracking-wider text-muted-foreground">{BUCKET_LABELS[bucket]}</h2>
               {items.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-border p-6 text-center text-xs font-semibold text-muted-foreground">
                   No classes {bucket === "past" ? "yet" : bucket}.
@@ -91,7 +88,9 @@ export default function StudentLiveClassesPage() {
               ) : (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {items.map((cls) => (
-                    <ClassCard key={cls.id} cls={cls} onJoin={(id) => void navigate(`/dashboard/live-classes/${id}/room`)} />
+                    <LiveClassCard key={cls.id} cls={cls} note={studentNote(cls)}>
+                      <StudentClassActions cls={cls} onJoin={(id) => void navigate(`/dashboard/live-classes/${id}/room`)} />
+                    </LiveClassCard>
                   ))}
                 </div>
               )}

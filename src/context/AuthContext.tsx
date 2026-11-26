@@ -8,48 +8,7 @@ import type { LoginFormData, SignupFormData } from "@/schemas/auth.schema";
 import { type Result, ok, UnexpectedError } from "@/utils/result";
 
 import { AuthContext, type AuthAction, type ExtendedAuthContextState } from "./AuthContextObj";
-
-const initialState: ExtendedAuthContextState = {
-  status: "INITIALIZING",
-  loadingState: "IDLE",
-  session: null,
-  user: null,
-  authUser: null,
-  error: null,
-};
-
-function authReducerBase(state: ExtendedAuthContextState, action: AuthAction): ExtendedAuthContextState {
-  switch (action.type) {
-    case "START_AUTH":
-      return { ...state, status: "AUTHENTICATING", error: null };
-    case "AUTH_SUCCESS":
-      return {
-        ...state,
-        status: "LOADING_PROFILE",
-        session: action.payload.session,
-        user: action.payload.user,
-        error: null,
-      };
-    case "AUTH_FAIL":
-      return { ...state, status: "UNAUTHENTICATED", session: null, user: null, authUser: null };
-    case "WAITING_EMAIL_CONFIRMATION":
-      return { ...state, status: "WAITING_EMAIL_CONFIRMATION", error: null };
-    case "IDENTITY_LOADED":
-      return {
-        ...state,
-        status: "READY",
-        authUser: action.payload.authUser,
-      };
-    case "SESSION_EXPIRED":
-      return { ...initialState, status: "SESSION_EXPIRED" };
-    case "LOGOUT":
-      return { ...initialState, status: "UNAUTHENTICATED" };
-    case "ERROR":
-      return { ...state, status: "ERROR", error: action.payload };
-    default:
-      return state;
-  }
-}
+import { authReducerBase, initialAuthState as initialState } from "./authReducer";
 
 function authReducer(state: ExtendedAuthContextState, action: AuthAction): ExtendedAuthContextState {
   const nextState = authReducerBase(state, action);

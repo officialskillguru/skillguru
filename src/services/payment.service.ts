@@ -16,13 +16,66 @@ export interface CheckoutSession {
   keyId: string | null;
   /** Only present in Mock mode - there is no real checkout widget to complete against. */
   mockPayment?: { providerPaymentId: string; signature: string };
+  courseTitle?: string;
+  /** True when an existing pending order for this course was resumed instead of creating a new one. */
+  resumed?: boolean;
 }
+
+export interface CheckoutBilling {
+  fullName: string;
+  email: string;
+  phone: string;
+  city: string;
+}
+
+export type SimulatedOutcome = "declined" | "pending" | "confirm";
+
+export interface StudentOrder {
+  id: string;
+  status: string;
+  totalAmount: number;
+  currency: string;
+  createdAt: string;
+  failureReason: string | null;
+  courses: Array<{ id: string; title: string; slug: string }>;
+  invoiceNumber: string | null;
+  paymentMethod: string | null;
+}
+
+/** Checkout failure with the field codes the Edge Function reported (e.g. ["phone"]). */
+export class CheckoutError extends DatabaseError {
+  readonly fields: string[];
+  readonly status: number;
+  constructor(message: string, code: string, fields: string[] = [], status = 400) {
+    super(message, code);
+    this.fields = fields;
+    this.status = status;
+  }
+}
+
+async function readFunctionError(error: unknown, fallback: string, code: string): Promise<CheckoutError> {
+  // supabase-js FunctionsHttpError keeps the HTTP Response on `context`.
+  const context = (error as { context?: Response } | null)?.context;
+  if (context && typeof context.json === "function") {
+    try {
+      const body = (await context.clone().json()) as { message?: string; errors?: unknown[] };
+      const fields = (body.errors ?? []).filter((e): e is string => typeof e === "string");
+      return new CheckoutError(body.message ?? fallback, code, fields, context.status);
+    } catch {
+      // Body was not JSON - fall back to the generic error below.
+    }
+  }
+  return new CheckoutError(error instanceof Error ? error.message : fallback, code);
+}
+
 
 export interface PaymentVerificationResult {
   success: boolean;
   orderId: string;
   enrollmentIds: string[];
   invoiceNumber?: string;
+  /** True when this confirmation was a duplicate of an already-completed order (nothing new was created). */
+  alreadyCompleted?: boolean;
 }
 
 declare global {
@@ -75,15 +128,14 @@ async function loadRazorpayScript(): Promise<void> {
 }
 
 export const paymentService = {
-  async createOrder(courseId: string): Promise<Result<CheckoutSession>> {
+  async createOrder(courseId: string, billing?: CheckoutBilling): Promise<Result<CheckoutSession>> {
     const supabase = getExtendedSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- supabase-js's FunctionsError union resolves loosely here
     const { data, error } = await supabase.functions.invoke<{ success: boolean; message: string; data: CheckoutSession }>("create-order", {
-      body: { courseId },
+      body: { courseId, billing },
     });
     if (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument -- see above
-      return fail(new DatabaseError(error.message, "create_order_failed"));
+      return fail(await readFunctionError(error, "Could not start checkout", "create_order_failed"));
     }
     if (!data?.success || !data.data) {
       return fail(new DatabaseError(data?.message ?? "Failed to create order", "create_order_failed"));
@@ -128,26 +180,105 @@ export const paymentService = {
     orderId: string,
     providerOrderId: string,
     providerPaymentId: string,
-    signature: string
+    signature: string,
+    method?: string
   ): Promise<Result<PaymentVerificationResult>> {
     const supabase = getExtendedSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- supabase-js's FunctionsError union resolves loosely here
     const { data, error } = await supabase.functions.invoke<{
       success: boolean;
       message: string;
-      data: { orderId: string; enrollmentIds: string[]; invoiceNumber?: string };
+      data: { orderId: string; enrollmentIds: string[]; invoiceNumber?: string; alreadyCompleted?: boolean };
     }>("verify-payment", {
-      body: { orderId, providerOrderId, providerPaymentId, signature },
+      body: { orderId, providerOrderId, providerPaymentId, signature, method },
     });
     if (error) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-argument -- see above
-      return fail(new DatabaseError(error.message, "verify_payment_failed"));
+      return fail(await readFunctionError(error, "Payment verification failed", "verify_payment_failed"));
     }
     if (!data?.success || !data.data) {
       return fail(new DatabaseError(data?.message ?? "Payment verification failed", "verify_payment_failed"));
     }
-    return ok({ success: true, orderId: data.data.orderId, enrollmentIds: data.data.enrollmentIds, invoiceNumber: data.data.invoiceNumber });
+    return ok({
+      success: true,
+      orderId: data.data.orderId,
+      enrollmentIds: data.data.enrollmentIds,
+      invoiceNumber: data.data.invoiceNumber,
+      alreadyCompleted: data.data.alreadyCompleted ?? false,
+    });
   },
+
+  /**
+   * Mock-provider-only gateway outcomes (decline, bank pending, bank callback).
+   * The Edge Function refuses to run unless the server's provider is "mock".
+   */
+  async simulateOutcome(
+    orderId: string,
+    outcome: SimulatedOutcome,
+    method?: string
+  ): Promise<Result<{ status?: string; invoiceNumber?: string; alreadyCompleted?: boolean }>> {
+    const supabase = getExtendedSupabaseClient();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- supabase-js's FunctionsError union resolves loosely here
+    const { data, error } = await supabase.functions.invoke<{
+      success: boolean;
+      message: string;
+      data: { status?: string; invoiceNumber?: string; alreadyCompleted?: boolean };
+    }>("simulate-payment", { body: { orderId, outcome, method } });
+    if (error) {
+      return fail(await readFunctionError(error, "Payment simulation failed", "simulate_payment_failed"));
+    }
+    if (!data?.success) {
+      return fail(new DatabaseError(data?.message ?? "Payment simulation failed", "simulate_payment_failed"));
+    }
+    return ok(data.data ?? {});
+  },
+
+  /** The signed-in student's own orders (RLS: orders.user_id = auth.uid()). */
+  async getMyOrders(): Promise<Result<StudentOrder[]>> {
+    try {
+      const supabase = getExtendedSupabaseClient();
+      const { data, error } = await supabase
+        .from("orders")
+        .select(
+          "id, status, total_amount, currency, created_at, failure_reason, order_items(course:courses(id, title, slug)), invoices(invoice_number), payments(method, status, created_at)"
+        )
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (error) return fail(new DatabaseError(error.message, error.code));
+      type Row = {
+        id: string;
+        status: string | null;
+        total_amount: number | null;
+        currency: string | null;
+        created_at: string;
+        failure_reason: string | null;
+        order_items: Array<{ course: { id: string; title: string; slug: string } | null }> | null;
+        invoices: Array<{ invoice_number: string }> | { invoice_number: string } | null;
+        payments: Array<{ method: string | null; status: string | null; created_at: string }> | null;
+      };
+      const rows = (data ?? []) as unknown as Row[];
+      return ok(
+        rows.map((r) => {
+          const invoice = Array.isArray(r.invoices) ? r.invoices[0] : r.invoices;
+          const payments = [...(r.payments ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at));
+          const chosen = payments.find((p) => p.status === "completed") ?? payments[0];
+          return {
+            id: r.id,
+            status: r.status ?? "pending",
+            totalAmount: Number(r.total_amount ?? 0),
+            currency: r.currency ?? "INR",
+            createdAt: r.created_at,
+            failureReason: r.failure_reason,
+            courses: (r.order_items ?? []).flatMap((i) => (i.course ? [i.course] : [])),
+            invoiceNumber: invoice?.invoice_number ?? null,
+            paymentMethod: chosen?.method ?? null,
+          };
+        })
+      );
+    } catch (e: unknown) {
+      return fail(new DatabaseError(String(e), "my_orders"));
+    }
+  },
+
 
   async initiateRefund(orderId: string, amountInPaise: number, reason: string): Promise<Result<{ refundId: string; status: string }>> {
     const supabase = getExtendedSupabaseClient();

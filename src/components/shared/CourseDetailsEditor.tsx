@@ -61,7 +61,7 @@ function emptyForm(): BasicFormState {
  * matching the pattern CourseCurriculumEditor already established for the
  * curriculum tab.
  */
-export function CourseDetailsEditor({ courseId, viewerRole }: Readonly<{ courseId: string; viewerRole: "admin" | "mentor" }>) {
+export function CourseDetailsEditor({ courseId, viewerRole }: Readonly<{ courseId: string; viewerRole: "admin" | "mentor" | "counsellor" }>) {
   const queryClient = useQueryClient();
   const [form, setForm] = useState<BasicFormState>(emptyForm());
   const [newOutcome, setNewOutcome] = useState("");

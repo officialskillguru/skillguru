@@ -10,6 +10,8 @@ import {
   Heart,
   LayoutDashboard,
   Radio,
+  Receipt,
+  Search,
   StickyNote,
   User,
   Users
@@ -27,6 +29,7 @@ const NAV_GROUPS = [
       { name: "Learning Tasks", path: "/dashboard/assignments", icon: CheckSquare, disabled: false },
       { name: "My Notes", path: "/dashboard/notes", icon: StickyNote, disabled: false },
       { name: "Live Classes", path: "/dashboard/live-classes", icon: Radio, disabled: false },
+      { name: "Explore Courses", path: "/courses", icon: Search, disabled: false },
     ]
   },
   {
@@ -43,6 +46,7 @@ const NAV_GROUPS = [
   {
     title: "ACCOUNT",
     items: [
+      { name: "Payments & Receipts", path: "/dashboard/payments", icon: Receipt, disabled: false },
       { name: "Profile", path: "/dashboard/profile", icon: User, disabled: false },
     ]
   }

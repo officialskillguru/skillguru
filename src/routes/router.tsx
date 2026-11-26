@@ -40,6 +40,7 @@ const LegalPage           = lazy(() => import("@/pages/LegalPage"));
 const NotFoundPage        = lazy(() => import("@/pages/NotFoundPage"));
 const PaymentSuccessPage  = lazy(() => import("@/pages/PaymentSuccessPage"));
 const PaymentFailedPage   = lazy(() => import("@/pages/PaymentFailedPage"));
+const CheckoutPage        = lazy(() => import("@/pages/CheckoutPage"));
 const VerifyCertificatePage = lazy(() => import("@/pages/VerifyCertificatePage"));
 
 // ── Student dashboard pages ───────────────────────────────────────────────────
@@ -79,6 +80,7 @@ const CounsellorStudentsPage    = lazy(() => import("@/pages/counsellor/Counsell
 const CounsellorLeadsPage       = lazy(() => import("@/pages/counsellor/CounsellorLeadsPage"));
 const CounsellorMentorsPage     = lazy(() => import("@/pages/counsellor/CounsellorMentorsPage"));
 const CounsellorCoursesPage     = lazy(() => import("@/pages/counsellor/CounsellorCoursesPage"));
+const CounsellorCourseWorkspacePage = lazy(() => import("@/pages/counsellor/CounsellorCourseWorkspacePage"));
 const CounsellorJobsPage        = lazy(() => import("@/pages/counsellor/CounsellorJobsPage"));
 const CounsellorMessagesPage    = lazy(() => import("@/pages/counsellor/CounsellorMessagesPage"));
 const CounsellorProfilePage     = lazy(() => import("@/pages/counsellor/CounsellorProfilePage"));
@@ -146,6 +148,9 @@ export const router = createBrowserRouter([
       { path: routes.authCallback, element: withSuspense(<AuthCallbackPage />) },
       { path: routes.verifyCertificate, element: withSuspense(<MarketingRoute><VerifyCertificatePage /></MarketingRoute>) },
       { path: "/verify-certificate/:code", element: withSuspense(<MarketingRoute><VerifyCertificatePage /></MarketingRoute>) },
+
+      // ── Checkout ─────────────────────────────────────────────────────────────
+      { path: "/checkout/:slug", element: withSuspense(<ProtectedRoute><MarketingRoute><CheckoutPage /></MarketingRoute></ProtectedRoute>) },
 
       // ── Payment result pages ─────────────────────────────────────────────────
       { path: routes.paymentSuccess, element: withSuspense(<ProtectedRoute><PaymentSuccessPage /></ProtectedRoute>) },
@@ -227,6 +232,7 @@ export const router = createBrowserRouter([
           { path: "leads",      element: withSuspense(<CounsellorLeadsPage />) },
           { path: "mentors",    element: withSuspense(<CounsellorMentorsPage />) },
           { path: "courses",    element: withSuspense(<CounsellorCoursesPage />) },
+          { path: "courses/:courseId", element: withSuspense(<CounsellorCourseWorkspacePage />) },
           { path: "jobs",       element: withSuspense(<CounsellorJobsPage />) },
           { path: "messages",   element: withSuspense(<CounsellorMessagesPage />) },
           { path: "messages/:conversationId", element: withSuspense(<CounsellorMessagesPage />) },

@@ -40,7 +40,8 @@ import { learningService } from "@/services/learning.service";
 import { resolveFileUrl } from "@/services/storage.service";
 import { PageLoader } from "@/components/common/PageLoader";
 import { useAuth } from "@/hooks/useAuth";
-import { useCheckout, useFreeEnroll } from "@/hooks/student/usePayment";
+import { useFreeEnroll } from "@/hooks/student/usePayment";
+import { CourseSchedule } from "@/components/live-classes/CourseSchedule";
 import { useIsWishlisted, useToggleWishlist } from "@/hooks/student/useWishlist";
 import { mentorService } from "@/features/mentor-profile/services/mentor.service";
 import {
@@ -217,7 +218,6 @@ export default function CourseDetailsPage() {
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
 
   const { data: course, isLoading: isCourseLoading } = useCourseBySlug(slug);
-  const { mutate: processCheckout, isPending: isCheckingOut } = useCheckout();
   const { mutate: enrollFree, isPending: isEnrollingFree } = useFreeEnroll();
   const { data: enrollmentData, isLoading: isCheckingEnrollment } = useCheckEnrollment(slug ?? "");
   const isEnrolled = !!enrollmentData?.isEnrolled;
@@ -342,22 +342,8 @@ export default function CourseDetailsPage() {
       return;
     }
 
-    processCheckout(
-      {
-        courseId: course.id,
-        userInfo: {
-          name: String(user.user_metadata?.full_name || user.email || "Student"),
-          email: user.email || "",
-        },
-      },
-      {
-        onSuccess: () => {
-          toast.success("Payment successful!");
-          void navigate(routes.dashboard);
-        },
-        onError: () => toast.error("Payment failed. Please try again."),
-      }
-    );
+    // Paid courses go through the checkout (details -> review -> payment).
+    void navigate(`/checkout/${course.slug}`);
   };
 
   const handleToggleWishlist = () => {
@@ -404,10 +390,10 @@ export default function CourseDetailsPage() {
   ) : (
     <button
       onClick={handleEnroll}
-      disabled={isCheckingOut || isEnrollingFree}
+      disabled={isEnrollingFree}
       className="h-12 w-full rounded-xl bg-secondary font-black text-white hover:bg-opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50"
     >
-      {isCheckingOut || isEnrollingFree ? "Processing..." : course.price ? "Enroll Now" : "Enroll Free"}
+      {isEnrollingFree ? "Processing..." : course.price ? "Enroll Now" : "Enroll Free"}
     </button>
   );
 
@@ -561,6 +547,7 @@ export default function CourseDetailsPage() {
                   <div className="mt-5">
                     <ModuleAccordion modules={curriculum} />
                   </div>
+                  <CourseSchedule courseId={course.id} />
                 </section>
 
                 <section id="course-2" className="mt-12">
