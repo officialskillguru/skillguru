@@ -14,12 +14,32 @@
 import { execSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "@/types/database";
+
+type Db = SupabaseClient<Database>;
 import { beforeAll, describe, expect, it } from "vitest";
 
 const RUN = process.env.SIM_INTEGRATION === "1";
 const DOMAIN = "demo.skillguru.local";
 
-type Clients = { url: string; anonKey: string; service: SupabaseClient };
+type Clients = { url: string; anonKey: string; service: Db };
+
+/** Union of the fields the payment Edge Functions return in `data`. */
+type FnData = {
+  orderId: string;
+  providerOrderId: string;
+  mockPayment: { providerPaymentId: string; signature: string };
+  status: string;
+  alreadyCompleted: boolean;
+  invoiceNumber: string | null;
+};
+type FnResponse = { success: boolean; message: string; data: FnData; errors: unknown[] };
+type ClassRow = { status: string };
+type JoinRow = { attendanceRecorded: boolean; firstJoin: boolean };
+
+function newClient(url: string, key: string): Db {
+  return createClient<Database>(url, key, { auth: { persistSession: false } });
+}
 
 function localTarget(): Clients {
   const raw = execSync("npx supabase status -o json", { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
@@ -29,7 +49,7 @@ function localTarget(): Clients {
   return {
     url,
     anonKey: json.ANON_KEY!,
-    service: createClient(url, json.SERVICE_ROLE_KEY!, { auth: { persistSession: false } }),
+    service: newClient(url, json.SERVICE_ROLE_KEY!),
   };
 }
 
@@ -39,8 +59,8 @@ function password(): string {
   return match[1]!.trim();
 }
 
-async function signIn(t: Clients, who: string): Promise<{ client: SupabaseClient; userId: string; token: string }> {
-  const client = createClient(t.url, t.anonKey, { auth: { persistSession: false } });
+async function signIn(t: Clients, who: string): Promise<{ client: Db; userId: string; token: string }> {
+  const client = newClient(t.url, t.anonKey);
   const { data, error } = await client.auth.signInWithPassword({ email: `${who}@${DOMAIN}`, password: password() });
   if (error || !data.session) throw new Error(`sign in ${who}: ${error?.message}`);
   return { client, userId: data.user.id, token: data.session.access_token };
@@ -52,7 +72,7 @@ async function callFn(t: Clients, token: string, name: string, body: unknown) {
     headers: { Authorization: `Bearer ${token}`, apikey: t.anonKey, "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
-  return { status: res.status, json: (await res.json()) as { success: boolean; message: string; data: any; errors: unknown[] } };
+  return { status: res.status, json: (await res.json()) as FnResponse };
 }
 
 const BILLING = { fullName: "Riya Sharma", email: `student.riya@${DOMAIN}`, phone: "9876543210", city: "Pune" };
@@ -69,15 +89,17 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
   beforeAll(async () => {
     t = localTarget();
     const { data } = await t.service.from("courses").select("id, slug").like("slug", "sim-%");
-    courseIds = Object.fromEntries((data ?? []).map((c) => [c.slug as string, c.id as string]));
-    [riya, neha, vikram, kavya, meera] = await Promise.all(
-      ["student.riya", "student.neha", "teacher.vikram", "teacher.kavya", "counsellor.meera"].map((w) => signIn(t, w)),
-    );
+    courseIds = Object.fromEntries((data ?? []).map((c) => [c.slug, c.id]));
+    riya = await signIn(t, "student.riya");
+    neha = await signIn(t, "student.neha");
+    vikram = await signIn(t, "teacher.vikram");
+    kavya = await signIn(t, "teacher.kavya");
+    meera = await signIn(t, "counsellor.meera");
   }, 60_000);
 
   async function counts(userId: string, courseId: string) {
     const { data: orders } = await t.service.from("orders").select("id, status, order_items!inner(course_id)").eq("user_id", userId).eq("order_items.course_id", courseId);
-    const orderIds = (orders ?? []).map((o) => o.id as string);
+    const orderIds = (orders ?? []).map((o) => o.id);
     const [{ count: completedPayments }, { count: invoices }, { count: enrollments }] = await Promise.all([
       t.service.from("payments").select("id", { count: "exact", head: true }).in("order_id", orderIds.length ? orderIds : ["00000000-0000-0000-0000-000000000000"]).eq("status", "completed"),
       t.service.from("invoices").select("id", { count: "exact", head: true }).in("order_id", orderIds.length ? orderIds : ["00000000-0000-0000-0000-000000000000"]),
@@ -189,7 +211,7 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
 
   it("only the course teacher starts/ends a class; only enrolled students join and get attendance", async () => {
     const { data: cls } = await t.service.from("live_classes").select("id").eq("course_id", courseIds["sim-ui-ux-figma-fundamentals"]!).eq("status", "scheduled").limit(1).single();
-    const classId = cls!.id as string;
+    const classId = cls!.id;
 
     // Not live yet: enrolled student waits.
     const early = await riya.client.rpc("join_live_class", { p_class_id: classId });
@@ -206,7 +228,7 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
 
     const started = await kavya.client.rpc("start_live_class", { p_class_id: classId });
     expect(started.error).toBeNull();
-    expect(started.data.status).toBe("live");
+    expect((started.data as unknown as ClassRow).status).toBe("live");
 
     // Students were notified, and the enrolled student can now join.
     const { data: liveNote } = await riya.client.from("notifications").select("id").eq("type", "live_class").eq("title", "Class is live now");
@@ -214,9 +236,9 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
 
     const joined = await riya.client.rpc("join_live_class", { p_class_id: classId });
     expect(joined.error).toBeNull();
-    expect(joined.data.attendanceRecorded).toBe(true);
+    expect((joined.data as unknown as JoinRow).attendanceRecorded).toBe(true);
     const rejoin = await riya.client.rpc("join_live_class", { p_class_id: classId });
-    expect(rejoin.data.firstJoin).toBe(false);
+    expect((rejoin.data as unknown as JoinRow).firstJoin).toBe(false);
 
     // Unenrolled student is refused, including by direct RPC/URL and table reads.
     const outsider = await neha.client.rpc("join_live_class", { p_class_id: classId });
@@ -229,8 +251,13 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
     expect((await neha.client.from("live_class_messages").insert({ live_class_id: classId, author_id: neha.userId, body: "hi" })).error).not.toBeNull();
     const { data: kavyaSees } = await kavya.client.from("live_class_messages").select("body").eq("live_class_id", classId);
     expect((kavyaSees ?? []).map((m) => m.body)).toContain("Can you show auto layout again?");
+    // Teacher sees the student's display name via the gated chat RPC; outsiders are refused.
+    const chat = await kavya.client.rpc("get_live_class_messages", { p_class_id: classId });
+    expect((chat.data ?? []).map((m) => m.author_name)).toContain("Riya Sharma");
+    expect((await neha.client.rpc("get_live_class_messages", { p_class_id: classId })).error?.code).toBe("42501");
 
-    expect((await kavya.client.rpc("end_live_class", { p_class_id: classId })).data.status).toBe("completed");
+    const ended = await kavya.client.rpc("end_live_class", { p_class_id: classId });
+    expect((ended.data as unknown as ClassRow).status).toBe("completed");
     const late = await riya.client.rpc("join_live_class", { p_class_id: classId });
     expect(late.error?.message).toMatch(/class_not_live:completed/);
 
@@ -243,11 +270,15 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
   }, 30_000);
 
   it("counsellor drafts, publishes and schedules; drafts are hidden from the catalog", async () => {
-    const anon = createClient(t.url, t.anonKey, { auth: { persistSession: false } });
+    const anon = newClient(t.url, t.anonKey);
+    // Counsellor (mentors.read) can read teacher names; students cannot read teacher profile rows.
+    const teacherNames = await meera.client.from("profiles").select("full_name").in("id", [vikram.userId, kavya.userId]);
+    expect((teacherNames.data ?? []).map((r) => r.full_name).sort()).toEqual(["Kavya Nair", "Vikram Sethi"]);
+    expect((await neha.client.from("profiles").select("id").eq("id", vikram.userId)).data ?? []).toHaveLength(0);
     const slug = `sim-test-course-${Date.now()}`;
     const draft = await meera.client.from("courses").insert({ title: "Simulation Test Course", slug, price: 4999, mentor_id: vikram.userId, status: "draft" }).select("id").single();
     expect(draft.error).toBeNull();
-    const courseId = draft.data!.id as string;
+    const courseId = (draft.data as { id: string }).id;
     // The existing course_mentors auto-sync trigger assigns the owning teacher.
     const link = await meera.client.from("course_mentors").select("mentor_id, status").eq("course_id", courseId);
     expect(link.data).toEqual([{ mentor_id: vikram.userId, status: "active" }]);
@@ -265,17 +296,18 @@ describe.skipIf(!RUN)("simulation flow (local Supabase)", () => {
     expect((await meera.client.from("live_classes").insert({ ...base, mentor_id: kavya.userId })).error).not.toBeNull();
     const scheduled = await meera.client.from("live_classes").insert({ ...base, mentor_id: vikram.userId }).select("id").single();
     expect(scheduled.error).toBeNull();
-    expect((await vikram.client.from("live_classes").select("id").eq("id", scheduled.data!.id)).data).toHaveLength(1);
+    const scheduledId = (scheduled.data as { id: string }).id;
+    expect((await vikram.client.from("live_classes").select("id").eq("id", scheduledId)).data).toHaveLength(1);
     // A counsellor cannot start a class.
-    expect((await meera.client.rpc("start_live_class", { p_class_id: scheduled.data!.id })).error?.code).toBe("42501");
+    expect((await meera.client.rpc("start_live_class", { p_class_id: scheduledId })).error?.code).toBe("42501");
 
     // Counsellor sees the purchase that landed against the right course.
-    const overview = await meera.client.rpc("get_course_purchase_overview", { p_course_id: courseIds["sim-python-for-beginners"] });
+    const overview = await meera.client.rpc("get_course_purchase_overview", { p_course_id: courseIds["sim-python-for-beginners"]! });
     const riyaRow = (overview.data as Array<{ student_id: string; order_status: string; invoice_number: string | null }>).find((r) => r.student_id === riya.userId);
     expect(riyaRow?.order_status).toBe("completed");
     expect(riyaRow?.invoice_number).toMatch(/^SG-INV-/);
     // A student cannot read that overview.
-    expect((await riya.client.rpc("get_course_purchase_overview", { p_course_id: courseIds["sim-python-for-beginners"] })).error?.code).toBe("42501");
+    expect((await riya.client.rpc("get_course_purchase_overview", { p_course_id: courseIds["sim-python-for-beginners"]! })).error?.code).toBe("42501");
 
     // Browsers can never call the payment state functions directly.
     expect((await riya.client.rpc("complete_paid_order", { p_order_id: riyaRow ? "00000000-0000-0000-0000-000000000000" : "", p_provider: "mock", p_provider_payment_id: "x" })).error).not.toBeNull();

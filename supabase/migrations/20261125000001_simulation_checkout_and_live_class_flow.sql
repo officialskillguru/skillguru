@@ -146,7 +146,7 @@ begin
     format('Payment of ₹%s received for %s. Receipt %s. Your course and class schedule are now in My Learning.',
            to_char(coalesce(v_order.total_amount, 0), 'FM99,99,99,990'), coalesce(v_titles, 'your course'), v_invoice),
     'payment',
-    jsonb_build_object('category', 'payment', 'orderId', p_order_id, 'invoiceNumber', v_invoice)
+    jsonb_build_object('category', 'payment', 'action_url', '/dashboard/payments', 'orderId', p_order_id, 'invoiceNumber', v_invoice)
   );
 
   insert into public.payment_logs (order_id, payment_id, event, payload)
@@ -207,7 +207,7 @@ begin
   insert into public.notifications (recipient_id, title, message, type, metadata)
   values (v_order.user_id, 'Payment declined',
           'Your payment could not be completed and you have not been charged. You can retry from the course checkout.',
-          'payment', jsonb_build_object('category', 'payment', 'orderId', p_order_id, 'code', p_code));
+          'payment', jsonb_build_object('category', 'payment', 'action_url', '/dashboard/payments', 'orderId', p_order_id, 'code', p_code));
 
   insert into public.payment_logs (order_id, event, error, payload)
   values (p_order_id, 'payment.failed', p_reason, jsonb_build_object('code', p_code));
@@ -362,7 +362,7 @@ begin
     if new.created_by is distinct from new.mentor_id then
       insert into public.notifications (recipient_id, title, message, type, metadata)
       values (new.mentor_id, 'Class assigned to you', format('%s has been scheduled for %s.', new.title, v_when),
-              'live_class', jsonb_build_object('liveClassId', new.id, 'courseId', new.course_id, 'event', 'assigned'));
+              'live_class', jsonb_build_object('category', 'course', 'action_url', '/mentor/live-classes', 'liveClassId', new.id, 'courseId', new.course_id, 'event', 'assigned'));
     end if;
   elsif new.status is distinct from old.status then
     if new.status = 'live' then
@@ -385,7 +385,7 @@ begin
 
   insert into public.notifications (recipient_id, title, message, type, metadata)
   select e.student_id, v_title, v_message, 'live_class',
-         jsonb_build_object('liveClassId', new.id, 'courseId', new.course_id, 'event', lower(replace(v_title, ' ', '_')))
+         jsonb_build_object('category', 'course', 'action_url', '/dashboard/live-classes', 'liveClassId', new.id, 'courseId', new.course_id, 'event', lower(replace(v_title, ' ', '_')))
     from public.enrollments e
    where e.course_id = new.course_id and e.status = 'active';
   return new;
@@ -618,6 +618,32 @@ create policy "live_class_messages_insert" on public.live_class_messages
 
 grant select, insert on public.live_class_messages to authenticated;
 
+-- Chat with author display names. Participants cannot read each other's
+-- profiles rows (teachers cannot read student profiles), so names are joined
+-- here, gated by the same can_access_live_class() check as the table itself.
+create or replace function public.get_live_class_messages(p_class_id uuid)
+returns table (id uuid, author_id uuid, author_name text, body text, created_at timestamptz)
+language plpgsql
+stable
+security definer
+set search_path = public, pg_temp
+as $$
+begin
+  if not public.can_access_live_class(p_class_id) then
+    raise exception 'You do not have access to this class chat.' using errcode = '42501';
+  end if;
+  return query
+  select m.id, m.author_id, coalesce(p.full_name, 'Participant'), m.body, m.created_at
+    from public.live_class_messages m
+    left join public.profiles p on p.id = m.author_id
+   where m.live_class_id = p_class_id
+   order by m.created_at
+   limit 200;
+end;
+$$;
+revoke all on function public.get_live_class_messages(uuid) from public, anon;
+grant execute on function public.get_live_class_messages(uuid) to authenticated;
+
 -- ─── 3. Counsellor (course manager) access ──────────────────────────────────
 
 -- 20260902110001 granted the counsellor courses.create / courses.update_all by
@@ -661,6 +687,13 @@ drop policy if exists "courses: update (course managers)" on storage.objects;
 create policy "courses: update (course managers)" on storage.objects
   for update using (bucket_id = 'courses' and public.has_permission('courses.update_all'))
   with check (bucket_id = 'courses' and public.has_permission('courses.update_all'));
+
+-- Counsellors hold mentors.read but profiles RLS only exposed student
+-- profiles to them, so teacher names were unreadable (empty teacher pickers,
+-- "?" in Mentor Management). Mirrors the existing students.read clause.
+drop policy if exists "profiles_select_mentor_readers" on public.profiles;
+create policy "profiles_select_mentor_readers" on public.profiles
+  for select using (public.has_permission('mentors.read') and public.user_has_role(id, 'mentor'));
 
 drop policy if exists "enrollments_select_student_readers" on public.enrollments;
 create policy "enrollments_select_student_readers" on public.enrollments

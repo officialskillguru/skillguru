@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
 
     const { data: course, error: courseError } = await serviceClient
       .from("courses")
-      .select("id, price, status, title")
+      .select("id, price, discount_price, status, title")
       .eq("id", courseId)
       .maybeSingle();
 
@@ -87,7 +87,10 @@ Deno.serve(async (req) => {
     if (course.status !== "published") {
       return createResponse(false, "Course is not available for enrollment", null, [], 400, requestId);
     }
-    const priceNumber = course.price !== null ? Number(course.price) : 0;
+    // Same effective price the course page shows: a valid discount below the list price wins.
+    const listPrice = course.price !== null ? Number(course.price) : 0;
+    const discount = course.discount_price !== null ? Number(course.discount_price) : null;
+    const priceNumber = discount !== null && discount >= 0 && discount < listPrice ? discount : listPrice;
     if (priceNumber <= 0) {
       return createResponse(false, "This course is free. Use the enroll-free endpoint instead.", null, [], 400, requestId);
     }

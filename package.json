@@ -16,7 +16,7 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "prepare": "husky",
-    "dev:demo": "vite --mode demo",
+    "dev:demo": "vite --mode demo --host 127.0.0.1 --port 5180 --strictPort",
     "demo:seed": "node scripts/demo-sim/seed.mjs",
     "demo:reset": "node scripts/demo-sim/seed.mjs --reset",
     "demo:check": "node scripts/demo-sim/seed.mjs --check",

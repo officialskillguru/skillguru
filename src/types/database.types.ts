@@ -2869,6 +2869,45 @@ export type Database = {
           },
         ]
       }
+      live_class_messages: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          live_class_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          live_class_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          live_class_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_class_messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "live_class_messages_live_class_id_fkey"
+            columns: ["live_class_id"]
+            isOneToOne: false
+            referencedRelation: "live_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       live_classes: {
         Row: {
           course_id: string
@@ -2876,6 +2915,7 @@ export type Database = {
           created_by: string
           description: string | null
           end_time: string
+          ended_at: string | null
           id: string
           is_demo: boolean
           meeting_link: string | null
@@ -2883,6 +2923,7 @@ export type Database = {
           mentor_id: string
           scheduled_date: string
           start_time: string
+          started_at: string | null
           status: string
           title: string
           updated_at: string
@@ -2893,6 +2934,7 @@ export type Database = {
           created_by: string
           description?: string | null
           end_time: string
+          ended_at?: string | null
           id?: string
           is_demo?: boolean
           meeting_link?: string | null
@@ -2900,6 +2942,7 @@ export type Database = {
           mentor_id: string
           scheduled_date: string
           start_time: string
+          started_at?: string | null
           status?: string
           title: string
           updated_at?: string
@@ -2910,6 +2953,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           end_time?: string
+          ended_at?: string | null
           id?: string
           is_demo?: boolean
           meeting_link?: string | null
@@ -2917,6 +2961,7 @@ export type Database = {
           mentor_id?: string
           scheduled_date?: string
           start_time?: string
+          started_at?: string | null
           status?: string
           title?: string
           updated_at?: string
@@ -6600,6 +6645,145 @@ export type Database = {
       }
     }
     Functions: {
+      can_access_live_class: { Args: { p_class_id: string }; Returns: boolean }
+      complete_paid_order: {
+        Args: {
+          p_method?: string
+          p_order_id: string
+          p_provider: string
+          p_provider_payment_id: string
+          p_signature?: string
+          p_source?: string
+        }
+        Returns: Json
+      }
+      end_live_class: {
+        Args: { p_class_id: string }
+        Returns: {
+          course_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          end_time: string
+          ended_at: string | null
+          id: string
+          is_demo: boolean
+          meeting_link: string | null
+          meeting_platform: string
+          mentor_id: string
+          scheduled_date: string
+          start_time: string
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "live_classes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      fail_paid_order: {
+        Args: {
+          p_code?: string
+          p_method?: string
+          p_order_id: string
+          p_provider: string
+          p_provider_payment_id: string
+          p_reason?: string
+        }
+        Returns: Json
+      }
+      get_course_purchase_overview: {
+        Args: { p_course_id: string }
+        Returns: {
+          amount: number
+          email: string
+          enrolled_at: string
+          enrollment_source: string
+          enrollment_status: string
+          full_name: string
+          invoice_number: string
+          order_id: string
+          order_status: string
+          ordered_at: string
+          payment_method: string
+          student_id: string
+        }[]
+      }
+      get_live_class_messages: {
+        Args: { p_class_id: string }
+        Returns: {
+          author_id: string
+          author_name: string
+          body: string
+          created_at: string
+          id: string
+        }[]
+      }
+      get_live_class_roster: {
+        Args: { p_class_id: string }
+        Returns: {
+          attendance_status: string
+          email: string
+          enrolled_at: string
+          full_name: string
+          joined_at: string
+          student_id: string
+        }[]
+      }
+      get_public_course_schedule: {
+        Args: { p_course_id: string }
+        Returns: {
+          end_time: string
+          id: string
+          mentor_name: string
+          scheduled_date: string
+          start_time: string
+          status: string
+          title: string
+        }[]
+      }
+      join_live_class: { Args: { p_class_id: string }; Returns: Json }
+      mark_order_payment_pending: {
+        Args: {
+          p_method?: string
+          p_order_id: string
+          p_provider: string
+          p_provider_payment_id: string
+        }
+        Returns: Json
+      }
+      start_live_class: {
+        Args: { p_class_id: string }
+        Returns: {
+          course_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          end_time: string
+          ended_at: string | null
+          id: string
+          is_demo: boolean
+          meeting_link: string | null
+          meeting_platform: string
+          mentor_id: string
+          scheduled_date: string
+          start_time: string
+          started_at: string | null
+          status: string
+          title: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "live_classes"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       consume_resume_ai_quota: {
         Args: { p_operation: string; p_per_day: number; p_per_minute: number; p_user_id: string }
         Returns: { allowed: boolean; retry_after_seconds: number }[]
